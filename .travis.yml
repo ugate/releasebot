@@ -1,0 +1,14 @@
+language: node_js
+node_js:
+- '0.10'
+git:
+  depth: 2147483647
+  branch: master
+before_script:
+- npm install -g grunt-cli
+branches:
+  only:
+  - master
+env:
+  global:
+  - secure: qZvebte03X+Y/pUnp6TO7h/VvbsKE3uKULRGWaSvka6rgsGQY0+trZz4zIMpmO1bRnE0Dxexud6KW0rnOZBtCxWYDvfnr4NgbdOi1zn47rpIA3Gq5fYWPEkzb5pqSHVUozk5epdUIYwkD/PgE1SkeYgOU6Hga0X9XnA0JWFf8og=

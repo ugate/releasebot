@@ -1,0 +1,48 @@
+{
+  "name": "releasebot",
+  "description": "Git commit message triggered grunt task that tags a release (GitHub Release API supported), generates/uploads a release distribution asset archive, publishes a distribution asset's content to a specified branch and publishes to npm",
+  "version": "0.0.0",
+  "homepage": "https://github.com/ugate/releasebot",
+  "author": {
+    "name": "UGate LLC",
+    "url": "http://ugate.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/ugate/releasebot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ugate/releasebot/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/ugate/releasebot/blob/master/LICENSE"
+    }
+  ],
+  "scripts": {
+    "test": "grunt nodeunit -v"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.2",
+    "grunt-contrib-jshint": "~0.6.4",
+    "grunt-contrib-nodeunit": "~0.3.3",
+    "grunt-banner": "~0.2.0"
+  },
+  "peerDependencies": {
+    "grunt": "~0.4.2"
+  },
+  "keywords": [
+    "gruntplugin",
+    "release",
+    "publish"
+  ],
+  "dependencies": {
+    "shelljs": "~0.2.6",
+    "semver": "~2.2.1"
+  },
+  "files": [
+    "releasebot.js",
+    "LICENSE"
+  ]
+}
