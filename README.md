@@ -6,7 +6,7 @@
 1. [Capture](https://www.kernel.org/pub/software/scm/git/docs/git-rev-parse.html) [commit](https://www.kernel.org/pub/software/scm/git/docs/git-show.html) [details](https://www.kernel.org/pub/software/scm/git/docs/git-remote.html) [from Git](https://www.kernel.org/pub/software/scm/git/docs/git-describe.html) (on task registration)
 2. Check for <a href="#default-task-specific-options">release trigger</a> within commit message
 3. Capture/write [change log and/or authors](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) (if directed) &dagger;
-4. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) &dagger; &hearts;
+4. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) &dagger;
 5. [Generate release archive asset](https://www.kernel.org/pub/software/scm/git/docs/git-archive.html) &dagger;
 6. [Release](http://developer.github.com/v3/repos/releases/#create-a-release)/[Tag](https://www.kernel.org/pub/software/scm/git/docs/git-tag.html) version (with [change log](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) as description) &dagger; &hearts;
 7. [Upload archive asset](http://developer.github.com/v3/repos/releases/#upload-a-release-asset) &#9679; &dagger; &hearts;
