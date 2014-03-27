@@ -1,7 +1,25 @@
-# ReleaseBot
+# releasebot
 [![NPM version](https://badge.fury.io/js/releasebot.png)](http://badge.fury.io/js/releasebot) [![Build Status](https://travis-ci.org/ugate/releasebot.png?branch=master)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
 
-Git commit message triggered grunt task that tags a release (GitHub Release API supported), generates/uploads a release distribution asset archive, publishes a distribution asset's content to a specified branch and publishes to npm
+**releasebot** is a [Grunt](http://gruntjs.com/) task for triggering a release on a predefined commit message. The task performs the following actions:
+
+1. Capture commit details from Git (on task registration)
+2. Check for <a href="#default-task-specific-options">release trigger</a> within commit message
+3. Capture/write change log and authors (if directed) &dagger;
+4. Update package version &dagger; &hearts;
+5. Generate release archive asset &dagger;
+6. Release/Tag version (with change log as description) &hearts;
+7. Upload archive asset &#9679; &hearts;
+8. Publish/Push release archive asset contents to distribution branch &hearts;
+9. Publish release archive asset to <a href="https://www.npmjs.org/">npm</a> &hearts;
+
+&dagger; Performed when release is triggered <br/>
+&#9679; GitHub only <br/>
+&hearts; Failure will result in the following rollback sequence:
+
+1. Remove remote release archive asset &#9679; and tagged release
+2. Revert published archive asset contents in distribution branch
+3. Revert package version
 
 ## Getting Started
 If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
@@ -91,7 +109,7 @@ Global options are set once the releasebot task is registered. After registratio
      // Same as corresponding option value
      buildDir : '',
      // Same as corresponding option value or Git extracted value
-     branch : 'master',
+     branch : '',
      // Same as corresponding option value or Git extracted value
      slug : '',
      // Username extracted via slug
@@ -123,7 +141,7 @@ Global options are set once the releasebot task is registered. After registratio
      // The comprised version (e.g. "1.2.3-beta.4")
      version : '',
      // The versionType + version (e.g. "v1.2.3-beta.4")
-     versionTag : 'v0.0.1',
+     versionTag : '',
      // Function versionPkg([isSet][,isRevert]) that returns {reverted: Boolean, updated: Boolean, pkg: Object} with the pkgPath JSON contents
      versionPkg : [Function],
      // Array of tasks extracted from the commit message in the format: "[skip SOME_TASK]" 
@@ -155,7 +173,7 @@ Global options are set once the releasebot task is registered. After registratio
   // RegExp used to exclude dest directories within destDir
   destExcludeDirRegExp : /.?node_modules.?/gmi,
   // RegExp used to exclude dest files within destDir
-  destExcludeFileRegExp : /.?\.zip.?/gmi,
+  destExcludeFileRegExp : /.?\.zip|tar.?/gmi,
   // Change log file that will include all the commit messages since the last release (blank/null will prevent change log creation)
   chgLog : 'HISTORY.md',
   // Authors file that will include all the authors since the last release (blank/null prevents authors creation)
