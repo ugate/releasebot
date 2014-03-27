@@ -3,23 +3,24 @@
 
 **releasebot** is a [Grunt](http://gruntjs.com/) task for triggering a release on a predefined commit message. The task performs the following actions:
 
-1. Capture commit details from Git (on task registration)
+1. [Capture](https://www.kernel.org/pub/software/scm/git/docs/git-rev-parse.html) [commit](https://www.kernel.org/pub/software/scm/git/docs/git-show.html) [details](https://www.kernel.org/pub/software/scm/git/docs/git-remote.html) [from Git](https://www.kernel.org/pub/software/scm/git/docs/git-describe.html) (on task registration)
 2. Check for <a href="#default-task-specific-options">release trigger</a> within commit message
-3. Capture/write change log and authors (if directed) &dagger;
-4. Update package version &dagger; &hearts;
-5. Generate release archive asset &dagger;
-6. Release/Tag version (with change log as description) &hearts;
-7. Upload archive asset &#9679; &hearts;
-8. Publish/Push release archive asset contents to distribution branch &hearts;
-9. Publish release archive asset to <a href="https://www.npmjs.org/">npm</a> &hearts;
+3. Capture/write [change log and/or authors](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) (if directed) &dagger;
+4. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) &dagger; &hearts;
+5. [Generate release archive asset](https://www.kernel.org/pub/software/scm/git/docs/git-archive.html) &dagger;
+6. [Release](http://developer.github.com/v3/repos/releases/#create-a-release)/[Tag](https://www.kernel.org/pub/software/scm/git/docs/git-tag.html) version (with [change log](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) as description) &dagger; &hearts;
+7. [Upload archive asset](http://developer.github.com/v3/repos/releases/#upload-a-release-asset) &#9679; &dagger; &hearts;
+8. Publish/[Push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) release archive asset contents to distribution branch &dagger; &hearts;
+9. [Publish](https://www.npmjs.org/doc/cli/npm-publish.html) release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts;
 
 &dagger; Performed when release is triggered <br/>
 &#9679; GitHub only <br/>
 &hearts; Failure will result in the following rollback sequence:
 
-1. Remove remote release archive asset &#9679; and tagged release
-2. Revert published archive asset contents in distribution branch
-3. Revert package version
+1. [Remove remote release archive asset](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release)
+2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published archive asset contents in distribution branch
+3. [Unpublish npm](https://www.npmjs.org/doc/cli/npm-unpublish.html) asset
+3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html)
 
 ## Getting Started
 If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
