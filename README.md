@@ -1,7 +1,7 @@
-# releasebot
+# ReleaseBot
 [![NPM version](https://badge.fury.io/js/releasebot.png)](http://badge.fury.io/js/releasebot) [![Build Status](https://travis-ci.org/ugate/releasebot.png?branch=master)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
 
-Git commit message triggered grunt task that tags a release (GitHub Release API supported), generates/uploads a release distribution asset archive and publishes a distribution asset's content to a specified branch
+Git commit message triggered grunt task that tags a release (GitHub Release API supported), generates/uploads a release distribution asset archive, publishes a distribution asset's content to a specified branch and publishes to npm
 
 ## Getting Started
 If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
@@ -52,18 +52,93 @@ The following **global options** can be set using one of the following technique
 1. Via `grunt.config.set('releasebot', options)`
 2. Passed in from the command line `grunt releasebot --releasebot.theoptionname=THE_OPTION_VALUE`
 3. Automatically from the <a href="http://docs.travis-ci.com/user/ci-environment/#Environment-variables">Travis-CI environmental variables</a>
-4. Default option value
+4. Default option value or extracted from Git
 
 ###Default global options:
 
 ```JavaScript
 {
-  pkg : grunt.config('pkgFile') || 'package.json',
+  // the path to the project package file (blank/null prevents npm publish)
+  pkgPath : grunt.config('pkgFile') || 'package.json',
+  // CLI executable for Git operations
+  gitCliSubstitute : 'git',
+  // Directory where the build will take place
   buildDir : process.cwd(),
-  branch : '', // extracted from last commit via Git
-  commitNumber : '', // extracted from last commit via Git
-  commitMessage : '', // extracted from last commit via Git
-  repoSlug : '' // extracted from Git
+  // Git branch that will be released (default: extracted from current checkout)
+  branch : '',
+  // The repository slug the release is for (default: extracted from current checkout)
+  repoSlug : '',
+  // The commit message that will be checked for release trigger (default: extracted from last commit)
+  commitNumber : '',
+  // The commit message that will be checked for release trigger (default: extracted from last commit)
+  commitMessage : ''
+}
+```
+
+Global options are set once the releasebot task is registered. After registration `grunt.config.get('releasebot')` will return the global options above with one additional **read-only** property named `commit`:
+
+```JavaScript
+{
+  ...
+  commit :
+  {
+     // Same as corresponding option value
+     gitCliSubstitute : '',
+     // Same as corresponding option value
+     pkgPath : '',
+     // Same as corresponding option value or Git extracted value
+     number : '',
+     // Same as corresponding option value
+     buildDir : '',
+     // Same as corresponding option value or Git extracted value
+     branch : 'master',
+     // Same as corresponding option value or Git extracted value
+     slug : '',
+     // Username extracted via slug
+     username : '',
+     // Repository name extracted via slug
+     reponame : '',
+     // Same as corresponding option value or Git extracted value
+     message : '',
+     // The indices for each version "slot" that was incremented (e.g. 0.0.1 to 0.1.2 would contain [1,2])
+     versionBumpedIndices : [],
+     // The indices for each version "slot" that was extracted from the last release
+     versionLastIndices : [],
+     // Last released commit object containing similar properties as the current commit
+     lastCommit : {},
+     // The release label used within the commit message
+     versionLabel : 'Release',
+     // The release version label used within the commit message
+     versionType : 'v',
+     // The pre-release type used within the commit message (e.g. "beta" for version "1.0.0-beta.1")
+     versionPrereleaseType : undefined,
+     // The major version (e.g. 1 for version "1.2.3")
+     versionMajor : 0,
+     // The minor version (e.g. 2 for version "1.2.3")
+     versionMinor : 0,
+     // The patch version (e.g. 3 for version "1.2.3")
+     versionPatch : 0,
+     // The pre-release version (e.g. 4 for version "1.2.3-beta.4")
+     versionPrerelease : 0,
+     // The comprised version (e.g. "1.2.3-beta.4")
+     version : '',
+     // The versionType + version (e.g. "v1.2.3-beta.4")
+     versionTag : 'v0.0.1',
+     // Function versionPkg([isSet][,isRevert]) that returns {reverted: Boolean, updated: Boolean, pkg: Object} with the pkgPath JSON contents
+     versionPkg : [Function],
+     // Array of tasks extracted from the commit message in the format: "[skip SOME_TASK]" 
+     skipTasks : [],
+     // Function skipTaskGen(taskName) that produces a skip string (e.g. skipTaskGen("clean") produces "[skip clean]")
+     skipTaskGen : [Function],
+     // Function skipTaskCheck(taskName) that returns true when the task is in the skipTasks
+     skipTaskCheck : [Function],
+     // The ID of the release (populated after release task has ran)
+     releaseId : null,
+     // The URL of the release archive asset (populated after release task has ran)
+     releaseAssetUrl : '',
+     // The asset object returned by the release asset process (populated after release task has ran)
+     releaseAsset : null
+  }
 }
 ```
 
