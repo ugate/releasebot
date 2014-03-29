@@ -59,7 +59,7 @@ module.exports = function(grunt) {
 		pkgPath : grunt.config('pkgFile') || 'package.json',
 		gitCliSubstitute : globalOpts.gitCliSubstitute
 				|| grunt.option(pluginName + '.gitCliSubstitute')
-				|| '"C:\\Program Files (x86)\\Git\\bin\\git"',
+				|| '',
 		buildDir : globalOpts.buildDir
 				|| grunt.option(pluginName + '.buildDir')
 				|| process.env.TRAVIS_BUILD_DIR || process.cwd(),
