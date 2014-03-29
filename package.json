@@ -21,11 +21,13 @@
     }
   ],
   "scripts": {
-    "test": "grunt nodeunit -v"
+    "test": "grunt test -v --stack"
   },
   "devDependencies": {
     "grunt": "~0.4.2",
-    "grunt-contrib-jshint": "~0.6.4",
+    "grunt-contrib-clean": "~0.5.0",
+    "grunt-contrib-copy": "~0.5.0",
+    "grunt-contrib-jshint": "~0.9.2",
     "grunt-contrib-nodeunit": "~0.3.3",
     "grunt-banner": "~0.2.0"
   },

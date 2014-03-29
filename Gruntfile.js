@@ -32,11 +32,34 @@ module.exports = function(grunt) {
 				copy : {
 					dist : {
 						expand : true,
-						src : [ '**/**/*.{js,md}',
-								'!**/{node_modules,lib,test,dist}/**',
-								'!Gruntfile.js', 'LICENSE' ],
+						src : [ '{tasks,lib,test}/**/*.{js,md}', 'LICENSE',
+								'README.md', '*.json' ],
 						dest : distPath
 					}
+				},
+
+				jshint : {
+					gruntfile_tasks : [ 'Gruntfile.js', 'tasks/*.js' ],
+					libs_n_tests : [ 'lib/**/*.js', '<%= nodeunit.tests %>' ],
+					options : {
+						curly : true,
+						eqeqeq : true,
+						immed : true,
+						latedef : 'nofunc',
+						newcap : true,
+						noarg : true,
+						sub : true,
+						undef : true,
+						unused : true,
+						boss : true,
+						eqnull : true,
+						node : true,
+						laxbreak : true
+					}
+				},
+
+				nodeunit : {
+					tests : 'test/**/*.js'
 				},
 
 				releasebot : {
@@ -95,8 +118,8 @@ module.exports = function(grunt) {
 	function Tasks() {
 		this.tasks = [];
 		this.add = function(task) {
-			var rb = grunt.config.get('releasebot');
-			if (rb.skip(task)) {
+			var commit = grunt.config.get('releasebot.commit');
+			if (commit.skipTaskCheck(task)) {
 				grunt.log.writeln('Skipping "' + task + '" task');
 				return false;
 			}
@@ -109,6 +132,8 @@ module.exports = function(grunt) {
 	var buildTasks = new Tasks();
 	buildTasks.add('clean');
 	buildTasks.add('copy:dist');
+	buildTasks.add('jshint');
+	buildTasks.add('nodeunit');
 	buildTasks.add('releasebot');
 	grunt.registerTask('test', buildTasks.tasks);
 
