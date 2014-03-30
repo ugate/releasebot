@@ -1,7 +1,7 @@
 'use strict';
 
 var shell = require('shelljs');
-//var semver = require('semver');
+// var semver = require('semver');
 var fs = require('fs');
 var pth = require('path');
 var util = require('util');
@@ -58,8 +58,7 @@ module.exports = function(grunt) {
 	globalOpts = {
 		pkgPath : grunt.config('pkgFile') || 'package.json',
 		gitCliSubstitute : globalOpts.gitCliSubstitute
-				|| grunt.option(pluginName + '.gitCliSubstitute')
-				|| '',
+				|| grunt.option(pluginName + '.gitCliSubstitute') || '',
 		buildDir : globalOpts.buildDir
 				|| grunt.option(pluginName + '.buildDir')
 				|| process.env.TRAVIS_BUILD_DIR || process.cwd(),
@@ -74,10 +73,11 @@ module.exports = function(grunt) {
 		repoSlug : globalOpts.repoSlug
 				|| grunt.option(pluginName + '.repoSlug')
 				|| process.env.TRAVIS_REPO_SLUG,
-		gitToken : globalOpts.gitToken
-				|| grunt.option(pluginName + '.gitToken') || function() {
-					return process.env.GH_TOKEN;
-				}
+		gitToken : function() {
+			return globalOpts.gitToken
+					|| grunt.option(pluginName + '.gitToken')
+					|| process.env.GH_TOKEN || '';
+		}
 	};
 	var commit = genCommit(globalOpts);
 
@@ -158,14 +158,15 @@ module.exports = function(grunt) {
 		if (!rs) {
 			// fall back on capturing the repository slug from the current
 			// remote
-			rs = cmd(
-					"git remote -v | head -n1 | awk '{print $2}' | sed -e 's/\\.git$//'")
-					.replace(regexSlug, function(m, s) {
-						var ss = s.split('/');
-						un = ss[0];
-						rn = ss[1];
-						return s;
-					});
+			rs = cmd("git remote -v | head -n1 | awk '{print $2}' | sed -e 's/\\.git$//'");
+		}
+		if (rs) {
+			rs = rs.replace(regexSlug, function(m, s) {
+				var ss = s.split('/');
+				un = ss[0];
+				rn = ss[1];
+				return s;
+			});
 			grunt.verbose.writeln('Found repo slug: "' + rs + '"');
 		}
 		var lver = execCmd('git describe --abbrev=0 --tags',
@@ -220,7 +221,7 @@ module.exports = function(grunt) {
 	 */
 	function clone(c, incFuncs, excludes) {
 		var cl = {}, cp, t;
-		for (var keys = Object.keys(c), l = 0; l < keys.length; l++) {
+		for ( var keys = Object.keys(c), l = 0; l < keys.length; l++) {
 			cp = c[keys[l]];
 			if (excludes && excludes.indexOf(cp) >= 0) {
 				continue;
@@ -278,10 +279,6 @@ module.exports = function(grunt) {
 		}
 		var self = this;
 		var vt = 0, si = -1, vlp = '';
-		this.work = {
-			publishBranch : false,
-			publishNpm : false
-		};
 		this.publishedNpmTarget = '';
 		this.gitCliSubstitute = gitCliSubstitute;
 		this.pkgPath = pkgPath;
@@ -733,7 +730,7 @@ module.exports = function(grunt) {
 				if (options.distAssetUpdateFiles
 						&& typeof options.distAssetUpdateFunction === 'function') {
 					var paths = options.distAssetUpdateFiles;
-					for (var i = 0; i < paths.length; i++) {
+					for ( var i = 0; i < paths.length; i++) {
 						var p = pth.join(path, paths[i]), au = '';
 						var content = grunt.file.read(p, {
 							encoding : grunt.file.defaultEncoding
@@ -1106,7 +1103,7 @@ module.exports = function(grunt) {
 			endc = end || endc;
 			var stop = false;
 			pausd = false;
-			for (var l = wrkq.length; wi < l; wi++) {
+			for ( var l = wrkq.length; wi < l; wi++) {
 				wrk = wrkq[wi];
 				try {
 					stop = wrk.call();
@@ -1144,7 +1141,7 @@ module.exports = function(grunt) {
 		function rollbacks() {
 			var cnt = 0;
 			if (que.errorCount() > 0) {
-				for (var i = 0, l = wrkrb.length; i < l; i++) {
+				for ( var i = 0, l = wrkrb.length; i < l; i++) {
 					try {
 						cnt++;
 						if (wrkrb[i].rb()) {
@@ -1188,7 +1185,7 @@ module.exports = function(grunt) {
 		 * Logs one or more errors (can be {Error}, {Object} or {String})
 		 */
 		this.log = function() {
-			for (var i = 0; i < arguments.length; i++) {
+			for ( var i = 0; i < arguments.length; i++) {
 				if (util.isArray(arguments[i])) {
 					this.log(arguments[i]);
 				} else {
