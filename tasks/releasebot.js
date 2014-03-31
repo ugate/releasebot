@@ -139,6 +139,12 @@ module.exports = function(grunt) {
 			}
 			return rtn.output.replace(regexLines, '');
 		}
+		function sur(s) {
+			var ss = s.split('/');
+			un = ss[0];
+			rn = ss[1];
+			rs = s;
+		}
 		if (!br) {
 			br = cmd('git rev-parse --abbrev-ref HEAD');
 			grunt.verbose.writeln('Found branch: "' + br + '"');
@@ -157,14 +163,14 @@ module.exports = function(grunt) {
 			// fall back on capturing the repository slug from the current
 			// remote
 			rs = cmd("git ls-remote --get-url");
-		}
-		if (rs) {
 			rs.replace(regexSlug, function(m, s) {
-				var ss = s.split('/');
-				un = ss[0];
-				rn = ss[1];
+				sur(s);
 				rs = s;
 			});
+		} else {
+			sur(rs);
+		}
+		if (rs) {
 			grunt.verbose.writeln('Found repo slug: "' + rs + '"');
 		}
 		var lver = execCmd('git describe --abbrev=0 --tags',
