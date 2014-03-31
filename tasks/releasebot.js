@@ -71,6 +71,7 @@ module.exports = function(grunt) {
 				|| process.env.TRAVIS_COMMIT_MESSAGE || '',
 		repoSlug : globalEnv.repoSlug || grunt.option(pluginName + '.repoSlug')
 				|| process.env.TRAVIS_REPO_SLUG,
+		lastVersionMsgIgnoreRegExp : /No names found/i,
 		gitToken : function() {
 			return globalEnv.gitToken || grunt.option(pluginName + '.gitToken')
 					|| process.env.GH_TOKEN || '';
@@ -81,10 +82,17 @@ module.exports = function(grunt) {
 	// register release task
 	grunt.registerTask(pluginName, pluginDesc, function() {
 		var rx = regexRelease;
+		var em = pluginName
+				+ '@'
+				+ (process.env.TRAVIS_BUILD_NUMBER ? 'travis-ci.org'
+						: 'example.org');
 		var options = this.options({
 			pkgJsonReplacer : null,
 			pkgJsonSpace : 2,
 			releaseVersionRegExp : rx,
+			repoName : 'origin',
+			repoUser : pluginName,
+			repoEmail : em,
 			destBranch : 'gh-pages',
 			destDir : 'dist',
 			destExcludeDirRegExp : /.?node_modules.?/gmi,
@@ -176,14 +184,18 @@ module.exports = function(grunt) {
 		}
 		var lver = execCmd('git describe --abbrev=0 --tags',
 				env.gitCliSubstitute);
-		if (lver.code !== 0 && !/No names found/i.test(lver.output)) {
+		var lverno = false;
+		if (lver.code !== 0
+				&& (!util.isRegExp(env.lastVersionMsgIgnoreRegExp) || !(lverno = env.lastVersionMsgIgnoreRegExp
+						.test(lver.output)))) {
 			throw new Error('Error capturing last version ' + lver.output);
 		}
-		if (lver.output) {
+		if (!lverno && lver.output) {
 			lver = lver.output.replace(regexLines, '');
 			grunt.log.writeln('Found last release version "' + lver
 					+ '" from git');
 		} else {
+			lver = '';
 			var pkg = grunt.file.readJSON(env.pkgPath);
 			if (pkg.version) {
 				lver = dfltVersionType + pkg.version;
@@ -203,21 +215,24 @@ module.exports = function(grunt) {
 	 * 
 	 * @param c
 	 *            the {Commit} to clone
+	 * @param msg
+	 *            alternative verbose message (null prevents log output)
 	 */
-	function cloneAndSetCommit(c) {
+	function cloneAndSetCommit(c, msg) {
 		var cc = clone(c, [ c.skipTaskCheck, c.skipTaskGen, c.versionPkg ], [
 				c.versionMatch, c.gitCliSubstitute, c.pkgPath ]);
 		grunt.config.set(configCommit, cc);
-		grunt.verbose
-				.writeln('The following read-only object is now accessible via grunt.config.get("'
-						+ configCommit + '"):\n' + util.inspect(cc, {
-							colors : true,
-							depth : 3
-						}));
-		// grunt.log.writeflags(o,
-		// 'The following read-only properties are now accessible via
-		// grunt.config.get("'
-		// + configCommit + '")');
+		msg = typeof msg === 'string' ? msg + '\n'
+				: typeof msg === 'undefined' ? 'The following read-only object is now accessible via grunt.config.get("'
+						+ configCommit + '"):\n'
+						: msg;
+		if (msg) {
+			grunt.verbose.writeln(msg + util.inspect(cc, {
+				colors : true,
+				depth : 3
+			}));
+			// grunt.log.writeflags(c, msg);
+		}
 	}
 
 	/**
@@ -433,7 +448,7 @@ module.exports = function(grunt) {
 		que.start(function(rbcnt) {
 			// complete process
 			try {
-				cloneAndSetCommit(commit);
+				cloneAndSetCommit(commit, null);
 			} catch (e) {
 				que.error('Failed to set global commit result properties', e);
 			}
@@ -493,10 +508,11 @@ module.exports = function(grunt) {
 		 */
 		function remoteSetup() {
 			var link = '${GH_TOKEN}@github.com/' + commit.slug + '.git';
-			cmd('git config --global user.email "travis@travis-ci.org"');
-			cmd('git config --global user.name "travis"');
-			cmd('git remote rm origin');
-			cmd('git remote add origin https://' + commit.username + ':' + link);
+			cmd('git config --global user.email "' + options.repoEmail + '"');
+			cmd('git config --global user.name "' + options.repoUser + '"');
+			cmd('git remote rm ' + options.repoName);
+			cmd('git remote add ' + options.repoName + ' https://'
+					+ commit.username + ':' + link);
 		}
 
 		/**
@@ -540,7 +556,7 @@ module.exports = function(grunt) {
 					+ options.gitHostname);
 			cmd('git tag -f -a ' + commit.versionTag + ' -m "'
 					+ chgLogRtn.replace(regexLines, '$1 \\') + '"');
-			cmd('git push -f origin ' + commit.versionTag);
+			cmd('git push -f ' + options.repoName + ' ' + commit.versionTag);
 			// TODO : upload asset?
 			que.add(publish, rollbackTag);
 		}
@@ -585,8 +601,9 @@ module.exports = function(grunt) {
 						options.destExcludeDirRegExp,
 						options.destExcludeFileRegExp).toString());
 				// cmd('cp -r ' + pth.join(destPath, '*') + ' ' + ghPath);
-				cmd('git fetch origin ' + options.destBranch);
-				cmd('git checkout -q --track origin/' + options.destBranch);
+				cmd('git fetch ' + options.repoName + ' ' + options.destBranch);
+				cmd('git checkout -q --track ' + options.repoName + '/'
+						+ options.destBranch);
 				cmd('git rm -rfq .');
 				cmd('git clean -dfq .');
 				grunt.log.writeln('Copying publication directories/files from '
@@ -599,7 +616,8 @@ module.exports = function(grunt) {
 				updatePublishAssets(commit.buildDir);
 
 				cmd('git add -A && git commit -m "' + relMsg + '"');
-				cmd('git push -f origin ' + options.destBranch);
+				cmd('git push -f ' + options.repoName + ' '
+						+ options.destBranch);
 
 				que.add(publishNpm, rollbackPublish);
 			}
@@ -621,7 +639,8 @@ module.exports = function(grunt) {
 		 * Deletes tag using Git CLI
 		 */
 		function rollbackTag() {
-			cmd('git push --delete origin ' + commit.versionTag);
+			cmd('git push --delete ' + options.repoName + ' '
+					+ commit.versionTag);
 		}
 
 		/**
@@ -724,7 +743,7 @@ module.exports = function(grunt) {
 				}
 			}
 			if (output) {
-				grunt.log.writeln(output);
+				// grunt.verbose.writeln(output);
 				return output;
 			}
 			return '';
