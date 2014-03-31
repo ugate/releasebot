@@ -266,7 +266,7 @@ module.exports = function(grunt) {
 					|| util.isError(cp)) {
 				cl[keys[l]] = cp;
 			} else if (t !== 'undefined') {
-				cl[keys[l]] = clone(cp, incFuncs);
+				cl[keys[l]] = clone(cp, incFuncs, excludes);
 			}
 		}
 		return cl;
@@ -477,7 +477,8 @@ module.exports = function(grunt) {
 			// Generate change log for release using all messages since last
 			// tag/release
 			var chgLogPath = options.destDir + '/' + options.chgLog;
-			var lastGitLog = commit.lastCommit && commit.lastCommit.version ? commit.lastCommit.versionTag
+			var lastGitLog = commit.lastCommit
+					&& !commit.lastCommit.versionVacant() ? commit.lastCommit.versionTag
 					+ '..HEAD'
 					: 'HEAD';
 			chgLogRtn = cmd('git --no-pager log ' + lastGitLog
