@@ -19,7 +19,6 @@
 
 1. [Remove remote release archive asset](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release)
 2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published archive asset contents in distribution branch
-3. [Unpublish npm](https://www.npmjs.org/doc/cli/npm-unpublish.html) asset
 3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html)
 
 ## Getting Started

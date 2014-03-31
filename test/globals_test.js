@@ -5,8 +5,8 @@ var grunt = require('grunt');
  */
 exports.globals = {
 	options : function(test) {
-		var o = grunt.config.get('releasebot.options');
-		test.ok(o, 'Cannot find grunt.config.get("releasebot.options")');
+		var o = grunt.config.get('releasebot.env');
+		test.ok(o, 'Cannot find grunt.config.get("releasebot.env")');
 
 		test.ok(o.pkgPath, 'Cannot find options.pckPath');
 		test.ok(o.buildDir, 'Cannot find options.buildDir');
