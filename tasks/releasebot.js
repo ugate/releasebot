@@ -57,8 +57,7 @@ module.exports = function(grunt) {
 	globalEnv = {
 		pkgPath : grunt.config('pkgFile') || 'package.json',
 		gitCliSubstitute : globalEnv.gitCliSubstitute
-				|| grunt.option(pluginName + '.gitCliSubstitute')
-				|| '"C:\\Program Files (x86)\\Git\\bin\\git"',
+				|| grunt.option(pluginName + '.gitCliSubstitute') || '',
 		buildDir : globalEnv.buildDir || grunt.option(pluginName + '.buildDir')
 				|| process.env.TRAVIS_BUILD_DIR || process.cwd(),
 		branch : globalEnv.branch || grunt.option(pluginName + '.branch')
