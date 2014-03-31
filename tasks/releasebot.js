@@ -9,6 +9,7 @@ var pluginName = 'releasebot';
 var configEnv = pluginName + '.env';
 var configCommit = pluginName + '.commit';
 var dfltVersionLabel = 'release';
+var dfltVersionType = 'v';
 var regexRelease = /(released?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?))/mi;
 var pluginDesc = 'Git commit message triggered grunt task that tags a release (GitHub Release API '
 		+ 'supported), generates/uploads a release distribution asset archive, publishes a '
@@ -178,9 +179,19 @@ module.exports = function(grunt) {
 		if (lver.code !== 0 && !/No names found/i.test(lver.output)) {
 			throw new Error('Error capturing last version ' + lver.output);
 		}
-		lver = lver.code === 0 ? dfltVersionLabel
-				+ lver.output.replace(regexLines, '') : '';
-		grunt.verbose.writeln('Found last release version: "' + lver + '"');
+		if (lver.output) {
+			lver = lver.output.replace(regexLines, '');
+			grunt.log.writeln('Found last release version "' + lver
+					+ '" from git');
+		} else {
+			var pkg = grunt.file.readJSON(env.pkgPath);
+			if (pkg.version) {
+				lver = dfltVersionType + pkg.version;
+				grunt.log.writeln('Found last release version "' + lver
+						+ '" from ' + env.pkgPath);
+			}
+		}
+		lver = lver ? dfltVersionLabel + lver : '';
 		var c = new Commit(cm, lver, env.gitCliSubstitute, cn, env.pkgPath,
 				env.buildDir, br, rs, un, rn, env.gitToken);
 		cloneAndSetCommit(c);
@@ -194,9 +205,8 @@ module.exports = function(grunt) {
 	 *            the {Commit} to clone
 	 */
 	function cloneAndSetCommit(c) {
-		var cc = clone(c, [ c.skipTaskCheck, c.skipTaskGen, c.versionSetPkg,
-				c.versionGetPkg ], [ c.versionMatch, c.gitCliSubstitute,
-				c.pkgPath ]);
+		var cc = clone(c, [ c.skipTaskCheck, c.skipTaskGen, c.versionPkg ], [
+				c.versionMatch, c.gitCliSubstitute, c.pkgPath ]);
 		grunt.config.set(configCommit, cc);
 		grunt.verbose
 				.writeln('The following read-only object is now accessible via grunt.config.get("'
@@ -282,7 +292,7 @@ module.exports = function(grunt) {
 			rv = [];
 		}
 		var self = this;
-		var vt = 0, si = -1, vlp = '';
+		var vt = 0, si = -1;
 		this.publishedNpmTarget = '';
 		this.gitCliSubstitute = gitCliSubstitute;
 		this.pkgPath = pkgPath;
@@ -337,23 +347,19 @@ module.exports = function(grunt) {
 				+ (this.versionPrereleaseType ? vv(12, this.versionPrerelease)
 						: '') : rv.length > 3 ? rv[3] : '';
 		this.versionTag = rv.length > 3 ? rv[2] + this.version : '';
-		this.versionSetPkg = function(replacer, space, revert) {
-			var pkg = self.versionGetPkg(self.pkgPath);
+		this.versionPkg = function(replacer, space, revert) {
+			var pkg = grunt.file.readJSON(self.pkgPath);
 			var u = self.pkgPath && !revert && pkg.version !== self.version;
-			var r = self.pkgPath && revert && pkg.version !== vlp
-					&& (!vlp ? vlp = pkg.version : vlp);
+			var r = self.pkgPath && revert
+					&& pkg.version !== self.lastCommit.version
+					&& self.lastCommit.version;
 			if (u || r) {
-				pkg.version = r ? vlp : self.version;
+				pkg.version = r ? self.lastCommit.version : self.version;
 				grunt.file.write(self.pkgPath, JSON.stringify(pkg, replacer,
 						space));
-				if (u) {
-					vlp = pkg.version;
-				}
+				return true;
 			}
-			return u || r;
-		};
-		this.versionGetPkg = function() {
-			return grunt.file.readJSON(self.pkgPath);
+			return false;
 		};
 		function verMatchVal(i) {
 			var v = self.versionMatch[i];
@@ -426,25 +432,23 @@ module.exports = function(grunt) {
 		// begin release
 		que.start(function(rbcnt) {
 			// complete process
-			if (this.errorCount() > 0) {
-				grunt.log.writeln('Processed ' + rbcnt + ' rollback actions');
-			} else {
-				try {
-					cloneAndSetCommit(commit);
-				} catch (e) {
-					que.error('Failed to set global commit result properties',
-							e);
-				}
-				try {
-					cmd('git checkout -q ' + (commit.number || commit.branch));
-				} catch (e) {
-					que.error(e);
-				}
-				if (doneAsync) {
-					doneAsync(que.errorCount() <= 0);
-				} else if (que.errorCount() > 0) {
-					throw new Error('Release failed');
-				}
+			try {
+				cloneAndSetCommit(commit);
+			} catch (e) {
+				que.error('Failed to set global commit result properties', e);
+			}
+			try {
+				cmd('git checkout -q ' + (commit.number || commit.branch));
+			} catch (e) {
+				que.error(e);
+			}
+			var msg = que.errorCount() > 0 ? 'Processed ' + rbcnt
+					+ ' rollback actions' : 'Released ' + commit.versionTag;
+			grunt.log.writeln(msg);
+			if (doneAsync) {
+				doneAsync(que.errorCount() <= 0);
+			} else if (que.errorCount() > 0) {
+				throw new Error('Release failed');
 			}
 		});
 
@@ -649,7 +653,7 @@ module.exports = function(grunt) {
 		 */
 		function commitPkg(revert) {
 			if (commit.pkgPath
-					&& commit.versionSetPkg(options.pkgJsonReplacer,
+					&& commit.versionPkg(options.pkgJsonReplacer,
 							options.pkgJsonSpace, revert)) {
 				// push package version
 				cmd('git commit -q -m "' + relMsg + '"');
@@ -1102,6 +1106,15 @@ module.exports = function(grunt) {
 		}
 	}
 
+	/**
+	 * Synchronous queue that provides a means to add a function to a waiting
+	 * queue along with an optional rollback function that will be called in a
+	 * stack order whenever an {Error} is either thrown (stops further queued
+	 * functions from firing) or when all queued functions have been called, but
+	 * {Error}s have been logged
+	 * 
+	 * @constructor
+	 */
 	function Queue() {
 		var wrk = null, wrkq = [], wrkd = [], wrkrb = [], que = this, wi = 0, endc = null, pausd = false, es = new Errors();
 		this.add = function(fx, rb) {
@@ -1114,7 +1127,7 @@ module.exports = function(grunt) {
 		};
 		this.start = function(end) {
 			endc = end || endc;
-			var stop = false;
+			var stop = null;
 			pausd = false;
 			for ( var l = wrkq.length; wi < l; wi++) {
 				wrk = wrkq[wi];
@@ -1125,7 +1138,7 @@ module.exports = function(grunt) {
 						return;
 					}
 				} catch (e) {
-					stop = true;
+					stop = e;
 					que.error(e);
 				} finally {
 					if (stop || wi === l - 1) {
