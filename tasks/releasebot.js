@@ -250,7 +250,7 @@ module.exports = function(grunt) {
 	 */
 	function clone(c, incFuncs, excludes) {
 		var cl = {}, cp, t;
-		for ( var keys = Object.keys(c), l = 0; l < keys.length; l++) {
+		for (var keys = Object.keys(c), l = 0; l < keys.length; l++) {
 			cp = c[keys[l]];
 			if (excludes && excludes.indexOf(cp) >= 0) {
 				continue;
@@ -363,16 +363,19 @@ module.exports = function(grunt) {
 						: '') : rv.length > 3 ? rv[3] : '';
 		this.versionTag = rv.length > 3 ? rv[2] + this.version : '';
 		this.versionPkg = function(replacer, space, revert) {
-			var pkg = grunt.file.readJSON(self.pkgPath);
-			var u = self.pkgPath && !revert && pkg.version !== self.version;
-			var r = self.pkgPath && revert
-					&& pkg.version !== self.lastCommit.version
-					&& self.lastCommit.version;
-			if (u || r) {
-				pkg.version = r ? self.lastCommit.version : self.version;
-				grunt.file.write(self.pkgPath, JSON.stringify(pkg, replacer,
-						space));
-				return true;
+			if (self.pkgPath) {
+				var pkg = grunt.file.readJSON(self.pkgPath);
+				var u = pkg && !revert && pkg.version !== self.version
+						&& self.version;
+				var r = pkg && revert
+						&& pkg.version !== self.lastCommit.version
+						&& self.lastCommit.version;
+				if (u || r) {
+					pkg.version = r ? self.lastCommit.version : self.version;
+					grunt.file.write(self.pkgPath, JSON.stringify(pkg,
+							replacer, space));
+					return true;
+				}
 			}
 			return false;
 		};
@@ -520,16 +523,13 @@ module.exports = function(grunt) {
 		 * Pushes package version update
 		 */
 		function pkgUpdate() {
-			commitPkg();
+			//commitPkg();
 		}
 
 		/**
 		 * Adds/Commits everything in the destination directory for tracking
 		 */
 		function addAndCommitDestDir() {
-			if (true) {
-				throw new Error('TEST ERROR');
-			}
 			// Commit changes to master (needed to generate archive asset)
 			cmd('git add --force ' + options.destDir);
 			cmd('git commit -q -m "' + relMsg + '"');
@@ -672,12 +672,11 @@ module.exports = function(grunt) {
 		 * @returns {Boolean} true when successful
 		 */
 		function commitPkg(revert) {
-			if (commit.pkgPath
-					&& commit.versionPkg(options.pkgJsonReplacer,
-							options.pkgJsonSpace, revert)) {
+			if (commit.versionPkg(options.pkgJsonReplacer,
+					options.pkgJsonSpace, revert)) {
 				// push package version
 				cmd('git commit -q -m "' + relMsg + '"');
-				cmd('git push origin ' + commit.pkgPath);
+				cmd('git push ' + options.repoName + ' ' + commit.pkgPath);
 			}
 		}
 
@@ -764,7 +763,7 @@ module.exports = function(grunt) {
 				if (options.distAssetUpdateFiles
 						&& typeof options.distAssetUpdateFunction === 'function') {
 					var paths = options.distAssetUpdateFiles;
-					for ( var i = 0; i < paths.length; i++) {
+					for (var i = 0; i < paths.length; i++) {
 						var p = pth.join(path, paths[i]), au = '';
 						var content = grunt.file.read(p, {
 							encoding : grunt.file.defaultEncoding
@@ -1149,7 +1148,7 @@ module.exports = function(grunt) {
 			endc = end || endc;
 			var stop = null;
 			pausd = false;
-			for ( var l = wrkq.length; wi < l; wi++) {
+			for (var l = wrkq.length; wi < l; wi++) {
 				wrk = wrkq[wi];
 				try {
 					wrk.run();
@@ -1187,7 +1186,7 @@ module.exports = function(grunt) {
 		function rollbacks() {
 			var cnt = 0;
 			if (que.errorCount() > 0) {
-				for ( var i = 0, l = wrkrb.length; i < l; i++) {
+				for (var i = 0, l = wrkrb.length; i < l; i++) {
 					try {
 						cnt++;
 						grunt.verbose.writeln('Calling rollback: '
@@ -1234,7 +1233,7 @@ module.exports = function(grunt) {
 		 * Logs one or more errors (can be {Error}, {Object} or {String})
 		 */
 		this.log = function() {
-			for ( var i = 0; i < arguments.length; i++) {
+			for (var i = 0; i < arguments.length; i++) {
 				if (util.isArray(arguments[i])) {
 					this.log(arguments[i]);
 				} else {

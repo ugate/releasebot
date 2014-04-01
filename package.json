@@ -1,6 +1,6 @@
 {
   "name": "releasebot",
-  "description": "Git commit message triggered grunt task that tags a release (GitHub Release API supported), generates/uploads a release distribution asset archive, publishes a distribution asset's content to a specified branch and publishes to npm",
+  "description": "Grunt task for triggering a release when a commit message matches a predefined regular expression or when manually invoked",
   "version": "0.0.0",
   "homepage": "https://github.com/ugate/releasebot",
   "author": {

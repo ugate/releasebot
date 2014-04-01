@@ -1,7 +1,7 @@
 # releasebot
 [![NPM version](https://badge.fury.io/js/releasebot.png)](http://badge.fury.io/js/releasebot) [![Build Status](https://travis-ci.org/ugate/releasebot.png?branch=master)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
 
-**releasebot** is a [Grunt](http://gruntjs.com/) task for triggering a release on a predefined commit message. The task performs the following actions:
+**releasebot** is a [Grunt](http://gruntjs.com/) task for triggering a release when a commit message matches a predefined regular expression or when manually invoked. The task performs the following actions:
 
 1. [Capture](https://www.kernel.org/pub/software/scm/git/docs/git-rev-parse.html) [commit](https://www.kernel.org/pub/software/scm/git/docs/git-show.html) [details](https://www.kernel.org/pub/software/scm/git/docs/git-remote.html) [from Git](https://www.kernel.org/pub/software/scm/git/docs/git-describe.html) (on task registration)
 2. Check for <a href="#default-task-specific-options">release trigger</a> within commit message
