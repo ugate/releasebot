@@ -10,7 +10,7 @@
 5. [Generate release archive asset](https://www.kernel.org/pub/software/scm/git/docs/git-archive.html) &dagger;
 6. [Release](http://developer.github.com/v3/repos/releases/#create-a-release)/[Tag](https://www.kernel.org/pub/software/scm/git/docs/git-tag.html) version (with [change log](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) as description) &dagger; &hearts;
 7. [Upload archive asset](http://developer.github.com/v3/repos/releases/#upload-a-release-asset) &#9679; &dagger; &hearts;
-8. Publish/[Push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) release archive asset contents to distribution branch &dagger; &hearts;
+8. Publish/[Push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) release archive asset contents to distribution/pages branch (creating the branch- if needed) &dagger; &hearts;
 9. [Publish](https://www.npmjs.org/doc/cli/npm-publish.html) release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts;
 
 &dagger; Performed when release is triggered <br/>
@@ -18,7 +18,7 @@
 &hearts; Failure will result in the following rollback sequence:
 
 1. [Remove remote release archive asset](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release)
-2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published archive asset contents in distribution branch
+2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published archive asset contents in distribution/pages branch
 3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html)
 
 ## Getting Started

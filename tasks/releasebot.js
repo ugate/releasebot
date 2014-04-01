@@ -523,7 +523,7 @@ module.exports = function(grunt) {
 		 * Pushes package version update
 		 */
 		function pkgUpdate() {
-			//commitPkg();
+			commitPkg();
 		}
 
 		/**
@@ -675,6 +675,9 @@ module.exports = function(grunt) {
 			if (commit.versionPkg(options.pkgJsonReplacer,
 					options.pkgJsonSpace, revert)) {
 				// push package version
+				if (!revert) {
+					cmd('git add --force ' + commit.pkgPath);
+				}
 				cmd('git commit -q -m "' + relMsg + '"');
 				cmd('git push ' + options.repoName + ' ' + commit.pkgPath);
 			}
@@ -1148,7 +1151,7 @@ module.exports = function(grunt) {
 			endc = end || endc;
 			var stop = null;
 			pausd = false;
-			for (var l = wrkq.length; wi < l; wi++) {
+			for (; wi < wrkq.length; wi++) {
 				wrk = wrkq[wi];
 				try {
 					wrk.run();
@@ -1160,7 +1163,7 @@ module.exports = function(grunt) {
 					stop = e;
 					que.error(e);
 				} finally {
-					if (stop || wi === l - 1) {
+					if (stop || wi === wrkq.length - 1) {
 						return endc ? endc.call(que, rollbacks()) : false;
 					}
 				}
