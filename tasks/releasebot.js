@@ -8,7 +8,7 @@ var util = require('util');
 var pluginName = 'releasebot';
 var configEnv = pluginName + '.env';
 var configCommit = pluginName + '.commit';
-var dfltVersionLabel = 'release';
+var dfltVersionLabel = 'Release';
 var dfltVersionType = 'v';
 var regexRelease = /(released?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?))/mi;
 var pluginDesc = 'Git commit message triggered grunt task that tags a release (GitHub Release API '
@@ -203,7 +203,7 @@ module.exports = function(grunt) {
 						+ '" from ' + env.pkgPath);
 			}
 		}
-		lver = lver ? dfltVersionLabel + lver : '';
+		lver = lver ? dfltVersionLabel + ' ' + lver : '';
 		var c = new Commit(cm, lver, env.gitCliSubstitute, cn, env.pkgPath,
 				env.buildDir, br, rs, un, rn, env.gitToken);
 		cloneAndSetCommit(c);
@@ -219,8 +219,12 @@ module.exports = function(grunt) {
 	 *            alternative verbose message (null prevents log output)
 	 */
 	function cloneAndSetCommit(c, msg) {
-		var cc = clone(c, [ c.skipTaskCheck, c.skipTaskGen, c.versionPkg ], [
-				c.versionMatch, c.gitCliSubstitute, c.pkgPath ]);
+		var ic = [ c.skipTaskCheck, c.skipTaskGen, c.versionPkg ];
+		var ex = [ c.versionMatch, c.gitCliSubstitute, c.pkgPath, undefined ];
+		if (c.lastCommit.versionMatch) {
+			ex.push(c.lastCommit.versionMatch);
+		}
+		var cc = clone(c, ic, ex);
 		grunt.config.set(configCommit, cc);
 		msg = typeof msg === 'string' ? msg + '\n'
 				: typeof msg === 'undefined' ? 'The following read-only object is now accessible via grunt.config.get("'
@@ -308,7 +312,8 @@ module.exports = function(grunt) {
 		}
 		var self = this;
 		var vt = 0, si = -1;
-		this.publishedNpmTarget = '';
+		this.hasGitToken = typeof gitToken === 'function' ? gitToken().length > 0
+				: typeof gitToken === 'string' && gitToken.length > 0;
 		this.gitCliSubstitute = gitCliSubstitute;
 		this.pkgPath = pkgPath;
 		this.number = cn;
@@ -812,6 +817,9 @@ module.exports = function(grunt) {
 				grunt.verbose.writeln('Non-release commit '
 						+ (commit.version || ''));
 				return false;
+			} else if (!commit.hasGitToken) {
+				throw grunt.util.error('Failed to release ' + commit.version
+						+ ' No Git token found');
 			} else if (commit.lastCommit.versionTag
 					&& !semver.gt(commit.version, commit.lastCommit.version)) {
 				throw grunt.util.error(commit.version
