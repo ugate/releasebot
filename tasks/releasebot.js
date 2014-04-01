@@ -313,8 +313,6 @@ module.exports = function(grunt) {
 		}
 		var self = this;
 		var vt = 0, si = -1;
-		this.hasGitToken = typeof gitToken === 'function' ? gitToken().length > 0
-				: typeof gitToken === 'string' && gitToken.length > 0;
 		this.gitCliSubstitute = gitCliSubstitute;
 		this.pkgPath = pkgPath;
 		this.number = cn;
@@ -340,6 +338,8 @@ module.exports = function(grunt) {
 				self.skipTasks.push(t);
 			});
 		}
+		this.hasGitToken = typeof gitToken === 'function' ? gitToken().length > 0
+				: typeof gitToken === 'string' && gitToken.length > 0;
 		this.message = cm;
 		this.versionMatch = rv;
 		this.versionBumpedIndices = [];
@@ -479,12 +479,18 @@ module.exports = function(grunt) {
 		/**
 		 * Generates/Writes a change log for the current release using all
 		 * messages since last tag/release
-		 * 
-		 * @returns true to stop further processing
 		 */
 		function changeLog() {
 			// Generate change log for release using all messages since last
 			// tag/release
+			if (!options.chgLog) {
+				if (options.chgLogRequired) {
+					throw new Error('Invalid "options.chgLog": "'
+							+ options.chgLog + '" ("options.chgLogRequired": '
+							+ options.chgLogRequired + '"');
+				}
+				return;
+			}
 			var chgLogPath = options.destDir + '/' + options.chgLog;
 			var lastGitLog = commit.lastCommit
 					&& !commit.lastCommit.versionVacant() ? commit.lastCommit.versionTag
@@ -496,21 +502,28 @@ module.exports = function(grunt) {
 					options.chgLogSkipLineRegExp, '<!-- Commit '
 							+ commit.number + ' -->\n')
 					|| '';
-			return options.chgLogRequired && !validateFile(chgLogPath);
+			validateFile(chgLogPath);
 		}
 
 		/**
 		 * Generates/Writes an authors log for the current release using all
 		 * authors since last tag/release
-		 * 
-		 * @returns true to stop further processing
 		 */
 		function authorsLog() {
 			// Generate list of authors/contributors since last tag/release
+			if (!options.authors) {
+				if (options.authorsRequired) {
+					throw new Error('Invalid "options.authors": "'
+							+ options.authors
+							+ '" ("options.authorsRequired": '
+							+ options.authorsRequired + '"');
+				}
+				return;
+			}
 			var authorsPath = options.destDir + '/' + options.authors;
 			cmd('git --no-pager shortlog -sen HEAD > ' + authorsPath, null,
 					false, authorsPath, options.authorsSkipLineRegExp);
-			return options.authorsRequired && !validateFile(authorsPath);
+			validateFile(authorsPath);
 		}
 
 		/**
@@ -561,8 +574,11 @@ module.exports = function(grunt) {
 			// Tag release
 			grunt.log.writeln('Tagging release ' + commit.versionTag + ' via '
 					+ options.gitHostname);
-			cmd('git tag -f -a ' + commit.versionTag + ' -m "'
-					+ chgLogRtn.replace(regexLines, '$1 \\') + '"');
+			cmd('git tag -f -a '
+					+ commit.versionTag
+					+ ' -m "'
+					+ (chgLogRtn ? chgLogRtn.replace(regexLines, '$1 \\')
+							: commit.message) + '"');
 			cmd('git push -f ' + options.repoName + ' ' + commit.versionTag);
 			// TODO : upload asset?
 			que.add(publish, rollbackTag);
@@ -578,11 +594,13 @@ module.exports = function(grunt) {
 			releaseAndUploadAsset({
 				path : distAsset,
 				name : distAsset
-			}, 'application/zip', commit, chgLogRtn, options, que, function() {
-				// GitHub Release API will not remove the tag when removing a
-				// release (thus tag rollback)
-				que.add(publish, rollbackTag);
-			});
+			}, 'application/zip', commit, chgLogRtn || commit.message, options,
+					que, function() {
+						// GitHub Release API will not remove the tag when
+						// removing a
+						// release (thus tag rollback)
+						que.add(publish, rollbackTag);
+					});
 		}
 
 		/**

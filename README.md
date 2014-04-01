@@ -63,16 +63,23 @@ To release version `2.0.0` when the latest release is `1.1.1`:
 release v+.0.0
 ```
 
+To release version `2.0.0` when the latest release is `1.1.1` via the [grunt cli](http://gruntjs.com/using-the-cli):
+```shell
+grunt releasebot --releasebot.commitMessage="Release v+.0.0"
+```
+
 ## Options
 
-The following **global options** can be set using one of the following techniques (in order of presidence):
+The following **global plug-in environment options** can be set using one of the following techniques (in order of presidence):
 
 1. Via `grunt.config.set('releasebot', options)`
 2. Passed in from the command line `grunt releasebot --releasebot.theoptionname=THE_OPTION_VALUE`
 3. Automatically from the <a href="http://docs.travis-ci.com/user/ci-environment/#Environment-variables">Travis-CI environmental variables</a>
 4. Default option value or extracted from Git
 
-###Default global options:
+###Default global plug-in environment options:
+
+Global environment options are set once the releasebot task is registered and are accessible via `grunt.config.get('releasebot.env')`
 
 ```JavaScript
 {
@@ -84,16 +91,22 @@ The following **global options** can be set using one of the following technique
   buildDir : process.cwd(),
   // Git branch that will be released (default: extracted from current checkout)
   branch : '',
-  // The repository slug the release is for (default: extracted from current checkout)
-  repoSlug : '',
   // The commit message that will be checked for release trigger (default: extracted from last commit)
   commitNumber : '',
   // The commit message that will be checked for release trigger (default: extracted from last commit)
-  commitMessage : ''
+  commitMessage : '',
+  // The repository slug the release is for (default: extracted from current checkout)
+  repoSlug : '',
+  // The regular expression that will be used to ignore output when extracting the last release version from Git
+  lastVersionMsgIgnoreRegExp: /No names found/i,
+  // The function that will return the token used for authentication/authorization of remote Git pushes
+  gitToken: [Function]
 }
 ```
 
-Global options are set once the releasebot task is registered. After registration `grunt.config.get('releasebot')` will return the global options above with one additional **read-only** property named `commit`:
+###Commit:
+
+Once the releasebot task has been registered commit datails are captured and made available via `grunt.config.get('releasebot.commit')`
 
 ```JavaScript
 {
@@ -116,6 +129,8 @@ Global options are set once the releasebot task is registered. After registratio
      username : '',
      // Repository name extracted via slug
      reponame : '',
+     // Flag indicating if the required Git token exists (extracted from global plug-in environment)
+     hasGitToken : false,
      // Same as corresponding option value or Git extracted value
      message : '',
      // The indices for each version "slot" that was incremented (e.g. 0.0.1 to 0.1.2 would contain [1,2])
@@ -164,39 +179,53 @@ Global options are set once the releasebot task is registered. After registratio
 
 ```JavaScript
 {
-  // regular expression that will be used against the commit message to determine if a release needs to be made
+  // The package replacer option sent into JSON.stringify during updates
+  pkgJsonReplacer : null,
+  // The package space option sent into JSON.stringify during updates
+  pkgJsonSpace : 2,
+  // The regular expression used to check the commit message for in order to trigger a release
   releaseVersionRegExp : /(released?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
-  // the branch that will be used to push the destDir to (blank/null will skip the dest push)
+  // The repository name
+  repoName : 'origin',
+  // The repository user that will be used during remote updates
+  repoUser : 'releasebot',
+  // The repository email that will be used during remote updates
+  repoEmail : 'releasebot@example.org',
+  // The branch that will be used to distribute released documentation or other distribution assets to
   destBranch : 'gh-pages',
-  // the directory that will be used as the contents of the release asset and will be pushed to the destBranch
+  // The directory that will be used to distribute released documentation or other distribution assets from
   destDir : 'dist',
-  // RegExp used to exclude dest directories within destDir
+  // Regular expression that will be used to exclude directories from distributed assets within the destDir
   destExcludeDirRegExp : /.?node_modules.?/gmi,
-  // RegExp used to exclude dest files within destDir
+  // Regular expression that will be used to exclude files from distributed assets within the destDir
   destExcludeFileRegExp : /.?\.zip|tar.?/gmi,
-  // Change log file that will include all the commit messages since the last release (blank/null will prevent change log creation)
+  // Change log file that will contain change details since the last release and used as the release description markdown (null to skip)
   chgLog : 'HISTORY.md',
-  // Authors file that will include all the authors since the last release (blank/null prevents authors creation)
+  // Authors log that will contain all the authors of the project (null to skip)
   authors : 'AUTHORS.md',
-  // The git log --pretty format that will be used for each line of the change log
+  // The Git format that will be used for each line in the change log 
   chgLogLineFormat : '  * %s',
-  // Release fails when the change log fails to be created?
+  // Flag to indicate that the release will fail when the change log cannot be validated
   chgLogRequired : true,
-  // Lines in the change log that should not be included (commit messages with "[skip CHANGELOG]" within it's contents will be excluded by default)
+  // Regular expression that will be used to skip individual lines from being used within the change log
   chgLogSkipLineRegExp : /.*(?:(released?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?)))|(\[skip\s*CHANGELOG\]).*\r?\n'/mi,
-  // Release fails when the authors log fails to be created?
+  // Flag to indicate that the release will fail when the authors log cannot be validated
   authorsRequired : false,
-  // Lines in the authors log that should not be included
+  // Regular expression that will be used to skip individual lines from being used within the authors log
   authorsSkipLineRegExp : null,
-  // Release asset format (zip or tar)
+  // The format for which the destDir will be archived
   distAssetFormat : 'zip',
-  // Release asset compression ratio
+  // The compression ratio for which the destDir will be archived
   distAssetCompressRatio : 9,
-  // The Git host being used
+  // The host name of the Git provider (null will use generic Git releases)
   gitHostname : 'github',
   // Function that will be called for each distAssetUpdateFiles passing: contents, path, commit and returning customized content for the specified distribution asset that will be overwritten before the release asset is pushed
   distAssetUpdateFunction : null,
   // Array of file paths that will be read/written to before/after distAssetUpdateFunction
-  distAssetUpdateFiles : []
+  distAssetUpdateFiles : [],
+  // The npm publish target (null to skip npm publish)
+  npmTarget : '',
+  // The npm publish tag
+  npmTag : ''
 }
 ```

@@ -11,6 +11,4 @@ branches:
   - master
 env:
   global:
-  - secure: qZvebte03X+Y/pUnp6TO7h/VvbsKE3uKULRGWaSvka6rgsGQY0+trZz4zIMpmO1bRnE0Dxexud6KW0rnOZBtCxWYDvfnr4NgbdOi1zn47rpIA3Gq5fYWPEkzb5pqSHVUozk5epdUIYwkD/PgE1SkeYgOU6Hga0X9XnA0JWFf8og=
-  - secure: t2pkeRYFk0P7tjoL4VMxwT1ACrELdU4w5laXMtg6wMWH7HMEQakdlbQGIGUC1vSVGN+WNBoN6JC4pj4pgIIO4wW8Px84wxdtxDJAymnlTn49zxijHvF63euY4agwwGKIly+/Rt0rsjWb+yOb00AJXuWRjypMLc5RIIC2b41HUgc=
-  - secure: mwEQnI/Fp2wmgU4ruXwvjlprH2HQK4/AP30MFdu8NsiluC17uIoAUyN+ydr6c+hZgZD176TvW0/E4WKYtXpJPDnsZeuen9wwlKFmqfHrXmQY3sxDJcsg/BVoYBJccs5krtlaKIg7jBfj1s2uRDrn18FreSA2D0mcCva/H9B5+II=
+  - secure: "VDrsPsCpkXsT8lg94LxuICDVpNCPpJGEXFvIwxlzrbtcMR2GT0flaCXLZduQ7+9CB7glStiVWdqLXs+BaC/W4hiUuZo6OYt8PrVBlFoH9Udo6IeTPHP9n1tznUqVl87ErMzBCLlwAnlmoBaMRiWbBZoxHzQHixyvUGZgI0dfPT4="
