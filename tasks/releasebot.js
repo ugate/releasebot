@@ -26,6 +26,7 @@ var regexSlug = /^(?:.+\/)(.+\/[^\.]+)/;
 var regexLines = /(\r?\n)/g;
 var regexDupLines = /^(.*)(\r?\n\1)+$/gm;
 var regexKey = /(https?:\/\/|:)+(?=[^:]*$)[a-z0-9]+(@)/gmi;
+var regexFuncName = /(?!\W*function\s+)[\w\$]+(?=\()/;
 var regexHost = /^https?\:\/\/([^\/?#]+)(?:[\/?#]|$)/i;
 var regexGitCmd = /^git/;
 var gitHubHostname = 'github';
@@ -1200,8 +1201,12 @@ module.exports = function(grunt) {
 				for (var i = 0, l = wrkrb.length; i < l; i++) {
 					try {
 						cnt++;
-						grunt.verbose.writeln('Calling rollback: '
-								+ wrkrb[i].rb);
+						if (grunt.option('verbose')) {
+							var rbn = regexFuncName
+									.exec(wrkrb[i].rb.toString());
+							grunt.verbose.writeln('Calling rollback'
+									+ (rbn ? ': ' + rbn[0] : ''));
+						}
 						if (wrkrb[i].rb()) {
 							return cnt;
 						}
