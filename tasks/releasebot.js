@@ -1282,9 +1282,10 @@ module.exports = function(grunt) {
 			rbpausd = false;
 			if (que.errorCount() > 0) {
 				for (rbi++; rbi < wrkrb.length; rbi++) {
-					grunt.verbose.writeln('Calling rollback' + wrkrb[i].rbName);
+					grunt.verbose.writeln('Calling rollback'
+							+ wrkrb[rbi].rbName);
 					try {
-						wrkrb[i].rb();
+						wrkrb[rbi].rb();
 						rbcnt++;
 						if (rbpausd) {
 							return rbcnt;
