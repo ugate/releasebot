@@ -639,7 +639,7 @@ module.exports = function(grunt) {
 				} catch (e) {
 					if (util.isRegExp(options.destBranchCreateRegExp)
 							&& options.destBranchCreateRegExp.test(e.message)) {
-						cmd('git checkout -q  --orphan ' + destBranch);
+						cmd('git checkout -q --orphan ' + options.destBranch);
 					} else {
 						throw e;
 					}

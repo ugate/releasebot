@@ -10,7 +10,10 @@ exports.globals = {
 
 		test.ok(o.pkgPath, 'Cannot find options.pckPath');
 		test.ok(o.buildDir, 'Cannot find options.buildDir');
-		test.ok(o.gitToken, 'Cannot find options.gitToken');
+
+		var ght = typeof o.gitToken === 'function' ? o.gitToken() : o.gitToken;
+		test.ok(typeof ght === 'string' && ght.length > 0,
+				'Cannot find options.gitToken');
 
 		test.done();
 	},
