@@ -75,7 +75,8 @@ module.exports = function(grunt) {
 		lastVersionMsgIgnoreRegExp : /No names found/i,
 		gitToken : function() {
 			return globalEnv.gitToken || grunt.option(pluginName + '.gitToken')
-					|| process.env.GH_TOKEN || '';
+					|| process.env.GH_TOKEN || process.env.global.GH_TOKEN
+					|| '';
 		}
 	};
 	var commit = genCommit(globalEnv);
@@ -640,7 +641,8 @@ module.exports = function(grunt) {
 				// give taskateers a chance to update asset contents
 				updatePublishAssets(commit.buildDir);
 
-				cmd('git add -A && git commit -m "' + relMsg + '"');
+				cmd('git add -A');
+				cmd('git commit -m "' + relMsg + '"');
 				cmd('git push -f ' + options.repoName + ' '
 						+ options.destBranch);
 
