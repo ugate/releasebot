@@ -458,7 +458,6 @@ module.exports = function(grunt) {
 		// Queue/Start work
 		var que = new Queue(options).add(changeLog).add(authorsLog).add(
 				remoteSetup);
-		que.add(pkgUpdate, rollbackPkg);
 		que.add(addAndCommitDestDir).add(genDistAsset);
 		que.add(function() {
 			if (useGitHub) {
@@ -551,13 +550,6 @@ module.exports = function(grunt) {
 			cmd('git remote rm ' + options.repoName);
 			cmd('git remote add ' + options.repoName + ' https://'
 					+ commit.username + ':' + link);
-		}
-
-		/**
-		 * Pushes package version update
-		 */
-		function pkgUpdate() {
-			commitPkg();
 		}
 
 		/**
@@ -674,6 +666,21 @@ module.exports = function(grunt) {
 						+ (options.npmTag ? ' --tag ' + options.npmTag : '');
 				cmd(npmc);
 			}
+			que.add(pkgUpdate);
+		}
+
+		/**
+		 * Updates the package file version using the current {Commit} version
+		 * and commits/pushes it to remote
+		 */
+		function pkgUpdate() {
+			cmd('git checkout -q ' + (commit.number || commit.branch));
+			if (commit.versionPkg(options.pkgJsonReplacer,
+					options.pkgJsonSpace, false)) {
+				// push package version
+				cmd('git commit -q -m "' + relMsg + '"' + commit.pkgPath);
+				cmd('git push ' + options.repoName + ' ' + commit.pkgPath);
+			}
 		}
 
 		/**
@@ -693,30 +700,6 @@ module.exports = function(grunt) {
 			} catch (e) {
 				var msg = 'Failed to revert publish branch!';
 				que.error(msg, e);
-			}
-		}
-
-		/**
-		 * Pushes package version update
-		 */
-		function rollbackPkg() {
-			commitPkg(true);
-		}
-
-		/**
-		 * Updates the package file version using the current {Commit} version
-		 * (or reverted version) and commits/pushes it to remote
-		 * 
-		 * @param revert
-		 *            true to revert package version
-		 * @returns {Boolean} true when successful
-		 */
-		function commitPkg(revert) {
-			if (commit.versionPkg(options.pkgJsonReplacer,
-					options.pkgJsonSpace, revert)) {
-				// push package version
-				cmd('git commit -q -m "' + relMsg + '"' + commit.pkgPath);
-				cmd('git push ' + options.repoName + ' ' + commit.pkgPath);
 			}
 		}
 
