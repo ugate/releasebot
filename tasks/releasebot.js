@@ -1056,6 +1056,8 @@ module.exports = function(grunt) {
 		}
 
 		function postReleaseAsset() {
+			// pause and wait for response
+			que.pause();
 			grunt.log.writeln('Uploading "' + asset.path
 					+ '" release asset for ' + commit.versionTag + ' via '
 					+ options.gitHostname);
@@ -1069,7 +1071,6 @@ module.exports = function(grunt) {
 					+ (asset.name || commit.versionTag));
 			opts.headers['Content-Type'] = contentType;
 			opts.headers['Content-Length'] = fstat.size;
-			que.pause();
 			var res2 = null;
 			var req2 = https.request(opts, function(r) {
 				res2 = r;
@@ -1135,7 +1136,8 @@ module.exports = function(grunt) {
 
 		function postReleaseRollback() {
 			try {
-				// rollback release
+				// pause and wait for response
+				que.pause();
 				opts.path = releasePath + '/' + commit.releaseId.toString();
 				opts.method = 'DELETE';
 				opts.hostname = host;
@@ -1204,7 +1206,7 @@ module.exports = function(grunt) {
 			if (!que.hasQueued()) {
 				return endit();
 			}
-			for (wi++; wi < wrkq.length; wi++) {
+			for (wi++; que.hasQueued(); wi++) {
 				wrk = wrkq[wi];
 				try {
 					wrk.run();
@@ -1224,8 +1226,8 @@ module.exports = function(grunt) {
 				return endc ? endc.call(que, rollbacks()) : rollbacks();
 			}
 		};
-		this.hasQueued = function() {
-			return wi < wrkq.length - 1;
+		this.hasQueued = function(i) {
+			return (i || wi) < wrkq.length - 1;
 		};
 		this.pause = function() {
 			pausd = true;
@@ -1250,12 +1252,8 @@ module.exports = function(grunt) {
 				for (var i = 0, l = wrkrb.length; i < l; i++) {
 					try {
 						cnt++;
-						if (grunt.option('verbose')) {
-							var rbn = regexFuncName
-									.exec(wrkrb[i].rb.toString());
-							grunt.verbose.writeln('Calling rollback'
-									+ (rbn ? ': ' + rbn[0] : ''));
-						}
+						grunt.verbose.writeln('Calling rollback'
+								+ wrkrb[i].rbName);
 						if (wrkrb[i].rb()) {
 							return cnt;
 						}
@@ -1273,6 +1271,9 @@ module.exports = function(grunt) {
 			this.rb = function() {
 				return orb ? orb.call(que) : false;
 			};
+			this.rbName = typeof orb === 'function' ? regexFuncName.exec(orb
+					.toString()) : null;
+			this.rbName = this.rbName && this.rbName[0] ? this.rbName[0] : '';
 			this.args = args;
 			this.rtn = undefined;
 			this.run = function() {
