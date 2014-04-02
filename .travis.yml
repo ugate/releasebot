@@ -11,4 +11,4 @@ branches:
   - master
 env:
   global:
-  - secure: "VDrsPsCpkXsT8lg94LxuICDVpNCPpJGEXFvIwxlzrbtcMR2GT0flaCXLZduQ7+9CB7glStiVWdqLXs+BaC/W4hiUuZo6OYt8PrVBlFoH9Udo6IeTPHP9n1tznUqVl87ErMzBCLlwAnlmoBaMRiWbBZoxHzQHixyvUGZgI0dfPT4="
+  - secure: "IkxVmLqrbtCl4mhsZ/VJz7mO+vxbYnyqXhbMgaEwdogznav5ltjKFy1cXoeqzBrLkne2h0XbYue+fANlX400BCRc27zkeEdnNzhjCbOrrEIsV7Ikx0a3cXRv4JyUaJ1GQRjADhoxMr+HP2ZM80DWGb6qbcmcJtjap2jhufgwq5g="

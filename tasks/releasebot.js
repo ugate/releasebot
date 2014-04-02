@@ -82,8 +82,7 @@ module.exports = function(grunt) {
 			gitToken : function() {
 				return userEnv.gitToken
 						|| grunt.option(pluginName + '.gitToken')
-						|| process.env.GH_TOKEN || process.env.global.GH_TOKEN
-						|| '';
+						|| process.env.GH_TOKEN || '';
 			}
 		};
 		return genCommit(globalEnv);
@@ -126,6 +125,10 @@ module.exports = function(grunt) {
 			npmTarget : '',
 			npmTag : ''
 		});
+		if (options.gitHostname === gitHubHostname && commit.username) {
+			options.hideTokenRegExp = new RegExp('(' + commit.username
+					+ ':)(([0-9a-f]+)(@' + options.gitHostname + ')');
+		}
 		release(this, options);
 	});
 
@@ -453,7 +456,8 @@ module.exports = function(grunt) {
 		var chgLogRtn = '', distAsset = '';
 
 		// Queue/Start work
-		var que = new Queue().add(changeLog).add(authorsLog).add(remoteSetup);
+		var que = new Queue(options).add(changeLog).add(authorsLog).add(
+				remoteSetup);
 		que.add(pkgUpdate, rollbackPkg);
 		que.add(addAndCommitDestDir).add(genDistAsset);
 		que.add(function() {
@@ -711,10 +715,7 @@ module.exports = function(grunt) {
 			if (commit.versionPkg(options.pkgJsonReplacer,
 					options.pkgJsonSpace, revert)) {
 				// push package version
-				if (!revert) {
-					cmd('git add --force ' + commit.pkgPath);
-				}
-				cmd('git commit -q -m "' + relMsg + '"');
+				cmd('git commit -q -m "' + relMsg + '"' + commit.pkgPath);
 				cmd('git push ' + options.repoName + ' ' + commit.pkgPath);
 			}
 		}
@@ -1175,9 +1176,12 @@ module.exports = function(grunt) {
 	 * {Error}s have been logged
 	 * 
 	 * @constructor
+	 * @param options
+	 *            the task options
 	 */
-	function Queue() {
-		var wrk = null, wrkq = [], wrkd = [], wrkrb = [], que = this, wi = 0, endc = null, pausd = false, es = new Errors();
+	function Queue(options) {
+		var wrk = null, wrkq = [], wrkd = [], wrkrb = [], que = this, wi = 0, endc = null, pausd = false, es = new Errors(
+				options);
 		this.add = function(fx, rb) {
 			wrk = new Work(fx, rb, Array.prototype.slice.call(arguments, 2));
 			wrkq.push(wrk);
@@ -1271,8 +1275,10 @@ module.exports = function(grunt) {
 	 * Work/Error tracking
 	 * 
 	 * @constructor
+	 * @param options
+	 *            the task options
 	 */
-	function Errors() {
+	function Errors(options) {
 		var errors = [];
 
 		/**
@@ -1304,8 +1310,20 @@ module.exports = function(grunt) {
 		function logError(e) {
 			e = e instanceof Error ? e : e ? grunt.util.error(e) : null;
 			if (e) {
+				if (options && util.isRegExp(options.hideTokenRegExp)) {
+					e.message = e.message.replace(options.hideTokenRegExp,
+							function(match, prefix, token, suffix) {
+								return prefix + '[SECURE]' + suffix;
+							});
+				}
 				errors.unshift(e);
-				grunt.log.error(e.stack || e.message);
+				var scolor = util.inspect.styles['string'];
+				try {
+					util.inspect.styles['string'] = 'red';
+					grunt.log.error(e.stack || e.message);
+				} finally {
+					util.inspect.styles['string'] = scolor;
+				}
 			}
 		}
 	}
