@@ -1151,6 +1151,7 @@ module.exports = function(grunt) {
 		}
 
 		function postReleaseRollback() {
+			var res = null, rrdata = '';
 			try {
 				// pause and wait for response
 				que.pauseRollback();
@@ -1162,7 +1163,7 @@ module.exports = function(grunt) {
 						+ ' release via ' + options.gitHostname + ' '
 						+ opts.method + ' ' + opts.path);
 				var rreq = https.request(opts, function(res) {
-					var rrdata = '';
+					res = r;
 					res.on('data', function(chunk) {
 						grunt.verbose
 								.writeln('Receiving release rollback data');
