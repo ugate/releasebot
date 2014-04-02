@@ -604,8 +604,7 @@ module.exports = function(grunt) {
 			}, 'application/zip', commit, chgLogRtn || commit.message, options,
 					que, function() {
 						// GitHub Release API will not remove the tag when
-						// removing a
-						// release (thus tag rollback)
+						// removing a release (thus tag rollback)
 						que.add(publish, rollbackTag);
 					});
 		}
@@ -1188,7 +1187,7 @@ module.exports = function(grunt) {
 	 *            the task options
 	 */
 	function Queue(options) {
-		var wrk = null, wrkq = [], wrkd = [], wrkrb = [], que = this, wi = 0, endc = null, pausd = false, es = new Errors(
+		var wrk = null, wrkq = [], wrkd = [], wrkrb = [], que = this, wi = -1, endc = null, pausd = false, es = new Errors(
 				options);
 		this.add = function(fx, rb) {
 			wrk = new Work(fx, rb, Array.prototype.slice.call(arguments, 2));
@@ -1205,12 +1204,11 @@ module.exports = function(grunt) {
 			if (!que.hasQueued()) {
 				return endit();
 			}
-			for (; wi < wrkq.length; wi++) {
+			for (wi++; wi < wrkq.length; wi++) {
 				wrk = wrkq[wi];
 				try {
 					wrk.run();
 					if (pausd) {
-						wi++;
 						return;
 					}
 				} catch (e) {
