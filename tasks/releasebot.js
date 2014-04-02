@@ -973,7 +973,7 @@ module.exports = function(grunt) {
 		json[gitHubReleaseBody] = desc;
 		json[gitHubReleaseCommitish] = commit.number;
 		json[gitHubReleasePreFlag] = commit.versionPrereleaseType != null;
-		json = JSON.stringify(json);
+		var jsonStr = JSON.stringify(json);
 		var fstat = asset && asset.path ? fs.statSync(asset.path) : {
 			size : 0
 		};
@@ -990,7 +990,7 @@ module.exports = function(grunt) {
 			'User-Agent' : commit.slug,
 			'Authorization' : 'token ' + authToken,
 			'Content-Type' : 'application/json',
-			'Content-Length' : json.length
+			'Content-Length' : jsonStr.length
 		};
 
 		// queue request
@@ -999,15 +999,27 @@ module.exports = function(grunt) {
 		function postRelease() {
 			// pause and wait for response
 			que.pause();
+			var prmsg = 'Posting the following to ' + opts.hostname + '/'
+					+ releasePath;
+			if (grunt.option('verbose')) {
+				grunt.verbose.writeln(prmsg + ' ' + util.inspect(json, {
+					colors : true
+				}));
+			} else {
+				grunt.log.writeln(prmsg);
+			}
 			var res = null;
 			var req = https.request(opts, function(r) {
 				// var sc = res.statusCode;
 				res = r;
 				res.on('data', function(chunk) {
 					data += chunk;
+					grunt.verbose
+							.writeln('Receiving post release chunked data');
 				});
 				res.on('end', function() {
 					if (gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0) {
+						grunt.verbose.writeln('Received post release data');
 						que.add(postReleaseEnd).resume();
 					} else {
 						que.error(
@@ -1017,7 +1029,7 @@ module.exports = function(grunt) {
 					}
 				});
 			});
-			req.end(json);
+			req.end(jsonStr);
 			req.on('error', function(e) {
 				que.error('Release post failed', e).add(cb).resume();
 			});
@@ -1025,6 +1037,11 @@ module.exports = function(grunt) {
 				var success = gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0;
 				rl = success ? chk(JSON.parse(data.replace(regexLines, ' ')))
 						: null;
+				if (grunt.option('verbose')) {
+					grunt.verbose.writeln(util.inspect(rl, {
+						colors : true
+					}));
+				}
 				if (rl && rl[gitHubReleaseTagName] === commit.versionTag) {
 					commit.releaseId = rl[gitHubReleaseId];
 					// queue asset uploaded or complete with callback
@@ -1060,11 +1077,12 @@ module.exports = function(grunt) {
 			var req2 = https.request(opts, function(r) {
 				res2 = r;
 				res2.on('data', function(chunk) {
-					grunt.log.writeln('Receiving chunked data');
 					data2 += chunk;
+					grunt.verbose.writeln('Receiving upload response');
 				});
 				res2.on('end', function() {
 					if (gitHubSuccessHttpCodes.indexOf(res2.statusCode) >= 0) {
+						grunt.verbose.writeln('Received upload response');
 						que.add(postRleaseAssetEnd).resume();
 					} else {
 						que.error(
@@ -1101,7 +1119,14 @@ module.exports = function(grunt) {
 								+ '/' + cf[gitHubReleaseName];
 						grunt.log.writeln('Asset ID '
 								+ cf[gitHubReleaseAssetId] + ' successfully '
-								+ cf.state + ' for ' + asset);
+								+ cf.state + ' for ' + asset.name + ' '
+								+ asset.path + ' (downloadable at: '
+								+ commit.releaseAssetUrl + ')');
+						if (grunt.option('verbose')) {
+							grunt.verbose.writeln(util.inspect(cf, {
+								colors : true
+							}));
+						}
 					}
 				} else {
 					que.error('Asset upload failed!', data2);
@@ -1123,7 +1148,8 @@ module.exports = function(grunt) {
 				var rreq = https.request(opts, function(res) {
 					var rrdata = '';
 					res.on('data', function(chunk) {
-						grunt.log.writeln('Receiving chunked data');
+						grunt.verbose
+								.writeln('Receiving release rollback data');
 						rrdata += chunk;
 					});
 					res.on('end',
