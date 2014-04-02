@@ -127,7 +127,7 @@ module.exports = function(grunt) {
 		});
 		if (options.gitHostname === gitHubHostname && commit.username) {
 			options.hideTokenRegExp = new RegExp('(' + commit.username
-					+ ':)(([0-9a-f]+)(@' + options.gitHostname + ')');
+					+ ':)([0-9a-f]+)(@' + options.gitHostname + ')');
 		}
 		release(this, options);
 	});
