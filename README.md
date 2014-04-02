@@ -190,6 +190,8 @@ Once the releasebot task has been registered commit datails are captured and mad
   destBranch : 'gh-pages',
   // The directory that will be used to distribute released documentation or other distribution assets from
   destDir : 'dist',
+  // Regular expression that will be used to check the error output of a Git fetch of destBranch, when there's a match an attempt will be made to create the destBranch
+  destBranchCreateRegExp : /Couldn't find remote ref/i,
   // Regular expression that will be used to exclude directories from distributed assets within the destDir
   destExcludeDirRegExp : /.?node_modules.?/gmi,
   // Regular expression that will be used to exclude files from distributed assets within the destDir

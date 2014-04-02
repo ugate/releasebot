@@ -106,6 +106,7 @@ module.exports = function(grunt) {
 			repoEmail : em,
 			destBranch : 'gh-pages',
 			destDir : 'dist',
+			destBranchCreateRegExp : /Couldn't find remote ref/i,
 			destExcludeDirRegExp : /.?node_modules.?/gmi,
 			destExcludeFileRegExp : /.?\.zip|tar.?/gmi,
 			chgLog : 'HISTORY.md',
@@ -632,9 +633,20 @@ module.exports = function(grunt) {
 						options.destExcludeDirRegExp,
 						options.destExcludeFileRegExp).toString());
 				// cmd('cp -r ' + pth.join(destPath, '*') + ' ' + ghPath);
-				cmd('git fetch ' + options.repoName + ' ' + options.destBranch);
-				cmd('git checkout -q --track ' + options.repoName + '/'
-						+ options.destBranch);
+				var chko = '';
+				try {
+					cmd('git fetch ' + options.repoName + ' '
+							+ options.destBranch);
+				} catch (e) {
+					if (util.isRegExp(options.destBranchCreateRegExp)
+							&& options.destBranchCreateRegExp.test(e.message)) {
+						chko = ' --orphan ' + options.destBranch;
+					} else {
+						throw e;
+					}
+				}
+				cmd('git checkout -q' + chko + ' --track ' + options.repoName
+						+ '/' + options.destBranch);
 				cmd('git rm -rfq .');
 				cmd('git clean -dfq .');
 				grunt.log.writeln('Copying publication directories/files from '
