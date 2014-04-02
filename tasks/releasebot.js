@@ -1154,7 +1154,7 @@ module.exports = function(grunt) {
 		function postReleaseRollback() {
 			try {
 				// pause and wait for response
-				que.pause();
+				que.pauseRollback();
 				opts.path = releasePath + '/' + commit.releaseId.toString();
 				opts.method = 'DELETE';
 				opts.hostname = host;
@@ -1169,24 +1169,28 @@ module.exports = function(grunt) {
 								.writeln('Receiving release rollback data');
 						rrdata += chunk;
 					});
-					res.on('end',
-							function() {
-								var msg = 'Release rollback for release ID: '
-										+ commit.releaseId;
-								if (gitHubSuccessHttpCodes
-										.indexOf(res.statusCode) >= 0) {
-									grunt.log.writeln(msg + ' complete');
-									grunt.verbose.writeln(rrdata);
-								} else {
-									que.error(msg + ' failed', rrdata);
-								}
-							});
+					res.on('end', postReleaseRollback);
 				});
 				rreq.end();
 				rreq.on('error', function(e) {
-					que.error('Failed to rollback release ID '
-							+ commit.releaseId, e);
+					var em = 'Failed to rollback release ID '
+							+ commit.releaseId;
+					que.error(em, e).resumeRollback();
 				});
+				function postReleaseRollback() {
+					try {
+						var msg = 'Release rollback for release ID: '
+								+ commit.releaseId;
+						if (gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0) {
+							grunt.log.writeln(msg + ' complete');
+							grunt.verbose.writeln(rrdata);
+						} else {
+							que.error(msg + ' failed', rrdata);
+						}
+					} finally {
+						que.resumeRollback();
+					}
+				}
 			} catch (e) {
 				que.error('Failed to request rollback for release ID '
 						+ commit.releaseId, e);
@@ -1206,7 +1210,8 @@ module.exports = function(grunt) {
 	 *            the task options
 	 */
 	function Queue(options) {
-		var wrk = null, wrkq = [], wrkd = [], wrkrb = [], que = this, wi = -1, endc = null, pausd = false, es = new Errors(
+		var wrk = null, wrkq = [], wrkd = [], wrkrb = [], que = this, wi = -1, endc = null;
+		var pausd = false, rbpausd = false, rbi = -1, rbcnt = 0, es = new Errors(
 				options);
 		this.add = function(fx, rb) {
 			wrk = new Work(fx, rb, Array.prototype.slice.call(arguments, 2));
@@ -1221,7 +1226,7 @@ module.exports = function(grunt) {
 			var stop = null;
 			pausd = false;
 			if (!que.hasQueued()) {
-				return endit();
+				return rollbacks();
 			}
 			for (wi++; wi < wrkq.length; wi++) {
 				wrk = wrkq[wi];
@@ -1235,12 +1240,9 @@ module.exports = function(grunt) {
 					que.error(e);
 				} finally {
 					if (stop || (!pausd && !que.hasQueued())) {
-						return endit();
+						return rollbacks();
 					}
 				}
-			}
-			function endit() {
-				return endc ? endc.call(que, rollbacks()) : rollbacks();
 			}
 		};
 		this.hasQueued = function(i) {
@@ -1251,6 +1253,9 @@ module.exports = function(grunt) {
 			return que;
 		};
 		this.resume = function() {
+			if (!pausd) {
+				return 0;
+			}
 			return que.start();
 		};
 		this.worked = function() {
@@ -1263,24 +1268,42 @@ module.exports = function(grunt) {
 		this.errorCount = function() {
 			return es.count();
 		};
+		this.pauseRollback = function() {
+			rbpausd = true;
+			return que;
+		};
+		this.resumeRollback = function() {
+			if (!rbpausd) {
+				return 0;
+			}
+			return rollbacks();
+		};
 		function rollbacks() {
-			var cnt = 0;
+			rbpausd = false;
 			if (que.errorCount() > 0) {
-				for (var i = 0, l = wrkrb.length; i < l; i++) {
+				for (rbi++; rbi < wrkrb.length; rbi++) {
+					grunt.verbose.writeln('Calling rollback' + wrkrb[i].rbName);
 					try {
-						cnt++;
-						grunt.verbose.writeln('Calling rollback'
-								+ wrkrb[i].rbName);
-						if (wrkrb[i].rb()) {
-							return cnt;
+						wrkrb[i].rb();
+						rbcnt++;
+						if (rbpausd) {
+							return rbcnt;
 						}
 					} catch (e) {
-						cnt--;
-						que.error('Rollback failed', e);
+						que.error(e);
+					} finally {
+						if (!rbpausd && rbi + 1 < wrkrb.length) {
+							return endit();
+						}
 					}
 				}
+			} else {
+				endit();
 			}
-			return cnt;
+			function endit() {
+				return endc ? endc.call(que, rbcnt) : rbcnt;
+			}
+			return rbcnt;
 		}
 		function Work(fx, rb, args) {
 			var orb = rb;

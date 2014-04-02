@@ -13,13 +13,13 @@
 8. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) &dagger;
 9. [Publish](https://www.npmjs.org/doc/cli/npm-publish.html) release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts;
 
-&dagger; Performed when release is triggered <br/>
+&dagger; Performed when only when release is triggered <br/>
 &#9679; GitHub only <br/>
 &hearts; Failure will result in the following rollback sequence:
 
 1. [Remove remote release archive asset](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release)
 2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published archive asset contents in distribution/pages branch
-3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html) &dagger;
+3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html)
 
 ## Getting Started
 If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
@@ -72,7 +72,7 @@ grunt releasebot --releasebot.commitMessage="Release v+.0.0"
 
 The following **global plug-in environment options** can be set using one of the following techniques (in order of presidence):
 
-1. Via `grunt.config.set('releasebot', options)`
+1. Via `grunt.config.set('releasebot.env', options)` before the releasebot task is registered
 2. Passed in from the command line `grunt releasebot --releasebot.theoptionname=THE_OPTION_VALUE`
 3. Automatically from the <a href="http://docs.travis-ci.com/user/ci-environment/#Environment-variables">Travis-CI environmental variables</a>
 4. Default option value or extracted from Git
