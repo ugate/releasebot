@@ -1022,8 +1022,8 @@ module.exports = function(grunt) {
 					} else {
 						que.error(
 								'Release post failed with HTTP status: '
-										+ res.statusCode + ' data: ' + data)
-								.add(cb).resume();
+										+ res.statusCode + ' data: '
+										+ util.inspect(data)).add(cb).resume();
 					}
 				});
 			});
@@ -1083,9 +1083,10 @@ module.exports = function(grunt) {
 						grunt.verbose.writeln('Received upload response');
 						que.add(postRleaseAssetEnd).resume();
 					} else {
+						var dstr = util.inspect(data2);
 						que.error(
 								'Asset upload failed with HTTP status: '
-										+ res2.statusCode + ' data: ' + data)
+										+ res2.statusCode + ' data: ' + dstr)
 								.add(cb).resume();
 					}
 				});
@@ -1201,7 +1202,7 @@ module.exports = function(grunt) {
 			endc = end || endc;
 			var stop = null;
 			pausd = false;
-			if (que.isDone()) {
+			if (!que.hasQueued()) {
 				return endit();
 			}
 			for (; wi < wrkq.length; wi++) {
@@ -1209,13 +1210,14 @@ module.exports = function(grunt) {
 				try {
 					wrk.run();
 					if (pausd) {
+						wi++;
 						return;
 					}
 				} catch (e) {
 					stop = e;
 					que.error(e);
 				} finally {
-					if (!pausd && (stop || que.isDone())) {
+					if (stop || (!pausd && !que.hasQueued())) {
 						return endit();
 					}
 				}
@@ -1224,8 +1226,8 @@ module.exports = function(grunt) {
 				return endc ? endc.call(que, rollbacks()) : rollbacks();
 			}
 		};
-		this.isDone = function() {
-			return wi >= wrkq.length - 1;
+		this.hasQueued = function() {
+			return wi < wrkq.length - 1;
 		};
 		this.pause = function() {
 			pausd = true;
@@ -1332,13 +1334,7 @@ module.exports = function(grunt) {
 							});
 				}
 				errors.unshift(e);
-				var scolor = util.inspect.styles['string'];
-				try {
-					util.inspect.styles['string'] = 'red';
-					grunt.log.error(e.stack || e.message);
-				} finally {
-					util.inspect.styles['string'] = scolor;
-				}
+				grunt.log.error(e.stack || e.message);
 			}
 		}
 	}
