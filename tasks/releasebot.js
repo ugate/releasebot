@@ -1169,7 +1169,7 @@ module.exports = function(grunt) {
 								.writeln('Receiving release rollback data');
 						rrdata += chunk;
 					});
-					res.on('end', postReleaseRollback);
+					res.on('end', postReleaseRollbackEnd);
 				});
 				rreq.end();
 				rreq.on('error', function(e) {
@@ -1181,7 +1181,7 @@ module.exports = function(grunt) {
 				que.error('Failed to request rollback for release ID '
 						+ commit.releaseId, e);
 			}
-			function postReleaseRollback() {
+			function postReleaseRollbackEnd() {
 				try {
 					var msg = 'Release rollback for release ID: '
 							+ commit.releaseId;

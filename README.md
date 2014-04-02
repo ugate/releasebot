@@ -21,19 +21,6 @@
 2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published archive asset contents in distribution/pages branch
 3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html)
 
-## Getting Started
-If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
-
-```shell
-npm install releasebot --save-dev
-```
-
-Once the plugin has been installed, it may be enabled inside your Gruntfile with this line of JavaScript:
-
-```shell
-grunt.loadNpmTasks('releasebot');
-```
-
 ## Usage Examples
 
 Each commit message will be checked for the presense of a version to release. The default expression checks for `release v` followed by a <a href="http://semver.org/">semantic compliant version</a> or a `+` or `*` within the appropriate version *slot* indicating the version should be either *incremented* by one or that the value should be replaces by the *last/current* released version (respectively).
@@ -66,6 +53,40 @@ release v+.0.0
 To release version `2.0.0` when the latest release is `1.1.1` via the [grunt cli](http://gruntjs.com/using-the-cli):
 ```shell
 grunt releasebot --releasebot.commitMessage="Release v+.0.0"
+```
+
+## Getting Started
+If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
+
+```shell
+npm install releasebot --save-dev
+```
+
+Once the plugin has been installed, it may be enabled inside your Gruntfile with this line of JavaScript:
+
+```shell
+grunt.loadNpmTasks('releasebot');
+```
+
+####[Travis CI](http://travis-ci.com/)
+
+By default, `process.env.GH_TOKEN` is used for authorization for Git pushes and the alike. It's recommended you encrypt the token following [travis encrypttion guidlines](http://docs.travis-ci.com/user/encryption-keys/).
+
+When using releasebot's built-in *destination branch* publishing make sure to exclude that branch (or restrict to master) from travis builds in your `.travis.yml` file:
+
+```yaml
+branches:
+  only:
+  - master
+git:
+  branch: master
+```
+
+By default, travis [clones](https://www.kernel.org/pub/software/scm/git/docs/git-clone.html) repositories with a `depth=1`. Make sure you set this value high enough to accommodate the desired level of history in your `.travis.yml` file:
+
+```yaml
+git:
+  depth: 2147483647
 ```
 
 ## Options
