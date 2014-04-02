@@ -663,7 +663,27 @@ module.exports = function(grunt) {
 				cmd('git push -f ' + options.repoName + ' '
 						+ options.destBranch);
 
-				que.add(publishNpm, rollbackPublish);
+				que.add(pkgUpdate, rollbackPublish);
+			}
+		}
+
+		/**
+		 * Updates the package file version using the current {Commit} version
+		 * and commits/pushes it to remote
+		 */
+		function pkgUpdate() {
+			cmd('git checkout -q ' + (commit.number || commit.branch));
+			upkg();
+			que.add(publishNpm, function() {
+				upkg(true);
+			});
+			function upkg(revert) {
+				if (commit.versionPkg(options.pkgJsonReplacer,
+						options.pkgJsonSpace, revert)) {
+					// push package version
+					cmd('git commit -q -m "' + relMsg + '"' + commit.pkgPath);
+					cmd('git push ' + options.repoName + ' ' + commit.pkgPath);
+				}
 			}
 		}
 
@@ -676,21 +696,6 @@ module.exports = function(grunt) {
 				var npmc = 'npm publish ' + options.npmTarget
 						+ (options.npmTag ? ' --tag ' + options.npmTag : '');
 				cmd(npmc);
-			}
-			que.add(pkgUpdate);
-		}
-
-		/**
-		 * Updates the package file version using the current {Commit} version
-		 * and commits/pushes it to remote
-		 */
-		function pkgUpdate() {
-			cmd('git checkout -q ' + (commit.number || commit.branch));
-			if (commit.versionPkg(options.pkgJsonReplacer,
-					options.pkgJsonSpace, false)) {
-				// push package version
-				cmd('git commit -q -m "' + relMsg + '"' + commit.pkgPath);
-				cmd('git push ' + options.repoName + ' ' + commit.pkgPath);
 			}
 		}
 
@@ -1218,7 +1223,7 @@ module.exports = function(grunt) {
 			if (!que.hasQueued()) {
 				return endit();
 			}
-			for (wi++; que.hasQueued(); wi++) {
+			for (wi++; wi < wrkq.length; wi++) {
 				wrk = wrkq[wi];
 				try {
 					wrk.run();
@@ -1292,7 +1297,7 @@ module.exports = function(grunt) {
 				this.rtn = fx.apply(que, this.args);
 				wrkd.push(this);
 				if (orb) {
-					wrkrb.unshift(this);
+					wrkrb.push(this);
 				}
 				return this.rtn;
 			};
