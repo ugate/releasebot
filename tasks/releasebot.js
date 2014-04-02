@@ -53,33 +53,43 @@ var gitHubSuccessHttpCodes = [ 200, 201, 204 ];
  */
 module.exports = function(grunt) {
 
-	// initialize global release options set by
-	// grunt.config.set(pluginName)
-	var globalEnv = grunt.config.get(configEnv) || {};
-	globalEnv = {
-		pkgPath : grunt.config('pkgFile') || 'package.json',
-		gitCliSubstitute : globalEnv.gitCliSubstitute
-				|| grunt.option(pluginName + '.gitCliSubstitute') || '',
-		buildDir : globalEnv.buildDir || grunt.option(pluginName + '.buildDir')
-				|| process.env.TRAVIS_BUILD_DIR || process.cwd(),
-		branch : globalEnv.branch || grunt.option(pluginName + '.branch')
-				|| process.env.TRAVIS_BRANCH || '',
-		commitNumber : globalEnv.commitNumber
-				|| grunt.option(pluginName + '.commitNumber')
-				|| process.env.TRAVIS_COMMIT || '',
-		commitMessage : globalEnv.commitMessage
-				|| grunt.option(pluginName + '.commitMessage')
-				|| process.env.TRAVIS_COMMIT_MESSAGE || '',
-		repoSlug : globalEnv.repoSlug || grunt.option(pluginName + '.repoSlug')
-				|| process.env.TRAVIS_REPO_SLUG,
-		lastVersionMsgIgnoreRegExp : /No names found/i,
-		gitToken : function() {
-			return globalEnv.gitToken || grunt.option(pluginName + '.gitToken')
-					|| process.env.GH_TOKEN || process.env.global.GH_TOKEN
-					|| '';
-		}
-	};
-	var commit = genCommit(globalEnv);
+	/**
+	 * Initializes the global environment and returns {Commit} related data
+	 * 
+	 * @returns {Commit}
+	 */
+	function initEnv() {
+		var userEnv = grunt.config.get(configEnv) || {};
+		var globalEnv = {
+			pkgPath : grunt.config('pkgFile') || 'package.json',
+			gitCliSubstitute : userEnv.gitCliSubstitute
+					|| grunt.option(pluginName + '.gitCliSubstitute') || '',
+			buildDir : userEnv.buildDir
+					|| grunt.option(pluginName + '.buildDir')
+					|| process.env.TRAVIS_BUILD_DIR || process.cwd(),
+			branch : userEnv.branch || grunt.option(pluginName + '.branch')
+					|| process.env.TRAVIS_BRANCH || '',
+			commitNumber : userEnv.commitNumber
+					|| grunt.option(pluginName + '.commitNumber')
+					|| process.env.TRAVIS_COMMIT || '',
+			commitMessage : userEnv.commitMessage
+					|| grunt.option(pluginName + '.commitMessage')
+					|| process.env.TRAVIS_COMMIT_MESSAGE || '',
+			repoSlug : userEnv.repoSlug
+					|| grunt.option(pluginName + '.repoSlug')
+					|| process.env.TRAVIS_REPO_SLUG,
+			lastVersionMsgIgnoreRegExp : /No names found/i,
+			gitToken : function() {
+				return userEnv.gitToken
+						|| grunt.option(pluginName + '.gitToken')
+						|| process.env.GH_TOKEN || process.env.global.GH_TOKEN
+						|| '';
+			}
+		};
+		return genCommit(globalEnv);
+	}
+	// initialize global release environment options
+	var commit = initEnv();
 
 	// register release task
 	grunt.registerTask(pluginName, pluginDesc, function() {
