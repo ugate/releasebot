@@ -999,7 +999,7 @@ module.exports = function(grunt) {
 		function postRelease() {
 			// pause and wait for response
 			que.pause();
-			grunt.log.writeln('Posting the following to ' + opts.hostname + '/'
+			grunt.log.writeln('Posting the following to ' + opts.hostname
 					+ releasePath);
 			if (grunt.option('verbose')) {
 				grunt.verbose.writeln(util.inspect(json, {
@@ -1209,14 +1209,13 @@ module.exports = function(grunt) {
 				try {
 					wrk.run();
 					if (pausd) {
-						grunt.verbose.writeln('Waiting for response...');
 						return;
 					}
 				} catch (e) {
 					stop = e;
 					que.error(e);
 				} finally {
-					if (stop || que.isDone()) {
+					if (!pausd && (stop || que.isDone())) {
 						return endit();
 					}
 				}
