@@ -1162,7 +1162,7 @@ module.exports = function(grunt) {
 				grunt.log.writeln('Rolling back ' + commit.versionTag
 						+ ' release via ' + options.gitHostname + ' '
 						+ opts.method + ' ' + opts.path);
-				var rreq = https.request(opts, function(res) {
+				var rreq = https.request(opts, function(r) {
 					res = r;
 					res.on('data', function(chunk) {
 						grunt.verbose
