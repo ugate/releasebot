@@ -6,12 +6,12 @@
 1. [Capture](https://www.kernel.org/pub/software/scm/git/docs/git-rev-parse.html) [commit](https://www.kernel.org/pub/software/scm/git/docs/git-show.html) [details](https://www.kernel.org/pub/software/scm/git/docs/git-remote.html) [from Git](https://www.kernel.org/pub/software/scm/git/docs/git-describe.html) (on task registration)
 2. Check for <a href="#default-task-specific-options">release trigger</a> within commit message
 3. Capture/write [change log and/or authors](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) (if directed) &dagger;
-4. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) &dagger;
-5. [Generate release archive asset](https://www.kernel.org/pub/software/scm/git/docs/git-archive.html) &dagger;
-6. [Release](http://developer.github.com/v3/repos/releases/#create-a-release)/[Tag](https://www.kernel.org/pub/software/scm/git/docs/git-tag.html) version (with [change log](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) as description) &dagger; &hearts;
-7. [Upload archive asset](http://developer.github.com/v3/repos/releases/#upload-a-release-asset) &#9679; &dagger; &hearts;
-8. Publish/[Push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) release archive asset contents to distribution/pages branch (creating the branch- if needed) &dagger; &hearts;
-9. [Publish](https://www.npmjs.org/doc/cli/npm-publish.html) release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts;
+4. [Generate release archive asset](https://www.kernel.org/pub/software/scm/git/docs/git-archive.html) &dagger;
+5. [Release](http://developer.github.com/v3/repos/releases/#create-a-release)/[Tag](https://www.kernel.org/pub/software/scm/git/docs/git-tag.html) version (with [change log](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) as description) &dagger; &hearts;
+6. [Upload archive asset](http://developer.github.com/v3/repos/releases/#upload-a-release-asset) &#9679; &dagger; &hearts;
+7. Publish/[Push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) release archive asset contents to distribution/pages branch (creating the branch- if needed) &dagger; &hearts;
+8. [Publish](https://www.npmjs.org/doc/cli/npm-publish.html) release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts;
+9. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) &dagger;
 
 &dagger; Performed when release is triggered <br/>
 &#9679; GitHub only <br/>
@@ -19,7 +19,6 @@
 
 1. [Remove remote release archive asset](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release)
 2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published archive asset contents in distribution/pages branch
-3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html)
 
 ## Getting Started
 If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:

@@ -999,14 +999,12 @@ module.exports = function(grunt) {
 		function postRelease() {
 			// pause and wait for response
 			que.pause();
-			var prmsg = 'Posting the following to ' + opts.hostname + '/'
-					+ releasePath;
+			grunt.log.writeln('Posting the following to ' + opts.hostname + '/'
+					+ releasePath);
 			if (grunt.option('verbose')) {
-				grunt.verbose.writeln(prmsg + ' ' + util.inspect(json, {
+				grunt.verbose.writeln(util.inspect(json, {
 					colors : true
 				}));
-			} else {
-				grunt.log.writeln(prmsg);
 			}
 			var res = null;
 			var req = https.request(opts, function(r) {
@@ -1203,23 +1201,32 @@ module.exports = function(grunt) {
 			endc = end || endc;
 			var stop = null;
 			pausd = false;
+			if (que.isDone()) {
+				return endit();
+			}
 			for (; wi < wrkq.length; wi++) {
 				wrk = wrkq[wi];
 				try {
 					wrk.run();
 					if (pausd) {
-						pausd = false;
+						grunt.verbose.writeln('Waiting for response...');
 						return;
 					}
 				} catch (e) {
 					stop = e;
 					que.error(e);
 				} finally {
-					if (stop || wi === wrkq.length - 1) {
-						return endc ? endc.call(que, rollbacks()) : false;
+					if (stop || que.isDone()) {
+						return endit();
 					}
 				}
 			}
+			function endit() {
+				return endc ? endc.call(que, rollbacks()) : rollbacks();
+			}
+		};
+		this.isDone = function() {
+			return wi >= wrkq.length - 1;
 		};
 		this.pause = function() {
 			pausd = true;
