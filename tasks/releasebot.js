@@ -633,20 +633,19 @@ module.exports = function(grunt) {
 						options.destExcludeDirRegExp,
 						options.destExcludeFileRegExp).toString());
 				// cmd('cp -r ' + pth.join(destPath, '*') + ' ' + ghPath);
-				var chko = '';
 				try {
 					cmd('git fetch ' + options.repoName + ' '
 							+ options.destBranch);
 				} catch (e) {
 					if (util.isRegExp(options.destBranchCreateRegExp)
 							&& options.destBranchCreateRegExp.test(e.message)) {
-						chko = ' --orphan ' + options.destBranch;
+						cmd('git checkout -q  --orphan ' + destBranch);
 					} else {
 						throw e;
 					}
 				}
-				cmd('git checkout -q' + chko + ' --track ' + options.repoName
-						+ '/' + options.destBranch);
+				cmd('git checkout -q --track ' + options.repoName + '/'
+						+ options.destBranch);
 				cmd('git rm -rfq .');
 				cmd('git clean -dfq .');
 				grunt.log.writeln('Copying publication directories/files from '
@@ -1177,23 +1176,23 @@ module.exports = function(grunt) {
 							+ commit.releaseId;
 					que.error(em, e).resumeRollback();
 				});
-				function postReleaseRollback() {
-					try {
-						var msg = 'Release rollback for release ID: '
-								+ commit.releaseId;
-						if (gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0) {
-							grunt.log.writeln(msg + ' complete');
-							grunt.verbose.writeln(rrdata);
-						} else {
-							que.error(msg + ' failed', rrdata);
-						}
-					} finally {
-						que.resumeRollback();
-					}
-				}
 			} catch (e) {
 				que.error('Failed to request rollback for release ID '
 						+ commit.releaseId, e);
+			}
+			function postReleaseRollback() {
+				try {
+					var msg = 'Release rollback for release ID: '
+							+ commit.releaseId;
+					if (gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0) {
+						grunt.log.writeln(msg + ' complete');
+						grunt.verbose.writeln(rrdata);
+					} else {
+						que.error(msg + ' failed', rrdata);
+					}
+				} finally {
+					que.resumeRollback();
+				}
 			}
 		}
 	}
