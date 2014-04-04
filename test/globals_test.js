@@ -21,7 +21,7 @@ exports.globals = {
 		var c = grunt.config.get('releasebot.commit');
 		test.ok(c, 'Cannot find grunt.config.get("releasebot.commit")');
 
-		test.ok(c.number, 'Cannot find commit.number');
+		test.ok(c.hash, 'Cannot find commit.hash');
 		test.ok(c.buildDir, 'Cannot find commit.buildDir');
 		test.ok(c.branch, 'Cannot find commit.branch');
 		test.ok(c.slug, 'Cannot find commit.slug');
