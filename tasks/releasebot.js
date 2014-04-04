@@ -716,19 +716,19 @@ module.exports = function(grunt) {
 			});
 			que.add(publishNpm);
 			function upkg(revert) {
-				if (commit.versionPkg(options.pkgJsonReplacer,
-						options.pkgJsonSpace, revert)) {
-					// push package version
-					cmd('git checkout -q ' + commit.branch);
-					try {
+				cmd('git checkout -q ' + commit.branch);
+				try {
+					if (commit.versionPkg(options.pkgJsonReplacer,
+							options.pkgJsonSpace, revert)) {
+						// push package version
 						grunt.log.write(cmd('git status'));
 						cmd('git commit -q -m "' + relMsg + '" '
 								+ commit.pkgPath);
 						cmd('git push ' + options.repoName + ' '
 								+ commit.pkgPath);
-					} finally {
-						cmd('git checkout -q ' + (commit.hash || commit.branch));
 					}
+				} finally {
+					cmd('git checkout -q ' + (commit.hash || commit.branch));
 				}
 			}
 		}
@@ -766,10 +766,13 @@ module.exports = function(grunt) {
 						cmd('git commit -q -m "Rollback ' + relMsg + '"');
 						cmd('git push -f ' + options.repoName + ' '
 								+ options.distBranch);
+					} else if (!pubHash) {
+						cmd('git push ' + options.repoName + ' --delete '
+								+ options.distBranch);
 					} else {
 						grunt.verbose.writeln('Skipping rollback for '
-								+ options.distBranch + ' for hash ' + pubHash
-								+ ' (current hash: ' + cph + ')');
+								+ options.distBranch + ' for hash "' + pubHash
+								+ '" (current hash: "' + cph + '")');
 					}
 				} finally {
 					cmd('git checkout -q ' + (commit.hash || commit.branch));
