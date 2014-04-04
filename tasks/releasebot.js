@@ -28,6 +28,7 @@ var regexDupLines = /^(.*)(\r?\n\1)+$/gm;
 var regexKey = /(https?:\/\/|:)+(?=[^:]*$)[a-z0-9]+(@)/gmi;
 var regexFuncName = /(?!\W*function\s+)[\w\$]+(?=\()/;
 var regexHost = /^https?\:\/\/([^\/?#]+)(?:[\/?#]|$)/i;
+var regexKeyVal = /="(.+)"$/;
 var regexGitCmd = /^git/;
 var gitHubHostname = 'github';
 var gitHubRegexParam = /{(\?.+)}/;
@@ -53,42 +54,18 @@ var gitHubSuccessHttpCodes = [ 200, 201, 204 ];
  */
 module.exports = function(grunt) {
 
-	/**
-	 * Initializes the global environment and returns {Commit} related data
-	 * 
-	 * @returns {Commit}
-	 */
-	function initEnv() {
-		var userEnv = grunt.config.get(configEnv) || {};
-		var globalEnv = {
-			pkgPath : grunt.config('pkgFile') || 'package.json',
-			gitCliSubstitute : userEnv.gitCliSubstitute
-					|| grunt.option(pluginName + '.gitCliSubstitute') || '',
-			buildDir : userEnv.buildDir
-					|| grunt.option(pluginName + '.buildDir')
-					|| process.env.TRAVIS_BUILD_DIR || process.cwd(),
-			branch : userEnv.branch || grunt.option(pluginName + '.branch')
-					|| process.env.TRAVIS_BRANCH || '',
-			commitNumber : userEnv.commitNumber
-					|| grunt.option(pluginName + '.commitNumber')
-					|| process.env.TRAVIS_COMMIT || '',
-			commitMessage : userEnv.commitMessage
-					|| grunt.option(pluginName + '.commitMessage')
-					|| process.env.TRAVIS_COMMIT_MESSAGE || '',
-			repoSlug : userEnv.repoSlug
-					|| grunt.option(pluginName + '.repoSlug')
-					|| process.env.TRAVIS_REPO_SLUG,
-			lastVersionMsgIgnoreRegExp : /No names found/i,
-			gitToken : function() {
-				return userEnv.gitToken
-						|| grunt.option(pluginName + '.gitToken')
-						|| process.env.GH_TOKEN || '';
-			}
-		};
-		return genCommit(globalEnv);
-	}
 	// initialize global release environment options
-	var commit = initEnv();
+	var commit = initEnv({
+		pkgPath : grunt.config('pkgFile') || 'package.json',
+		gitCliSubstitute : '',
+		buildDir : process.env.TRAVIS_BUILD_DIR || process.cwd(),
+		branch : process.env.TRAVIS_BRANCH,
+		commitHash : process.env.TRAVIS_COMMIT,
+		commitMessage : process.env.TRAVIS_COMMIT_MESSAGE,
+		repoSlug : process.env.TRAVIS_REPO_SLUG,
+		lastVersionMsgIgnoreRegExp : /No names found/i,
+		gitToken : process.env.GH_TOKEN
+	});
 
 	// register release task
 	grunt.registerTask(pluginName, pluginDesc, function() {
@@ -104,11 +81,11 @@ module.exports = function(grunt) {
 			repoName : 'origin',
 			repoUser : pluginName,
 			repoEmail : em,
-			destBranch : 'gh-pages',
-			destDir : 'dist',
-			destBranchCreateRegExp : /Couldn't find remote ref/i,
-			destExcludeDirRegExp : /.?node_modules.?/gmi,
-			destExcludeFileRegExp : /.?\.zip|tar.?/gmi,
+			distBranch : 'gh-pages',
+			distDir : 'dist',
+			distBranchCreateRegExp : /Couldn't find remote ref/i,
+			distExcludeDirRegExp : /.?node_modules.?/gmi,
+			distExcludeFileRegExp : /.?\.zip|tar.?/gmi,
 			chgLog : 'HISTORY.md',
 			authors : 'AUTHORS.md',
 			chgLogLineFormat : '  * %s',
@@ -134,6 +111,56 @@ module.exports = function(grunt) {
 	});
 
 	/**
+	 * Initializes the global environment and returns {Commit} related data
+	 * 
+	 * @param env
+	 *            the environment object
+	 * @returns {Commit}
+	 */
+	function initEnv(env) {
+		var gconfig = grunt.config.get(configEnv) || {};
+		var nargv = null;
+		// find via node node CLI argument in the format key="value"
+		function argv(k) {
+			if (!nargv) {
+				nargv = process.argv.slice(0, 2);
+			}
+			var v = '', m = null;
+			var x = new RegExp(k + regexKeyVal.source);
+			nargv.every(function(e, i, a) {
+				m = e.match(x);
+				if (m && m.length) {
+					v = m[0];
+					return false;
+				}
+			});
+			return v;
+		}
+		function getv(k) {
+			return gconfig[k] || grunt.option(pluginName + '.' + k)
+					|| argv(pluginName + '.' + k) || '';
+		}
+		// loop through and set the values
+		Object.keys(env).forEach(function(key) {
+			if (env[key]) {
+				return;
+			}
+			env[key] = getv(key);
+		});
+		// capture git authentication token
+		var gt = getv('gitToken') || env.gitToken;
+		if (typeof gt === 'function') {
+			env.gitToken = gt;
+		} else {
+			// use function to prevent accidental log leaking
+			env.gitToken = function() {
+				return gt;
+			};
+		}
+		return genCommit(env);
+	}
+
+	/**
 	 * Initializes commit details and sets the results in the grunt
 	 * configuration using the plug-in name
 	 * 
@@ -148,7 +175,7 @@ module.exports = function(grunt) {
 							colors : true,
 							depth : 3
 						}));
-		var cn = env.commitNumber;
+		var ch = env.commitHash;
 		var cm = env.commitMessage;
 		var br = env.branch;
 		var rs = env.repoSlug;
@@ -174,14 +201,14 @@ module.exports = function(grunt) {
 			br = cmd('git rev-parse --abbrev-ref HEAD');
 			grunt.verbose.writeln('Found branch: "' + br + '"');
 		}
-		if (!cn) {
-			cn = cmd('git rev-parse HEAD');
-			grunt.verbose.writeln('Found commit number: "' + cn + '"');
+		if (!ch) {
+			ch = cmd('git rev-parse HEAD');
+			grunt.verbose.writeln('Found commit hash: "' + ch + '"');
 		}
 		if (!cm) {
 			// fall back on either last commit message or the commit message for
-			// the current commit number
-			cm = cmd("git show -s --format=%B " + env.commitNumber);
+			// the current commit hash
+			cm = cmd("git show -s --format=%B " + env.commitHash);
 			grunt.verbose.writeln('Found commit message: "' + cm + '"');
 		}
 		if (!rs) {
@@ -220,7 +247,7 @@ module.exports = function(grunt) {
 			}
 		}
 		lver = lver ? dfltVersionLabel + ' ' + lver : '';
-		var c = new Commit(cm, lver, env.gitCliSubstitute, cn, env.pkgPath,
+		var c = new Commit(cm, lver, env.gitCliSubstitute, ch, env.pkgPath,
 				env.buildDir, br, rs, un, rn, env.gitToken);
 		cloneAndSetCommit(c);
 		return c;
@@ -304,7 +331,7 @@ module.exports = function(grunt) {
 	 *            the optional command replacement that will be substituted for
 	 *            the "git" CLI (when applicable)
 	 * @param cn
-	 *            the commit number
+	 *            the commit hash
 	 * @param pkgPath
 	 *            the path to the package file
 	 * @param buildDir
@@ -320,7 +347,7 @@ module.exports = function(grunt) {
 	 * @param gitToken
 	 *            a function that will be used to extract the Git token
 	 */
-	function Commit(cm, pcm, gitCliSubstitute, cn, pkgPath, buildDir, branch,
+	function Commit(cm, pcm, gitCliSubstitute, ch, pkgPath, buildDir, branch,
 			slug, username, reponame, gitToken) {
 		var rv = cm ? cm.match(regexRelease) : [];
 		if (!rv) {
@@ -330,7 +357,7 @@ module.exports = function(grunt) {
 		var vt = 0, si = -1;
 		this.gitCliSubstitute = gitCliSubstitute;
 		this.pkgPath = pkgPath;
-		this.number = cn;
+		this.hash = ch;
 		this.buildDir = buildDir;
 		this.branch = branch;
 		this.slug = slug;
@@ -454,12 +481,12 @@ module.exports = function(grunt) {
 						: 'N/A') + ')');
 		var useGitHub = options.gitHostname.toLowerCase() === gitHubHostname;
 		var relMsg = commit.message + ' ' + commit.skipTaskGen('ci');
-		var chgLogRtn = '', distAsset = '';
+		var chgLogRtn = '', distAsset = '', pubFilesCopied = false, pubSrcDir = '', pubDistDir = '', pubHash = '';
 
 		// Queue/Start work
 		var que = new Queue(options).add(changeLog).add(authorsLog).add(
 				remoteSetup);
-		que.add(addAndCommitDestDir).add(genDistAsset);
+		que.add(addAndCommitDistDir).add(genDistAsset);
 		que.add(function() {
 			if (useGitHub) {
 				doneAsync = task.async();
@@ -477,7 +504,7 @@ module.exports = function(grunt) {
 				que.error('Failed to set global commit result properties', e);
 			}
 			try {
-				cmd('git checkout -q ' + (commit.number || commit.branch));
+				cmd('git checkout -q ' + (commit.hash || commit.branch));
 			} catch (e) {
 				que.error(e);
 			}
@@ -506,7 +533,7 @@ module.exports = function(grunt) {
 				}
 				return;
 			}
-			var chgLogPath = options.destDir + '/' + options.chgLog;
+			var chgLogPath = options.distDir + '/' + options.chgLog;
 			var lastGitLog = commit.lastCommit
 					&& !commit.lastCommit.versionVacant() ? commit.lastCommit.versionTag
 					+ '..HEAD'
@@ -514,8 +541,8 @@ module.exports = function(grunt) {
 			chgLogRtn = cmd('git --no-pager log ' + lastGitLog
 					+ ' --pretty=format:"' + options.chgLogLineFormat + '" > '
 					+ chgLogPath, null, false, chgLogPath,
-					options.chgLogSkipLineRegExp, '<!-- Commit '
-							+ commit.number + ' -->\n')
+					options.chgLogSkipLineRegExp, '<!-- Commit ' + commit.hash
+							+ ' -->\n')
 					|| '';
 			validateFile(chgLogPath);
 		}
@@ -535,7 +562,7 @@ module.exports = function(grunt) {
 				}
 				return;
 			}
-			var authorsPath = options.destDir + '/' + options.authors;
+			var authorsPath = options.distDir + '/' + options.authors;
 			cmd('git --no-pager shortlog -sen HEAD > ' + authorsPath, null,
 					false, authorsPath, options.authorsSkipLineRegExp);
 			validateFile(authorsPath);
@@ -554,11 +581,11 @@ module.exports = function(grunt) {
 		}
 
 		/**
-		 * Adds/Commits everything in the destination directory for tracking
+		 * Adds/Commits everything in the distribution directory for tracking
 		 */
-		function addAndCommitDestDir() {
+		function addAndCommitDistDir() {
 			// Commit changes to master (needed to generate archive asset)
-			cmd('git add --force ' + options.destDir);
+			cmd('git add --force ' + options.distDir);
 			cmd('git commit -q -m "' + relMsg + '"');
 		}
 
@@ -572,7 +599,7 @@ module.exports = function(grunt) {
 			cmd('git archive -o ' + distAsset + ' --format='
 					+ options.distAssetFormat + ' -'
 					+ options.distAssetCompressRatio + ' HEAD:'
-					+ options.destDir);
+					+ options.distDir);
 		}
 
 		/**
@@ -611,48 +638,53 @@ module.exports = function(grunt) {
 		}
 
 		/**
-		 * Publish repository pages to destination branch (commit should have a
+		 * Publish repository pages to distribution branch (commit should have a
 		 * valid ID)
 		 */
 		function publish() {
 			if (!commit.releaseId) {
 				grunt.log.writeln('No release ID Skipping publishing to '
-						+ options.destBranch);
-			} else if (options.destBranch) {
-				grunt.log.writeln('Publishing to ' + options.destBranch);
+						+ options.distBranch);
+			} else if (options.distBranch) {
+				grunt.log.writeln('Publishing to ' + options.distBranch);
 				if (distAsset) {
 					// remove uploaded asset file to prevent conflicts
 					fs.unlinkSync(distAsset);
 				}
-				var destPath = pth.join(commit.buildDir, options.destDir);
-				var ghPath = commit.buildDir.replace(commit.reponame,
-						options.destBranch);
+				pubSrcDir = pth.join(commit.buildDir, options.distDir);
+				pubDistDir = commit.buildDir.replace(commit.reponame,
+						options.distBranch);
 				// copy all directories/files over that need to be published
 				// so that they are not removed by the following steps
-				grunt.log.writeln(copyRecursiveSync(destPath, ghPath,
-						options.destExcludeDirRegExp,
-						options.destExcludeFileRegExp).toString());
-				// cmd('cp -r ' + pth.join(destPath, '*') + ' ' + ghPath);
+				grunt.log.writeln(copyRecursiveSync(pubSrcDir, pubDistDir,
+						options.distExcludeDirRegExp,
+						options.distExcludeFileRegExp).toString());
+				pubFilesCopied = true;
+				// cmd('cp -r ' + pth.join(pubSrcDir, '*') + ' ' + pubDistDir);
 				try {
 					cmd('git fetch ' + options.repoName + ' '
-							+ options.destBranch);
+							+ options.distBranch);
+					pubHash = cmd('git rev-parse HEAD');
 				} catch (e) {
-					if (util.isRegExp(options.destBranchCreateRegExp)
-							&& options.destBranchCreateRegExp.test(e.message)) {
-						cmd('git checkout -q --orphan ' + options.destBranch);
+					if (util.isRegExp(options.distBranchCreateRegExp)
+							&& options.distBranchCreateRegExp.test(e.message)) {
+						cmd('git checkout -q --orphan ' + options.distBranch);
 					} else {
 						throw e;
 					}
 				}
+				// if (pubHash) {
 				cmd('git checkout -q --track ' + options.repoName + '/'
-						+ options.destBranch);
+						+ options.distBranch);
+				// }
 				cmd('git rm -rfq .');
 				cmd('git clean -dfq .');
 				grunt.log.writeln('Copying publication directories/files from '
-						+ ghPath + ' to ' + commit.buildDir);
-				grunt.log.writeln(copyRecursiveSync(ghPath, commit.buildDir)
-						.toString());
-				// cmd('cp -r ' + pth.join(ghPath, '*') + ' .');
+						+ pubDistDir + ' to ' + commit.buildDir);
+				grunt.log
+						.writeln(copyRecursiveSync(pubDistDir, commit.buildDir)
+								.toString());
+				// cmd('cp -r ' + pth.join(pubDistDir, '*') + ' .');
 
 				// give taskateers a chance to update asset contents
 				updatePublishAssets(commit.buildDir);
@@ -660,7 +692,7 @@ module.exports = function(grunt) {
 				cmd('git add -A');
 				cmd('git commit -m "' + relMsg + '"');
 				cmd('git push -f ' + options.repoName + ' '
-						+ options.destBranch);
+						+ options.distBranch);
 
 				que.add(pkgUpdate, rollbackPublish);
 			}
@@ -671,7 +703,7 @@ module.exports = function(grunt) {
 		 * and commits/pushes it to remote
 		 */
 		function pkgUpdate() {
-			cmd('git checkout -q ' + (commit.number || commit.branch));
+			cmd('git checkout -q ' + (commit.hash || commit.branch));
 			upkg();
 			que.add(publishNpm, function() {
 				upkg(true);
@@ -711,9 +743,20 @@ module.exports = function(grunt) {
 		 */
 		function rollbackPublish() {
 			try {
-				// TODO : rollback publish
+				cmd('git checkout -q ' + options.distBranch);
+				var cph = cmd('git rev-parse HEAD');
+				if (pubHash && pubHash !== cph) {
+					cmd('git checkout ' + pubHash);
+					cmd('git commit -q -m "Rollback ' + relMsg + '"');
+					cmd('git push -f ' + options.repoName + ' '
+							+ options.distBranch);
+				} else {
+					grunt.verbose.writeln('Skipping rollback for '
+							+ options.distBranch + ' for hash ' + pubHash
+							+ ' (current hash: ' + cph + ')');
+				}
 			} catch (e) {
-				var msg = 'Failed to revert publish branch!';
+				var msg = 'Failed to rollback publish branch changes!';
 				que.error(msg, e);
 			}
 		}
@@ -747,8 +790,8 @@ module.exports = function(grunt) {
 				rtn = shell[c.shell].apply(shell, c.args);
 			}
 			if (rtn.code !== 0) {
-				var e = 'Error "' + rtn.code + '" for commit number '
-						+ commit.number + ' ' + rtn.output;
+				var e = 'Error "' + rtn.code + '" for commit hash '
+						+ commit.hash + ' ' + rtn.output;
 				if (nofail) {
 					que.error(e);
 					return;
@@ -986,7 +1029,7 @@ module.exports = function(grunt) {
 		json[gitHubReleaseTagName] = commit.versionTag;
 		json[gitHubReleaseName] = commit.versionTag;
 		json[gitHubReleaseBody] = desc;
-		json[gitHubReleaseCommitish] = commit.number;
+		json[gitHubReleaseCommitish] = commit.hash;
 		json[gitHubReleasePreFlag] = commit.versionPrereleaseType != null;
 		var jsonStr = JSON.stringify(json);
 		var fstat = asset && asset.path ? fs.statSync(asset.path) : {
@@ -1278,6 +1321,9 @@ module.exports = function(grunt) {
 			}
 			return rollbacks();
 		};
+		this.hasQueuedRollbacks = function() {
+			return rbi < wrkrb.length - 1;
+		};
 		function rollbacks() {
 			rbpausd = false;
 			if (que.errorCount() > 0) {
@@ -1292,19 +1338,10 @@ module.exports = function(grunt) {
 						}
 					} catch (e) {
 						que.error(e);
-					} finally {
-						if (!rbpausd && rbi + 1 < wrkrb.length) {
-							return endit();
-						}
 					}
 				}
-			} else {
-				endit();
 			}
-			function endit() {
-				return endc ? endc.call(que, rbcnt) : rbcnt;
-			}
-			return rbcnt;
+			return endc ? endc.call(que, rbcnt) : rbcnt;
 		}
 		function Work(fx, rb, args) {
 			var orb = rb;

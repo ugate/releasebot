@@ -72,7 +72,7 @@ grunt.loadNpmTasks('releasebot');
 
 By default, `process.env.GH_TOKEN` is used for authorization for Git pushes and the alike. It's recommended you encrypt the token following [travis encrypttion guidlines](http://docs.travis-ci.com/user/encryption-keys/).
 
-When using releasebot's built-in *destination branch* publishing make sure to exclude that branch (or restrict to master) from travis builds in your `.travis.yml` file:
+When using releasebot's built-in *distribution branch* publishing make sure to exclude that branch (or restrict to master) from travis builds in your `.travis.yml` file:
 
 ```yaml
 branches:
@@ -208,17 +208,21 @@ Once the releasebot task has been registered commit datails are captured and mad
   repoUser : 'releasebot',
   // The repository email that will be used during remote updates
   repoEmail : 'releasebot@example.org',
-  // The branch that will be used to distribute released documentation or other distribution assets to
-  destBranch : 'gh-pages',
+  // The branch that will be used to distribute released documentation or other distribution assets to (null to skip)
+  distBranch : 'gh-pages',
   // The directory that will be used to distribute released documentation or other distribution assets from
-  destDir : 'dist',
-  // Regular expression that will be used to check the error output of a Git fetch of destBranch, when there's a match an attempt will be made to create the destBranch
-  destBranchCreateRegExp : /Couldn't find remote ref/i,
-  // Regular expression that will be used to exclude directories from distributed assets within the destDir
-  destExcludeDirRegExp : /.?node_modules.?/gmi,
-  // Regular expression that will be used to exclude files from distributed assets within the destDir
-  destExcludeFileRegExp : /.?\.zip|tar.?/gmi,
+  distDir : 'dist',
+  // Regular expression that will be used to check the error output of a Git fetch of distBranch, when there's a match an attempt will be made to create the distBranch
+  distBranchCreateRegExp : /Couldn't find remote ref/i,
+  // Regular expression that will be used to exclude directories from distributed assets within the distDir
+  distExcludeDirRegExp : /.?node_modules.?/gmi,
+  // Regular expression that will be used to exclude files from distributed assets within the distDir
+  distExcludeFileRegExp : /.?\.zip|tar.?/gmi,
   // Change log file that will contain change details since the last release and used as the release description markdown (null to skip)
+  // The format for which the distDir will be archived
+  distAssetFormat : 'zip',
+  // The compression ratio for which the distDir will be archived
+  distAssetCompressRatio : 9,
   chgLog : 'HISTORY.md',
   // Authors log that will contain all the authors of the project (null to skip)
   authors : 'AUTHORS.md',
@@ -232,10 +236,6 @@ Once the releasebot task has been registered commit datails are captured and mad
   authorsRequired : false,
   // Regular expression that will be used to skip individual lines from being used within the authors log
   authorsSkipLineRegExp : null,
-  // The format for which the destDir will be archived
-  distAssetFormat : 'zip',
-  // The compression ratio for which the destDir will be archived
-  distAssetCompressRatio : 9,
   // The host name of the Git provider (null will use generic Git releases)
   gitHostname : 'github',
   // Function that will be called for each distAssetUpdateFiles passing: contents, path, commit and returning customized content for the specified distribution asset that will be overwritten before the release asset is pushed
