@@ -12,6 +12,7 @@ module.exports = function(grunt) {
 		return string.replace(/[-\\^$*+?.()|[\]{}]/g, '\\$&');
 	};
 
+	// initialize grunt
 	var pkg = grunt.file.readJSON('package.json');
 	grunt
 			.initConfig({

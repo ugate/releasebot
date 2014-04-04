@@ -127,7 +127,7 @@ module.exports = function(grunt) {
 			}
 			var v = '', m = null;
 			var x = new RegExp(k + regexKeyVal.source);
-			nargv.every(function(e, i, a) {
+			nargv.every(function(e) {
 				m = e.match(x);
 				if (m && m.length) {
 					v = m[0];
