@@ -78,14 +78,10 @@ module.exports = function(grunt) {
 			pkgJsonReplacer : null,
 			pkgJsonSpace : 2,
 			releaseVersionRegExp : rx,
+			gitHostname : gitHubHostname,
 			repoName : 'origin',
 			repoUser : pluginName,
 			repoEmail : em,
-			distBranch : 'gh-pages',
-			distDir : 'dist',
-			distBranchCreateRegExp : /Couldn't find remote ref/i,
-			distExcludeDirRegExp : /.?node_modules.?/gmi,
-			distExcludeFileRegExp : /.?\.zip|tar.?/gmi,
 			chgLog : 'HISTORY.md',
 			authors : 'AUTHORS.md',
 			chgLogLineFormat : '  * %s',
@@ -95,11 +91,16 @@ module.exports = function(grunt) {
 					+ (rx.multiline ? 'm' : '') + (rx.ignoreCase ? 'i' : '')),
 			authorsRequired : false,
 			authorsSkipLineRegExp : null,
+			distBranch : 'gh-pages',
+			distDir : 'dist',
+			distBranchCreateRegExp : /Couldn't find remote ref/i,
+			distExcludeDirRegExp : /.?node_modules.?/gmi,
+			distExcludeFileRegExp : /.?\.zip|tar.?/gmi,
 			distAssetFormat : 'zip',
 			distAssetCompressRatio : 9,
-			gitHostname : gitHubHostname,
 			distAssetUpdateFunction : null,
 			distAssetUpdateFiles : [],
+			rollbackStrategy : 'queue',
 			npmTarget : '',
 			npmTag : ''
 		});
@@ -1329,7 +1330,7 @@ module.exports = function(grunt) {
 			rbpausd = false;
 			if (que.errorCount() > 0) {
 				for (rbi++; rbi < wrkrb.length; rbi++) {
-					grunt.verbose.writeln('Calling rollback'
+					grunt.verbose.writeln('Calling rollback '
 							+ wrkrb[rbi].rbName);
 					try {
 						wrkrb[rbi].rb();
@@ -1359,7 +1360,12 @@ module.exports = function(grunt) {
 				this.rtn = fx.apply(que, this.args);
 				wrkd.push(this);
 				if (orb) {
-					wrkrb.push(this);
+					if (typeof options.rollbackStrategy === 'string'
+							&& options.rollbackStrategy.test(/stack/i)) {
+						wrkrb.unshift(this);
+					} else {
+						wrkrb.push(this);
+					}
 				}
 				return this.rtn;
 			};

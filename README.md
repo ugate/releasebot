@@ -14,12 +14,13 @@
 9. [Publish](https://www.npmjs.org/doc/cli/npm-publish.html) release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts;
 
 &dagger; Performed when only when release is triggered <br/>
+&Dagger; When previously completed successfully <br/>
 &#9679; GitHub only <br/>
-&hearts; Failure will result in the following rollback sequence:
+&hearts; Failure will result in the following *default* roll back sequence (<a href="#default-task-specific-options">additional roll back strategies</a>):
 
-1. [Remove remote release archive asset](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release)
-2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published archive asset contents in distribution/pages branch
-3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html)
+1. [Remove remote release archive asset](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release) &Dagger;
+2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published archive asset contents in distribution/pages branch &Dagger;
+3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html) &Dagger;
 
 ## Usage Examples
 
@@ -202,27 +203,15 @@ Once the releasebot task has been registered commit datails are captured and mad
   pkgJsonSpace : 2,
   // The regular expression used to check the commit message for in order to trigger a release
   releaseVersionRegExp : /(released?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
+  // The host name of the Git provider (null will use generic Git releases)
+  gitHostname : 'github',
   // The repository name
   repoName : 'origin',
   // The repository user that will be used during remote updates
   repoUser : 'releasebot',
   // The repository email that will be used during remote updates
   repoEmail : 'releasebot@example.org',
-  // The branch that will be used to distribute released documentation or other distribution assets to (null to skip)
-  distBranch : 'gh-pages',
-  // The directory that will be used to distribute released documentation or other distribution assets from
-  distDir : 'dist',
-  // Regular expression that will be used to check the error output of a Git fetch of distBranch, when there's a match an attempt will be made to create the distBranch
-  distBranchCreateRegExp : /Couldn't find remote ref/i,
-  // Regular expression that will be used to exclude directories from distributed assets within the distDir
-  distExcludeDirRegExp : /.?node_modules.?/gmi,
-  // Regular expression that will be used to exclude files from distributed assets within the distDir
-  distExcludeFileRegExp : /.?\.zip|tar.?/gmi,
   // Change log file that will contain change details since the last release and used as the release description markdown (null to skip)
-  // The format for which the distDir will be archived
-  distAssetFormat : 'zip',
-  // The compression ratio for which the distDir will be archived
-  distAssetCompressRatio : 9,
   chgLog : 'HISTORY.md',
   // Authors log that will contain all the authors of the project (null to skip)
   authors : 'AUTHORS.md',
@@ -236,12 +225,26 @@ Once the releasebot task has been registered commit datails are captured and mad
   authorsRequired : false,
   // Regular expression that will be used to skip individual lines from being used within the authors log
   authorsSkipLineRegExp : null,
-  // The host name of the Git provider (null will use generic Git releases)
-  gitHostname : 'github',
+  // The branch that will be used to distribute released documentation or other distribution assets to (null to skip)
+  distBranch : 'gh-pages',
+  // The directory that will be used to distribute released documentation or other distribution assets from
+  distDir : 'dist',
+  // Regular expression that will be used to check the error output of a Git fetch of distBranch, when there's a match an attempt will be made to create the distBranch
+  distBranchCreateRegExp : /Couldn't find remote ref/i,
+  // Regular expression that will be used to exclude directories from distributed assets within the distDir
+  distExcludeDirRegExp : /.?node_modules.?/gmi,
+  // Regular expression that will be used to exclude files from distributed assets within the distDir
+  distExcludeFileRegExp : /.?\.zip|tar.?/gmi,
+  // The format for which the distDir will be archived
+  distAssetFormat : 'zip',
+  // The compression ratio for which the distDir will be archived
+  distAssetCompressRatio : 9,
   // Function that will be called for each distAssetUpdateFiles passing: contents, path, commit and returning customized content for the specified distribution asset that will be overwritten before the release asset is pushed
   distAssetUpdateFunction : null,
   // Array of file paths that will be read/written to before/after distAssetUpdateFunction
   distAssetUpdateFiles : [],
+  // The strategy/order in which roll back actions will be executed ("stack" or "queue")  
+  rollbackStrategy : 'queue',
   // The npm publish target (null to skip npm publish)
   npmTarget : '',
   // The npm publish tag
