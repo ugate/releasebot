@@ -585,7 +585,7 @@ module.exports = function(grunt) {
 		 * Adds/Commits everything in the distribution directory for tracking
 		 */
 		function addAndCommitDistDir() {
-			// Commit changes to master (needed to generate archive asset)
+			// Commit changes (needed to generate archive asset)
 			cmd('git add --force ' + options.distDir);
 			cmd('git commit -q -m "' + relMsg + '"');
 		}
@@ -678,28 +678,33 @@ module.exports = function(grunt) {
 						throw e;
 					}
 				}
-				if (pubHash) {
-					cmd('git checkout -q --track ' + options.repoName + '/'
+				try {
+					if (pubHash) {
+						cmd('git checkout -q --track ' + options.repoName + '/'
+								+ options.distBranch);
+					}
+					cmd('git rm -rfq .');
+					cmd('git clean -dfq .');
+					grunt.log
+							.writeln('Copying publication directories/files from '
+									+ pubDistDir + ' to ' + commit.buildDir);
+					grunt.log.writeln(copyRecursiveSync(pubDistDir,
+							commit.buildDir).toString());
+					// cmd('cp -r ' + pth.join(pubDistDir, '*') + ' .');
+
+					// give taskateers a chance to update asset contents
+					updatePublishAssets(commit.buildDir);
+
+					cmd('git add -A');
+					cmd('git commit -q -m "' + relMsg + '"');
+					cmd('git push -f ' + options.repoName + ' '
 							+ options.distBranch);
+
+					que.add(pkgUpdate, rollbackPublish);
+				} finally {
+					// go back to original branch
+					cmd('git checkout -q ' + (commit.hash || commit.branch));
 				}
-				cmd('git rm -rfq .');
-				cmd('git clean -dfq .');
-				grunt.log.writeln('Copying publication directories/files from '
-						+ pubDistDir + ' to ' + commit.buildDir);
-				grunt.log
-						.writeln(copyRecursiveSync(pubDistDir, commit.buildDir)
-								.toString());
-				// cmd('cp -r ' + pth.join(pubDistDir, '*') + ' .');
-
-				// give taskateers a chance to update asset contents
-				updatePublishAssets(commit.buildDir);
-
-				cmd('git add -A');
-				cmd('git commit -m "' + relMsg + '"');
-				cmd('git push -f ' + options.repoName + ' '
-						+ options.distBranch);
-
-				que.add(pkgUpdate, rollbackPublish);
 			}
 		}
 
@@ -716,8 +721,7 @@ module.exports = function(grunt) {
 				if (commit.versionPkg(options.pkgJsonReplacer,
 						options.pkgJsonSpace, revert)) {
 					// push package version
-					cmd('git checkout -q ' + commit.branch + ' -- '
-							+ commit.pkgPath);
+					cmd('git checkout -q ' + commit.branch);
 					try {
 						grunt.log.write(cmd('git status'));
 						cmd('git commit -q -m "' + relMsg + '" '
