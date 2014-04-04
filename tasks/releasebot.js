@@ -617,7 +617,8 @@ module.exports = function(grunt) {
 							: commit.message) + '"');
 			cmd('git push -f ' + options.repoName + ' ' + commit.versionTag);
 			// TODO : upload asset?
-			que.add(publish, rollbackTag);
+			que.addRollback(rollbackTag);
+			que.add(publish);
 		}
 
 		/**
@@ -678,33 +679,29 @@ module.exports = function(grunt) {
 						throw e;
 					}
 				}
-				try {
-					if (pubHash) {
-						cmd('git checkout -q --track ' + options.repoName + '/'
-								+ options.distBranch);
-					}
-					cmd('git rm -rfq .');
-					cmd('git clean -dfq .');
-					grunt.log
-							.writeln('Copying publication directories/files from '
-									+ pubDistDir + ' to ' + commit.buildDir);
-					grunt.log.writeln(copyRecursiveSync(pubDistDir,
-							commit.buildDir).toString());
-					// cmd('cp -r ' + pth.join(pubDistDir, '*') + ' .');
-
-					// give taskateers a chance to update asset contents
-					updatePublishAssets(commit.buildDir);
-
-					cmd('git add -A');
-					cmd('git commit -q -m "' + relMsg + '"');
-					cmd('git push -f ' + options.repoName + ' '
+				if (pubHash) {
+					cmd('git checkout -q --track ' + options.repoName + '/'
 							+ options.distBranch);
-
-					que.add(pkgUpdate, rollbackPublish);
-				} finally {
-					// go back to original branch
-					cmd('git checkout -q ' + (commit.hash || commit.branch));
 				}
+				cmd('git rm -rfq .');
+				cmd('git clean -dfq .');
+				grunt.log.writeln('Copying publication directories/files from '
+						+ pubDistDir + ' to ' + commit.buildDir);
+				grunt.log
+						.writeln(copyRecursiveSync(pubDistDir, commit.buildDir)
+								.toString());
+				// cmd('cp -r ' + pth.join(pubDistDir, '*') + ' .');
+
+				// give taskateers a chance to update asset contents
+				updatePublishAssets(commit.buildDir);
+
+				cmd('git add -A');
+				cmd('git commit -q -m "' + relMsg + '"');
+				cmd('git push -f ' + options.repoName + ' '
+						+ options.distBranch);
+
+				que.addRollback(rollbackPublish);
+				que.add(pkgUpdate);
 			}
 		}
 
@@ -714,9 +711,10 @@ module.exports = function(grunt) {
 		 */
 		function pkgUpdate() {
 			upkg();
-			que.add(publishNpm, function() {
+			que.addRollback(function() {
 				upkg(true);
 			});
+			que.add(publishNpm);
 			function upkg(revert) {
 				if (commit.versionPkg(options.pkgJsonReplacer,
 						options.pkgJsonSpace, revert)) {
@@ -761,16 +759,20 @@ module.exports = function(grunt) {
 		function rollbackPublish() {
 			try {
 				cmd('git checkout -q ' + options.distBranch);
-				var cph = cmd('git rev-parse HEAD');
-				if (pubHash && pubHash !== cph) {
-					cmd('git checkout ' + pubHash);
-					cmd('git commit -q -m "Rollback ' + relMsg + '"');
-					cmd('git push -f ' + options.repoName + ' '
-							+ options.distBranch);
-				} else {
-					grunt.verbose.writeln('Skipping rollback for '
-							+ options.distBranch + ' for hash ' + pubHash
-							+ ' (current hash: ' + cph + ')');
+				try {
+					var cph = cmd('git rev-parse HEAD');
+					if (pubHash && pubHash !== cph) {
+						cmd('git checkout ' + pubHash);
+						cmd('git commit -q -m "Rollback ' + relMsg + '"');
+						cmd('git push -f ' + options.repoName + ' '
+								+ options.distBranch);
+					} else {
+						grunt.verbose.writeln('Skipping rollback for '
+								+ options.distBranch + ' for hash ' + pubHash
+								+ ' (current hash: ' + cph + ')');
+					}
+				} finally {
+					cmd('git checkout -q ' + (commit.hash || commit.branch));
 				}
 			} catch (e) {
 				var msg = 'Failed to rollback publish branch changes!';
@@ -1095,7 +1097,7 @@ module.exports = function(grunt) {
 				res.on('end', function() {
 					if (gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0) {
 						grunt.verbose.writeln('Received post release data');
-						que.add(postReleaseEnd, fcb).resume();
+						que.add(postReleaseEnd).resume();
 					} else {
 						que.error(
 								'Release post failed with HTTP status: '
@@ -1120,8 +1122,8 @@ module.exports = function(grunt) {
 				if (rl && rl[gitHubReleaseTagName] === commit.versionTag) {
 					commit.releaseId = rl[gitHubReleaseId];
 					// queue asset uploaded or complete with callback
-					que.add(fstat.size <= 0 ? cb : postReleaseAsset,
-							postReleaseRollback);
+					que.addRollbacks(postReleaseRollback, fcb);
+					que.add(fstat.size <= 0 ? cb : postReleaseAsset);
 				} else {
 					que.error(
 							'No tag found for ' + commit.versionTag + ' in '
@@ -1280,6 +1282,28 @@ module.exports = function(grunt) {
 			wrkq.push(wrk);
 			return que;
 		};
+		this.addRollbacks = function() {
+			if (arguments.length === 0) {
+				return;
+			}
+			// make sure the order of the passed rollback functions is
+			// maintained regardless of strategy
+			var args = isStack() ? Array.prototype.reverse.call(arguments)
+					: arguments;
+			for (var i = 0; i < args.length; i++) {
+				que.addRollback(args[i]);
+			}
+		};
+		this.addRollback = function(rb) {
+			if (rb === 'function') {
+				if (typeof options.rollbackStrategy === 'string'
+						&& /stack/i.test(options.rollbackStrategy)) {
+					wrkrb.unshift(new Rollback(arguments[i]));
+				} else {
+					wrkrb.push(new Rollback(arguments[i]));
+				}
+			}
+		};
 		this.work = function() {
 			return wrk;
 		};
@@ -1338,6 +1362,7 @@ module.exports = function(grunt) {
 			if (!rbpausd) {
 				return 0;
 			}
+			grunt.verbose.writeln('Resuming rollbacks');
 			return rollbacks();
 		};
 		this.hasQueuedRollbacks = function() {
@@ -1346,13 +1371,17 @@ module.exports = function(grunt) {
 		function rollbacks() {
 			rbpausd = false;
 			if (que.errorCount() > 0) {
+				grunt.verbose.writeln('Processing ' + wrkrb.length
+						+ ' rollback action(s)');
 				for (rbi++; rbi < wrkrb.length; rbi++) {
-					grunt.verbose.writeln('Calling rollback '
-							+ wrkrb[rbi].rbName);
+					grunt.verbose
+							.writeln('Calling rollback ' + wrkrb[rbi].name);
 					try {
-						wrkrb[rbi].rb();
+						wrkrb[rbi].run();
 						rbcnt++;
 						if (rbpausd) {
+							grunt.verbose.writeln('Pausing after rollback '
+									+ wrkrb[rbi].name);
 							return rbcnt;
 						}
 					} catch (e) {
@@ -1363,29 +1392,27 @@ module.exports = function(grunt) {
 			return endc ? endc.call(que, rbcnt) : rbcnt;
 		}
 		function Work(fx, rb, args) {
-			var orb = rb;
 			this.func = fx;
-			this.rb = function() {
-				return orb ? orb.call(que) : false;
-			};
-			this.rbName = typeof orb === 'function' ? regexFuncName.exec(orb
-					.toString()) : null;
-			this.rbName = this.rbName && this.rbName[0] ? this.rbName[0] : '';
+			this.rb = rb ? new Rollback(rb, args) : null;
 			this.args = args;
 			this.rtn = undefined;
 			this.run = function() {
 				this.rtn = fx.apply(que, this.args);
 				wrkd.push(this);
-				if (orb) {
-					if (typeof options.rollbackStrategy === 'string'
-							&& /stack/i.test(options.rollbackStrategy)) {
-						wrkrb.unshift(this);
-					} else {
-						wrkrb.push(this);
-					}
-				}
+				que.addRollback(this.rb);
 				return this.rtn;
 			};
+		}
+		function Rollback(rb, args) {
+			var n = regexFuncName.exec(rb.toString());
+			this.name = n && n[0] ? n[0] : '';
+			this.run = function() {
+				return typeof rb === 'function' ? rb.call(que) : false;
+			};
+		}
+		function isStack() {
+			return typeof options.rollbackStrategy === 'string'
+					&& /stack/i.test(options.rollbackStrategy);
 		}
 	}
 
