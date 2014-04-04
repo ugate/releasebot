@@ -646,7 +646,10 @@ module.exports = function(grunt) {
 			if (!commit.releaseId) {
 				grunt.log.writeln('No release ID Skipping publishing to '
 						+ options.distBranch);
-			} else if (options.distBranch) {
+			} else if (!options.distBranch) {
+				grunt.verbose.writeln('Skipping publishing distribution');
+				que.add(pkgUpdate);
+			} else {
 				grunt.log.writeln('Publishing to ' + options.distBranch);
 				if (distAsset) {
 					// remove uploaded asset file to prevent conflicts
@@ -655,6 +658,8 @@ module.exports = function(grunt) {
 				pubSrcDir = pth.join(commit.buildDir, options.distDir);
 				pubDistDir = commit.buildDir.replace(commit.reponame,
 						options.distBranch);
+				grunt.log.writeln('Copying publication directories/files from '
+						+ pubSrcDir + ' to ' + pubDistDir);
 				// copy all directories/files over that need to be published
 				// so that they are not removed by the following steps
 				grunt.log.writeln(copyRecursiveSync(pubSrcDir, pubDistDir,
@@ -712,7 +717,8 @@ module.exports = function(grunt) {
 				if (commit.versionPkg(options.pkgJsonReplacer,
 						options.pkgJsonSpace, revert)) {
 					// push package version
-					cmd('git commit -q -m "' + relMsg + '"' + commit.pkgPath);
+					grunt.log.write(cmd('git status'));
+					cmd('git commit -q -m "' + relMsg + '" ' + commit.pkgPath);
 					cmd('git push ' + options.repoName + ' ' + commit.pkgPath);
 				}
 			}
