@@ -1361,7 +1361,7 @@ module.exports = function(grunt) {
 				wrkd.push(this);
 				if (orb) {
 					if (typeof options.rollbackStrategy === 'string'
-							&& options.rollbackStrategy.test(/stack/i)) {
+							&& /stack/i.test(options.rollbackStrategy)) {
 						wrkrb.unshift(this);
 					} else {
 						wrkrb.push(this);
