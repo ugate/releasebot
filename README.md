@@ -1,7 +1,7 @@
 # releasebot
 [![NPM version](https://badge.fury.io/js/releasebot.png)](http://badge.fury.io/js/releasebot) [![Build Status](https://travis-ci.org/ugate/releasebot.png?branch=master)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
 
-**releasebot** is a [Grunt](http://gruntjs.com/) task for triggering a release when a commit message matches a predefined regular expression or when manually invoked. The task performs the following actions:
+**releasebot** is a [Grunt](http://gruntjs.com/) task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>. The task performs the following actions:
 
 1. [Capture](https://www.kernel.org/pub/software/scm/git/docs/git-rev-parse.html) [commit](https://www.kernel.org/pub/software/scm/git/docs/git-show.html) [details](https://www.kernel.org/pub/software/scm/git/docs/git-remote.html) [from Git](https://www.kernel.org/pub/software/scm/git/docs/git-describe.html) (on task registration)
 2. Check for <a href="#default-task-specific-options">release trigger</a> within commit message
@@ -24,7 +24,7 @@
 
 ## Usage Examples
 
-Each commit message will be checked for the presense of a version to release. The default expression checks for `release v` followed by a <a href="http://semver.org/">semantic compliant version</a> or a `+` or `*` within the appropriate version *slot* indicating the version should be either *incremented* by one or that the value should be replaces by the *last/current* released version (respectively).
+Each commit message will be checked for the presence of a version to release. The default expression checks for `release v` followed by a <a href="http://semver.org/">semantic compliant version</a> or a `+` or `*` within the appropriate version *slot* indicating the version should be either *incremented* by one or that the value should be replaces by the *last/current* released version (respectively).
 
 The commit message below will result in a release of version `1.0.0` (surrounding text will be ignored):
 ```shell
@@ -92,16 +92,18 @@ git:
 
 ## Options
 
+There are two types of releasebot options. The first type of options are <a href="#default-global-plug-in-environment-options">globally defined</a> and are applied when the releasebot task is registered, but prior to any releasebot task executions. This allows for accessibility of extracted <a href="#commit">commit</a> details to other tasks that are ran before releasebot. It also provides a shared data pool and prevents duplicating the extraction process and prevents discrepancies between multiple relesebot task executions (e.g. in case releasebot needs to be re-ran due to a prior release failure). The second type are the <a href="#default-task-specific-options">typical grunt options</a> that are specific to the task itself.
+
+###Default global plug-in environment options:
+
+Global environment options are set once the releasebot task is registered and are accessible via `grunt.config.get('releasebot.env')`.
+
 The following **global plug-in environment options** can be set using one of the following techniques (in order of presidence):
 
 1. Via `grunt.config.set('releasebot.env', options)` before the releasebot task is registered
 2. Passed in from the command line `grunt releasebot --releasebot.theoptionname=THE_OPTION_VALUE`
 3. Automatically from the <a href="http://docs.travis-ci.com/user/ci-environment/#Environment-variables">Travis-CI environmental variables</a>
 4. Default option value or extracted from Git
-
-###Default global plug-in environment options:
-
-Global environment options are set once the releasebot task is registered and are accessible via `grunt.config.get('releasebot.env')`
 
 ```JavaScript
 {

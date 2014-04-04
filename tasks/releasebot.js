@@ -708,7 +708,6 @@ module.exports = function(grunt) {
 		 * and commits/pushes it to remote
 		 */
 		function pkgUpdate() {
-			cmd('git checkout -q ' + (commit.hash || commit.branch));
 			upkg();
 			que.add(publishNpm, function() {
 				upkg(true);
@@ -717,9 +716,17 @@ module.exports = function(grunt) {
 				if (commit.versionPkg(options.pkgJsonReplacer,
 						options.pkgJsonSpace, revert)) {
 					// push package version
-					grunt.log.write(cmd('git status'));
-					cmd('git commit -q -m "' + relMsg + '" ' + commit.pkgPath);
-					cmd('git push ' + options.repoName + ' ' + commit.pkgPath);
+					cmd('git checkout -q ' + commit.branch + ' -- '
+							+ commit.pkgPath);
+					try {
+						grunt.log.write(cmd('git status'));
+						cmd('git commit -q -m "' + relMsg + '" '
+								+ commit.pkgPath);
+						cmd('git push ' + options.repoName + ' '
+								+ commit.pkgPath);
+					} finally {
+						cmd('git checkout -q ' + (commit.hash || commit.branch));
+					}
 				}
 			}
 		}
