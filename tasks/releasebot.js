@@ -673,10 +673,10 @@ module.exports = function(grunt) {
 						throw e;
 					}
 				}
-				// if (pubHash) {
-				cmd('git checkout -q --track ' + options.repoName + '/'
-						+ options.distBranch);
-				// }
+				if (pubHash) {
+					cmd('git checkout -q --track ' + options.repoName + '/'
+							+ options.distBranch);
+				}
 				cmd('git rm -rfq .');
 				cmd('git clean -dfq .');
 				grunt.log.writeln('Copying publication directories/files from '
