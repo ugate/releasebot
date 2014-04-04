@@ -1295,7 +1295,7 @@ module.exports = function(grunt) {
 			}
 		};
 		this.addRollback = function(rb) {
-			if (rb === 'function') {
+			if (typeof rb === 'function') {
 				if (typeof options.rollbackStrategy === 'string'
 						&& /stack/i.test(options.rollbackStrategy)) {
 					wrkrb.unshift(new Rollback(rb));
