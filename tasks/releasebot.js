@@ -1298,9 +1298,9 @@ module.exports = function(grunt) {
 			if (rb === 'function') {
 				if (typeof options.rollbackStrategy === 'string'
 						&& /stack/i.test(options.rollbackStrategy)) {
-					wrkrb.unshift(new Rollback(arguments[i]));
+					wrkrb.unshift(new Rollback(rb));
 				} else {
-					wrkrb.push(new Rollback(arguments[i]));
+					wrkrb.push(new Rollback(rb));
 				}
 			}
 		};
@@ -1403,7 +1403,7 @@ module.exports = function(grunt) {
 				return this.rtn;
 			};
 		}
-		function Rollback(rb, args) {
+		function Rollback(rb) {
 			var n = regexFuncName.exec(rb.toString());
 			this.name = n && n[0] ? n[0] : '';
 			this.run = function() {
