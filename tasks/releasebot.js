@@ -481,7 +481,7 @@ module.exports = function(grunt) {
 						: 'N/A') + ')');
 		var useGitHub = options.gitHostname.toLowerCase() === gitHubHostname;
 		var relMsg = commit.message + ' ' + commit.skipTaskGen('ci');
-		var chgLogRtn = '', distAsset = '', pubFilesCopied = false, pubSrcDir = '', pubDistDir = '', pubHash = '';
+		var chgLogRtn = '', distAsset = '', pubSrcDir = '', pubDistDir = '', pubHash = '';
 
 		// Queue/Start work
 		var que = new Queue(options).add(changeLog).add(authorsLog).add(
@@ -509,7 +509,7 @@ module.exports = function(grunt) {
 				que.error(e);
 			}
 			var msg = que.errorCount() > 0 ? 'Processed ' + rbcnt
-					+ ' rollback actions' : 'Released ' + commit.versionTag;
+					+ ' rollback action(s)' : 'Released ' + commit.versionTag;
 			grunt.log.writeln(msg);
 			if (doneAsync) {
 				doneAsync(que.errorCount() <= 0);
@@ -626,14 +626,14 @@ module.exports = function(grunt) {
 		function gitHubRelease() {
 			grunt.log.writeln('Releasing ' + commit.versionTag + ' via '
 					+ options.gitHostname);
+			// GitHub Release API will not remove the tag when removing a
+			// release
 			releaseAndUploadAsset({
 				path : distAsset,
 				name : distAsset
 			}, 'application/zip', commit, chgLogRtn || commit.message, options,
-					que, function() {
-						// GitHub Release API will not remove the tag when
-						// removing a release (thus tag rollback)
-						que.add(publish, rollbackTag);
+					que, rollbackTag, function() {
+						que.add(publish);
 					});
 		}
 
@@ -659,7 +659,6 @@ module.exports = function(grunt) {
 				grunt.log.writeln(copyRecursiveSync(pubSrcDir, pubDistDir,
 						options.distExcludeDirRegExp,
 						options.distExcludeFileRegExp).toString());
-				pubFilesCopied = true;
 				// cmd('cp -r ' + pth.join(pubSrcDir, '*') + ' ' + pubDistDir);
 				try {
 					cmd('git fetch ' + options.repoName + ' '
@@ -1005,12 +1004,14 @@ module.exports = function(grunt) {
 	 *            the task options
 	 * @param que
 	 *            the {Queue} instance
+	 * @param fcb
+	 *            the call back function that will be called when the release
+	 *            fails
 	 * @param cb
-	 *            the call back function (passed parameters: the current task,
-	 *            JSON response, error)
+	 *            the call back function called when completed successfully
 	 */
 	function releaseAndUploadAsset(asset, contentType, commit, desc, options,
-			que, cb) {
+			que, fcb, cb) {
 		var authToken = typeof commit.gitToken === 'function' ? commit
 				.gitToken() : commit.gitToken;
 		if (!authToken) {
@@ -1076,7 +1077,7 @@ module.exports = function(grunt) {
 				res.on('end', function() {
 					if (gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0) {
 						grunt.verbose.writeln('Received post release data');
-						que.add(postReleaseEnd).resume();
+						que.add(postReleaseEnd, fcb).resume();
 					} else {
 						que.error(
 								'Release post failed with HTTP status: '
