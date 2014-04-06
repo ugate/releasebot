@@ -485,8 +485,8 @@ module.exports = function(grunt) {
 		var chgLogRtn = '', distAsset = '', pubSrcDir = '', pubDistDir = '', pubHash = '';
 
 		// Queue/Start work
-		var que = new Queue(options).add(pkgUpdate).add(changeLog).add(
-				authorsLog).add(remoteSetup);
+		var que = new Queue(options).add(remoteSetup).add(pkgUpdate).add(
+				changeLog).add(authorsLog);
 		que.add(addAndCommitDistDir).add(genDistAsset);
 		que.add(function() {
 			if (useGitHub) {
