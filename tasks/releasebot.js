@@ -1394,7 +1394,8 @@ module.exports = function(grunt) {
 		function rollbacks() {
 			rbpausd = false;
 			if (que.errorCount() > 0) {
-				grunt.verbose.writeln('Processing ' + (wrkrb.length - rbi + 1)
+				grunt.log.writeln('Processing '
+						+ (wrkrb.length - rbcnt - rbi - 1 || 0)
 						+ ' rollback action(s)');
 				for (rbi++; rbi < wrkrb.length; rbi++) {
 					grunt.verbose
