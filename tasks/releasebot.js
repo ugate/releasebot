@@ -298,7 +298,7 @@ module.exports = function(grunt) {
 	 */
 	function clone(c, incFuncs, excludes) {
 		var cl = {}, cp, t;
-		for (var keys = Object.keys(c), l = 0; l < keys.length; l++) {
+		for ( var keys = Object.keys(c), l = 0; l < keys.length; l++) {
 			cp = c[keys[l]];
 			if (excludes && excludes.indexOf(cp) >= 0) {
 				continue;
@@ -485,8 +485,8 @@ module.exports = function(grunt) {
 		var chgLogRtn = '', distAsset = '', pubSrcDir = '', pubDistDir = '', pubHash = '';
 
 		// Queue/Start work
-		var que = new Queue(options).add(changeLog).add(authorsLog).add(
-				remoteSetup);
+		var que = new Queue(options).add(pkgUpdate).add(changeLog).add(
+				authorsLog).add(remoteSetup);
 		que.add(addAndCommitDistDir).add(genDistAsset);
 		que.add(function() {
 			if (useGitHub) {
@@ -649,7 +649,6 @@ module.exports = function(grunt) {
 						+ options.distBranch);
 			} else if (!options.distBranch) {
 				grunt.verbose.writeln('Skipping publishing distribution');
-				que.add(pkgUpdate);
 			} else {
 				grunt.log.writeln('Publishing to ' + options.distBranch);
 				if (distAsset) {
@@ -701,7 +700,6 @@ module.exports = function(grunt) {
 						+ options.distBranch);
 
 				que.addRollback(rollbackPublish);
-				que.add(pkgUpdate);
 			}
 		}
 
@@ -866,7 +864,7 @@ module.exports = function(grunt) {
 				if (options.distAssetUpdateFiles
 						&& typeof options.distAssetUpdateFunction === 'function') {
 					var paths = options.distAssetUpdateFiles;
-					for (var i = 0; i < paths.length; i++) {
+					for ( var i = 0; i < paths.length; i++) {
 						var p = pth.join(path, paths[i]), au = '';
 						var content = grunt.file.read(p, {
 							encoding : grunt.file.defaultEncoding
@@ -1293,7 +1291,7 @@ module.exports = function(grunt) {
 			// maintained regardless of strategy
 			var args = isStack() ? Array.prototype.reverse.call(arguments)
 					: arguments;
-			for (var i = 0; i < args.length; i++) {
+			for ( var i = 0; i < args.length; i++) {
 				que.addRollback(args[i]);
 			}
 		};
@@ -1374,7 +1372,7 @@ module.exports = function(grunt) {
 		function rollbacks() {
 			rbpausd = false;
 			if (que.errorCount() > 0) {
-				grunt.verbose.writeln('Processing ' + wrkrb.length
+				grunt.verbose.writeln('Processing ' + (wrkrb.length - rbi + 1)
 						+ ' rollback action(s)');
 				for (rbi++; rbi < wrkrb.length; rbi++) {
 					grunt.verbose
@@ -1433,7 +1431,7 @@ module.exports = function(grunt) {
 		 * Logs one or more errors (can be {Error}, {Object} or {String})
 		 */
 		this.log = function() {
-			for (var i = 0; i < arguments.length; i++) {
+			for ( var i = 0; i < arguments.length; i++) {
 				if (util.isArray(arguments[i])) {
 					this.log(arguments[i]);
 				} else {
