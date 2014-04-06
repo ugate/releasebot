@@ -540,7 +540,6 @@ module.exports = function(grunt) {
 			que.addRollback(function() {
 				upkg(true);
 			});
-			que.add(publishNpm);
 			function upkg(revert) {
 				// cmd('git checkout -q ' + commit.branch);
 				try {
@@ -728,6 +727,7 @@ module.exports = function(grunt) {
 						+ options.distBranch);
 
 				que.addRollback(rollbackPublish);
+				que.add(publishNpm);
 			}
 		}
 
