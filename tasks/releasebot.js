@@ -520,6 +520,34 @@ module.exports = function(grunt) {
 		});
 
 		/**
+		 * Updates the package file version using the current {Commit} version
+		 * and commits/pushes it to remote
+		 */
+		function pkgUpdate() {
+			upkg();
+			que.addRollback(function() {
+				upkg(true);
+			});
+			que.add(publishNpm);
+			function upkg(revert) {
+				//cmd('git checkout -q ' + commit.branch);
+				try {
+					if (commit.versionPkg(options.pkgJsonReplacer,
+							options.pkgJsonSpace, revert)) {
+						// push package version
+						grunt.log.write(cmd('git status'));
+						cmd('git commit -q -m "' + relMsg + '" '
+								+ commit.pkgPath);
+						cmd('git push ' + options.repoName + ' '
+								+ commit.pkgPath);
+					}
+				} finally {
+					cmd('git checkout -q ' + (commit.hash || commit.branch));
+				}
+			}
+		}
+
+		/**
 		 * Generates/Writes a change log for the current release using all
 		 * messages since last tag/release
 		 */
@@ -700,34 +728,6 @@ module.exports = function(grunt) {
 						+ options.distBranch);
 
 				que.addRollback(rollbackPublish);
-			}
-		}
-
-		/**
-		 * Updates the package file version using the current {Commit} version
-		 * and commits/pushes it to remote
-		 */
-		function pkgUpdate() {
-			upkg();
-			que.addRollback(function() {
-				upkg(true);
-			});
-			que.add(publishNpm);
-			function upkg(revert) {
-				cmd('git checkout -q ' + commit.branch);
-				try {
-					if (commit.versionPkg(options.pkgJsonReplacer,
-							options.pkgJsonSpace, revert)) {
-						// push package version
-						grunt.log.write(cmd('git status'));
-						cmd('git commit -q -m "' + relMsg + '" '
-								+ commit.pkgPath);
-						cmd('git push ' + options.repoName + ' '
-								+ commit.pkgPath);
-					}
-				} finally {
-					cmd('git checkout -q ' + (commit.hash || commit.branch));
-				}
 			}
 		}
 
