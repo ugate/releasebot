@@ -101,6 +101,7 @@ module.exports = function(grunt) {
 			distAssetUpdateFunction : null,
 			distAssetUpdateFiles : [],
 			rollbackStrategy : 'queue',
+			releaseSkipTasks : [ 'ci' ],
 			npmTarget : '',
 			npmTag : ''
 		});
@@ -369,8 +370,16 @@ module.exports = function(grunt) {
 		this.releaseAssetUrl = '';
 		this.releaseAsset = null;
 		this.skipTasks = [];
-		this.skipTaskGen = function(task) {
-			return task ? '[skip ' + task + ']' : task;
+		this.skipTaskGen = function() {
+			var s = '';
+			for ( var i = 0; i < arguments.length; i++) {
+				if (Array.isArray(arguments[i])) {
+					s += self.skipTaskGen.apply(self, arguments[i]);
+				} else if (arguments[i]) {
+					s += '[skip ' + arguments[i] + ']';
+				}
+			}
+			return s;
 		};
 		this.skipTaskCheck = function(task) {
 			return self.skipTasks && self.skipTasks.indexOf(task) >= 0;
@@ -411,7 +420,7 @@ module.exports = function(grunt) {
 				+ (this.versionPrereleaseType ? vv(12, this.versionPrerelease)
 						: '') : rv.length > 3 ? rv[3] : '';
 		this.versionTag = rv.length > 3 ? rv[2] + this.version : '';
-		this.versionPkg = function(replacer, space, revert) {
+		this.versionPkg = function(replacer, space, revert, beforeWrite) {
 			if (self.pkgPath) {
 				var pkg = grunt.file.readJSON(self.pkgPath);
 				var u = pkg && !revert && pkg.version !== self.version
@@ -421,12 +430,14 @@ module.exports = function(grunt) {
 						&& self.lastCommit.version;
 				if (u || r) {
 					pkg.version = r ? self.lastCommit.version : self.version;
+					if (typeof beforeWrite === 'function') {
+						beforeWrite(pkg.version);
+					}
 					grunt.file.write(self.pkgPath, JSON.stringify(pkg,
 							replacer, space));
-					return true;
+					return pkg.version;
 				}
 			}
-			return false;
 		};
 		function verMatchVal(i) {
 			var v = self.versionMatch[i];
@@ -481,7 +492,8 @@ module.exports = function(grunt) {
 				+ (commit.lastCommit.versionTag ? commit.lastCommit.versionTag
 						: 'N/A') + ')');
 		var useGitHub = options.gitHostname.toLowerCase() === gitHubHostname;
-		var relMsg = commit.message + ' ' + commit.skipTaskGen('ci');
+		var relMsg = commit.message + ' '
+				+ commit.skipTaskGen(options.releaseSkipTasks);
 		var chgLogRtn = '', distAsset = '', pubSrcDir = '', pubDistDir = '', pubHash = '';
 
 		// Queue/Start work
@@ -541,12 +553,22 @@ module.exports = function(grunt) {
 				upkg(true);
 			});
 			function upkg(revert) {
-				// cmd('git checkout -q ' + commit.branch);
 				try {
+					var v = '';
 					if (commit.versionPkg(options.pkgJsonReplacer,
-							options.pkgJsonSpace, revert)) {
+							options.pkgJsonSpace, revert, function(ver) {
+								v = ver;
+								grunt.log.writeln((revert ? 'Reverting'
+										: 'Updating')
+										+ ' version to '
+										+ v
+										+ ' in '
+										+ commit.pkgPath);
+
+							})) {
 						// push package version
-						// grunt.log.write(cmd('git status'));
+						// TODO : check to make sure there isn't any commits
+						// ahead of this one
 						cmd('git commit -q -m "' + relMsg + '" '
 								+ commit.pkgPath);
 						cmd('git push ' + options.repoName + ' '

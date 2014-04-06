@@ -247,6 +247,8 @@ Once the releasebot task has been registered commit datails are captured and mad
   distAssetUpdateFiles : [],
   // The strategy/order in which roll back actions will be executed ("stack" or "queue")  
   rollbackStrategy : 'queue',
+  // Tasks names that will be skipped when releasebot performs commits for package version bumps, publish branch changes, etc. Default: http://docs.travis-ci.com/user/how-to-skip-a-build/
+  releaseSkipTasks : [ 'ci' ],
   // The npm publish target (null to skip npm publish)
   npmTarget : '',
   // The npm publish tag
