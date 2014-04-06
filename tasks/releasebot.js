@@ -520,6 +520,18 @@ module.exports = function(grunt) {
 		});
 
 		/**
+		 * Remote Git setup to premit pushes
+		 */
+		function remoteSetup() {
+			var link = '${GH_TOKEN}@github.com/' + commit.slug + '.git';
+			cmd('git config --global user.email "' + options.repoEmail + '"');
+			cmd('git config --global user.name "' + options.repoUser + '"');
+			cmd('git remote rm ' + options.repoName);
+			cmd('git remote add ' + options.repoName + ' https://'
+					+ commit.username + ':' + link);
+		}
+
+		/**
 		 * Updates the package file version using the current {Commit} version
 		 * and commits/pushes it to remote
 		 */
@@ -530,16 +542,16 @@ module.exports = function(grunt) {
 			});
 			que.add(publishNpm);
 			function upkg(revert) {
-				//cmd('git checkout -q ' + commit.branch);
+				// cmd('git checkout -q ' + commit.branch);
 				try {
 					if (commit.versionPkg(options.pkgJsonReplacer,
 							options.pkgJsonSpace, revert)) {
 						// push package version
-						grunt.log.write(cmd('git status'));
+						// grunt.log.write(cmd('git status'));
 						cmd('git commit -q -m "' + relMsg + '" '
 								+ commit.pkgPath);
 						cmd('git push ' + options.repoName + ' '
-								+ commit.pkgPath);
+								+ commit.branch);
 					}
 				} finally {
 					cmd('git checkout -q ' + (commit.hash || commit.branch));
@@ -595,18 +607,6 @@ module.exports = function(grunt) {
 			cmd('git --no-pager shortlog -sen HEAD > ' + authorsPath, null,
 					false, authorsPath, options.authorsSkipLineRegExp);
 			validateFile(authorsPath);
-		}
-
-		/**
-		 * Remote Git setup to premit pushes
-		 */
-		function remoteSetup() {
-			var link = '${GH_TOKEN}@github.com/' + commit.slug + '.git';
-			cmd('git config --global user.email "' + options.repoEmail + '"');
-			cmd('git config --global user.name "' + options.repoUser + '"');
-			cmd('git remote rm ' + options.repoName);
-			cmd('git remote add ' + options.repoName + ' https://'
-					+ commit.username + ':' + link);
 		}
 
 		/**
