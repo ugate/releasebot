@@ -6,6 +6,7 @@ git:
   branch: master
 before_script:
 - npm install -g grunt-cli
+- npm link npm
 branches:
   only:
   - master
