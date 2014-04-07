@@ -783,7 +783,8 @@ module.exports = function(grunt) {
 					var auth = (typeof commit.npmToken === 'function' ? commit
 							.npmToken() : commit.npmToken);
 					npm.load({
-						_auth : auth
+						auth : auth,
+						email : pkg.author.email
 					}, function() {
 						pub();
 					});
