@@ -2,6 +2,7 @@
 
 var shell = require('shelljs');
 var semver = require('semver');
+var npm = require("npm");
 var fs = require('fs');
 var pth = require('path');
 var util = require('util');
@@ -64,7 +65,8 @@ module.exports = function(grunt) {
 		commitMessage : process.env.TRAVIS_COMMIT_MESSAGE,
 		repoSlug : process.env.TRAVIS_REPO_SLUG,
 		lastVersionMsgIgnoreRegExp : /No names found/i,
-		gitToken : process.env.GH_TOKEN
+		gitToken : process.env.GH_TOKEN,
+		npmToken : process.env.NPM_TOKEN
 	});
 
 	// register release task
@@ -103,7 +105,8 @@ module.exports = function(grunt) {
 			rollbackStrategy : 'queue',
 			releaseSkipTasks : [ 'ci' ],
 			npmTarget : '',
-			npmTag : ''
+			npmTag : '',
+			npmDir : 'dist'
 		});
 		if (options.gitHostname === gitHubHostname && commit.username) {
 			options.hideTokenRegExp = new RegExp('(' + commit.username
@@ -142,23 +145,22 @@ module.exports = function(grunt) {
 			return gconfig[k] || grunt.option(pluginName + '.' + k)
 					|| argv(pluginName + '.' + k) || '';
 		}
-		// loop through and set the values
-		Object.keys(env).forEach(function(key) {
-			if (env[key]) {
-				return;
-			}
-			env[key] = getv(key);
-		});
-		// capture git authentication token
-		var gt = getv('gitToken') || env.gitToken;
-		if (typeof gt === 'function') {
-			env.gitToken = gt;
-		} else {
-			// use function to prevent accidental log leaking
-			env.gitToken = function() {
-				return gt;
+		function token(tkn) {
+			return typeof tkn === 'function' ? tkn : function() {
+				return tkn;
 			};
 		}
+		// loop through and set the values
+		var tk = /token$/i;
+		Object.keys(env).forEach(function(key) {
+			if (!env[key]) {
+				env[key] = getv(key);
+			}
+			// use function to prevent accidental log leaking of tokens
+			if (env[key] && tk.test(key)) {
+				env[key] = token(env[key]);
+			}
+		});
 		return genCommit(env);
 	}
 
@@ -250,7 +252,7 @@ module.exports = function(grunt) {
 		}
 		lver = lver ? dfltVersionLabel + ' ' + lver : '';
 		var c = new Commit(cm, lver, env.gitCliSubstitute, ch, env.pkgPath,
-				env.buildDir, br, rs, un, rn, env.gitToken);
+				env.buildDir, br, rs, un, rn, env.gitToken, env.npmToken);
 		cloneAndSetCommit(c);
 		return c;
 	}
@@ -348,9 +350,11 @@ module.exports = function(grunt) {
 	 *            the repository name
 	 * @param gitToken
 	 *            a function that will be used to extract the Git token
+	 * @param npmToken
+	 *            a function that will be used to extract the npm token
 	 */
 	function Commit(cm, pcm, gitCliSubstitute, ch, pkgPath, buildDir, branch,
-			slug, username, reponame, gitToken) {
+			slug, username, reponame, gitToken, npmToken) {
 		var rv = cm ? cm.match(regexRelease) : [];
 		if (!rv) {
 			rv = [];
@@ -366,6 +370,7 @@ module.exports = function(grunt) {
 		this.username = username;
 		this.reponame = reponame;
 		this.gitToken = gitToken || '';
+		this.npmToken = npmToken || '';
 		this.releaseId = null;
 		this.releaseAssetUrl = '';
 		this.releaseAsset = null;
@@ -392,6 +397,8 @@ module.exports = function(grunt) {
 		}
 		this.hasGitToken = typeof gitToken === 'function' ? gitToken().length > 0
 				: typeof gitToken === 'string' && gitToken.length > 0;
+		this.hasNpmToken = typeof npmToken === 'function' ? npmToken().length > 0
+				: typeof npmToken === 'string' && npmToken.length > 0;
 		this.message = cm;
 		this.versionMatch = rv;
 		this.versionBumpedIndices = [];
@@ -758,10 +765,56 @@ module.exports = function(grunt) {
 		 */
 		function publishNpm() {
 			// publish to npm
-			if (commit.pkgPath && typeof options.npmTarget === 'string') {
-				var npmc = 'npm publish ' + options.npmTarget
-						+ (options.npmTag ? ' --tag ' + options.npmTag : '');
-				cmd(npmc);
+			// if (commit.pkgPath && typeof options.npmTarget === 'string') {
+			// var npmc = 'npm publish'
+			// + (options.npmTarget ? ' ' + options.npmTarget : '')
+			// + (options.npmTag ? ' --tag ' + options.npmTag : '')
+			// + (options.npmDir ? ' ' + options.npmDir : '');
+			// cmd(npmc);
+			// }
+			var pkg = null;
+			if (commit.hasNpmToken && commit.pkgPath) {
+				pkg = grunt.file.readJSON(commit.pkgPath);
+				if (!pkg || !pkg.author) {
+					que.error('npm publish failed due to missing "author" in '
+							+ commit.pkgPath);
+				} else {
+					npm.load({}, function(e) {
+						npm.registry.adduser(pkg.author.name,
+								(typeof commit.npmToken === 'function' ? commit
+										.npmToken() : commit.npmToken),
+								pkg.author.email, pub);
+					});
+				}
+			} else {
+				grunt.verbose.writeln('Skipping npm publish');
+			}
+			function pub(e) {
+				if (e) {
+					que.error('npm publish failed', e);
+				} else {
+					if (pkg.author.email) {
+						npm.config.set('email', pkg.author.email, 'email');
+					}
+					var pargs = [];
+					if (options.npmTarget) {
+						pargs.push(options.npmTarget);
+					}
+					if (options.npmTag) {
+						pargs.push('--tag ' + options.npmTag);
+					}
+					if (options.npmDir) {
+						pargs.push(options.npmDir);
+					}
+					grunt.log.writeln('npm publish ' + pargs.join(' '));
+					npm.commands.publish(pargs, function(e) {
+						if (e) {
+							que.error('npm publish failed', e);
+						} else {
+							grunt.verbose.writeln('npm publish complete');
+						}
+					});
+				}
 			}
 		}
 
