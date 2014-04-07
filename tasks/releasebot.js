@@ -779,6 +779,7 @@ module.exports = function(grunt) {
 					que.error('npm publish failed due to missing "author" in '
 							+ commit.pkgPath);
 				} else {
+					que.pause();
 					npm.load({}, function() {
 						npm.registry.adduser(pkg.author.name,
 								(typeof commit.npmToken === 'function' ? commit
@@ -791,7 +792,7 @@ module.exports = function(grunt) {
 			}
 			function pub(e) {
 				if (e) {
-					que.error('npm publish failed', e);
+					que.error('npm publish failed', e).resume();
 				} else {
 					if (pkg.author.email) {
 						npm.config.set('email', pkg.author.email, 'email');
@@ -809,9 +810,10 @@ module.exports = function(grunt) {
 					grunt.log.writeln('npm publish ' + pargs.join(' '));
 					npm.commands.publish(pargs, function(e) {
 						if (e) {
-							que.error('npm publish failed', e);
+							que.error('npm publish failed', e).resume();
 						} else {
 							grunt.verbose.writeln('npm publish complete');
+							que.resume();
 						}
 					});
 				}
@@ -1411,6 +1413,7 @@ module.exports = function(grunt) {
 			return (i || wi) < wrkq.length - 1;
 		};
 		this.pause = function() {
+			// TODO : add settimeout for queue work pausing
 			pausd = true;
 			return que;
 		};
@@ -1431,6 +1434,7 @@ module.exports = function(grunt) {
 			return es.count();
 		};
 		this.pauseRollback = function() {
+			// TODO : add settimeout for queue rollback pausing
 			rbpausd = true;
 			return que;
 		};
