@@ -780,11 +780,12 @@ module.exports = function(grunt) {
 							+ commit.pkgPath);
 				} else {
 					que.pause();
-					npm.load({}, function() {
-						npm.registry.adduser(pkg.author.name,
-								(typeof commit.npmToken === 'function' ? commit
-										.npmToken() : commit.npmToken),
-								pkg.author.email, pub);
+					var auth = (typeof commit.npmToken === 'function' ? commit
+							.npmToken() : commit.npmToken);
+					npm.load({
+						_auth : auth
+					}, function() {
+						pub();
 					});
 				}
 			} else {
@@ -792,7 +793,8 @@ module.exports = function(grunt) {
 			}
 			function pub(e) {
 				if (e) {
-					que.error('npm publish failed', e).resume();
+					que.error('npm publish failed to be authenticated', e)
+							.resume();
 				} else {
 					if (pkg.author.email) {
 						npm.config.set('email', pkg.author.email, 'email');
@@ -990,6 +992,10 @@ module.exports = function(grunt) {
 			} else if (!commit.hasGitToken) {
 				throw grunt.util.error('Failed to release ' + commit.version
 						+ ' No Git token found');
+			} else if (!semver.valid(commit.version)) {
+				throw grunt.util.error(commit.version
+						+ ' must be higher than the last release version '
+						+ commit.lastCommit.version);
 			} else if (commit.lastCommit.versionTag
 					&& !semver.gt(commit.version, commit.lastCommit.version)) {
 				throw grunt.util.error(commit.version
@@ -1442,7 +1448,8 @@ module.exports = function(grunt) {
 			if (!rbpausd) {
 				return 0;
 			}
-			grunt.verbose.writeln('Resuming rollbacks');
+			grunt.verbose.writeln('Resuming ' + (wrkrb.length - rbcnt)
+					+ ' rollbacks');
 			return rollbacks();
 		};
 		this.hasQueuedRollbacks = function() {
