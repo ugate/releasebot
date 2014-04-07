@@ -779,7 +779,7 @@ module.exports = function(grunt) {
 					que.error('npm publish failed due to missing "author" in '
 							+ commit.pkgPath);
 				} else {
-					npm.load({}, function(e) {
+					npm.load({}, function() {
 						npm.registry.adduser(pkg.author.name,
 								(typeof commit.npmToken === 'function' ? commit
 										.npmToken() : commit.npmToken),
