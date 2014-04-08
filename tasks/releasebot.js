@@ -775,19 +775,21 @@ module.exports = function(grunt) {
 				} else {
 					auth = (typeof commit.npmToken === 'function' ? commit
 							.npmToken() : commit.npmToken);
-					auth = auth ? (auth = new Buffer(auth, 'base64')) ? auth
-							.split(':') : auth : auth;
+					auth = auth ? (auth = new Buffer(auth, 'base64').toString()) ? auth
+							.split(':')
+							: auth
+							: auth;
 					if (auth.length !== 2) {
 						que.error('npm NPM_TOKEN is missing or invalid');
 					} else {
 						que.pause();
-						npm.load({}, load);
+						npm.load({}, adduser);
 					}
 				}
 			} else {
 				grunt.verbose.writeln('Skipping npm publish');
 			}
-			function load(e) {
+			function adduser(e) {
 				if (e) {
 					que.error('npm load failed', e).resume();
 				} else {
