@@ -769,9 +769,10 @@ module.exports = function(grunt) {
 			var pkg = null, auth = [];
 			if (commit.hasNpmToken && commit.pkgPath) {
 				pkg = grunt.file.readJSON(commit.pkgPath);
-				if (!pkg || !pkg.author) {
-					que.error('npm publish failed due to missing "author" in '
-							+ commit.pkgPath);
+				if (!pkg || !pkg.author || !pkg.author.email) {
+					que
+							.error('npm publish failed due to missing author.email in '
+									+ commit.pkgPath);
 				} else {
 					auth = (typeof commit.npmToken === 'function' ? commit
 							.npmToken() : commit.npmToken);
@@ -793,8 +794,8 @@ module.exports = function(grunt) {
 				if (e) {
 					que.error('npm load failed', e).resume();
 				} else {
-					// pkg.author.email
-					npm.registry.adduser(auth[0], auth[1], null, pub);
+					npm.registry.adduser(auth[0], auth[1], pkg.author.email,
+							pub);
 				}
 			}
 			function pub(e) {
