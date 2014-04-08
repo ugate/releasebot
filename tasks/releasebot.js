@@ -560,29 +560,23 @@ module.exports = function(grunt) {
 				upkg(true);
 			});
 			function upkg(revert) {
-				try {
-					var v = '';
-					if (commit.versionPkg(options.pkgJsonReplacer,
-							options.pkgJsonSpace, revert, function(ver) {
-								v = ver;
-								grunt.log.writeln((revert ? 'Reverting'
-										: 'Updating')
-										+ ' version to '
-										+ v
-										+ ' in '
-										+ commit.pkgPath);
+				var v = '';
+				if (commit.versionPkg(options.pkgJsonReplacer,
+						options.pkgJsonSpace, revert, function(ver) {
+							v = ver;
+							grunt.log.writeln((revert ? 'Reverting'
+									: 'Updating')
+									+ ' version to '
+									+ v
+									+ ' in '
+									+ commit.pkgPath);
 
-							})) {
-						// push package version
-						// TODO : check to make sure there isn't any commits
-						// ahead of this one
-						cmd('git commit -q -m "' + relMsg + '" '
-								+ commit.pkgPath);
-						cmd('git push ' + options.repoName + ' '
-								+ commit.branch);
-					}
-				} finally {
-					cmd('git checkout -q ' + (commit.hash || commit.branch));
+						})) {
+					// push package version
+					// TODO : check to make sure there isn't any commits
+					// ahead of this one
+					cmd('git commit -q -m "' + relMsg + '" ' + commit.pkgPath);
+					cmd('git push ' + options.repoName + ' ' + commit.branch);
 				}
 			}
 		}
@@ -772,35 +766,40 @@ module.exports = function(grunt) {
 			// + (options.npmDir ? ' ' + options.npmDir : '');
 			// cmd(npmc);
 			// }
-			var pkg = null;
+			var pkg = null, auth = [];
 			if (commit.hasNpmToken && commit.pkgPath) {
 				pkg = grunt.file.readJSON(commit.pkgPath);
 				if (!pkg || !pkg.author) {
 					que.error('npm publish failed due to missing "author" in '
 							+ commit.pkgPath);
 				} else {
-					que.pause();
-					var auth = (typeof commit.npmToken === 'function' ? commit
+					auth = (typeof commit.npmToken === 'function' ? commit
 							.npmToken() : commit.npmToken);
-					npm.load({
-						user : auth,
-						email : pkg.author.email
-					}, function() {
-						npm.config.set('_token', auth, 'user');
-						pub();
-					});
+					auth = auth ? (auth = new Buffer(auth, 'base64')) ? auth
+							.split(':') : auth : auth;
+					if (auth.length !== 2) {
+						que.error('npm NPM_TOKEN is missing or invalid');
+					} else {
+						que.pause();
+						npm.load({}, load);
+					}
 				}
 			} else {
 				grunt.verbose.writeln('Skipping npm publish');
+			}
+			function load(e) {
+				if (e) {
+					que.error('npm load failed', e).resume();
+				} else {
+					// pkg.author.email
+					npm.registry.adduser(auth[0], auth[1], null, pub);
+				}
 			}
 			function pub(e) {
 				if (e) {
 					que.error('npm publish failed to be authenticated', e)
 							.resume();
 				} else {
-					if (pkg.author.email) {
-						npm.config.set('email', pkg.author.email, 'email');
-					}
 					var pargs = [];
 					if (options.npmTarget) {
 						pargs.push(options.npmTarget);
@@ -1450,8 +1449,6 @@ module.exports = function(grunt) {
 			if (!rbpausd) {
 				return 0;
 			}
-			grunt.verbose.writeln('Resuming ' + (wrkrb.length - rbcnt)
-					+ ' rollbacks');
 			return rollbacks();
 		};
 		this.hasQueuedRollbacks = function() {
