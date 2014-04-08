@@ -794,6 +794,7 @@ module.exports = function(grunt) {
 				if (e) {
 					que.error('npm load failed', e).resume();
 				} else {
+					npm.config.set('email', pkg.author.email, 'user');
 					npm.registry.adduser(auth[0], auth[1], pkg.author.email,
 							pub);
 				}
@@ -811,7 +812,7 @@ module.exports = function(grunt) {
 						pargs.push('--tag ' + options.npmTag);
 					}
 					if (options.npmDir) {
-						pargs.push(options.npmDir);
+						pargs.push(options.npmDir + '/');
 					}
 					grunt.log.writeln('npm publish ' + pargs.join(' '));
 					npm.commands.publish(pargs, function(e) {
