@@ -1447,7 +1447,7 @@ module.exports = function(grunt) {
 		};
 		this.pauseRollback = function() {
 			rbpausd = true;
-			return tko(self.resumeRollback);
+			return tko(que.resumeRollback);
 		};
 		this.resumeRollback = function() {
 			tko();
