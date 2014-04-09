@@ -1365,7 +1365,7 @@ module.exports = function(grunt) {
 	 */
 	function Queue(options) {
 		var wrk = null, wrkq = [], wrkd = [], wrkrb = [], que = this, wi = -1, endc = null;
-		var pausd = false, rbpausd = false, rbi = -1, rbcnt = 0, to = null, es = new Errors(
+		var pausd = false, rbpausd = false, rbi = -1, rbcnt = 0, tm = null, es = new Errors(
 				options);
 		this.add = function(fx, rb) {
 			wrk = new Work(fx, rb, Array.prototype.slice.call(arguments, 2));
@@ -1504,7 +1504,7 @@ module.exports = function(grunt) {
 			var n = fx ? regexFuncName.exec(fx.toString()) : null;
 			return n && n[0] ? n[0] : '';
 		}
-		function tko(cb, nm) {
+		function tko(cb) {
 			if (tm) {
 				clearTimeout(tm);
 			}
