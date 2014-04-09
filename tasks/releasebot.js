@@ -104,6 +104,7 @@ module.exports = function(grunt) {
 			distAssetUpdateFiles : [],
 			rollbackStrategy : 'queue',
 			releaseSkipTasks : [ 'ci' ],
+			asyncTimeout : 60000,
 			npmTarget : '',
 			npmTag : '',
 			npmDir : 'dist'
@@ -1364,7 +1365,7 @@ module.exports = function(grunt) {
 	 */
 	function Queue(options) {
 		var wrk = null, wrkq = [], wrkd = [], wrkrb = [], que = this, wi = -1, endc = null;
-		var pausd = false, rbpausd = false, rbi = -1, rbcnt = 0, es = new Errors(
+		var pausd = false, rbpausd = false, rbi = -1, rbcnt = 0, to = null, es = new Errors(
 				options);
 		this.add = function(fx, rb) {
 			wrk = new Work(fx, rb, Array.prototype.slice.call(arguments, 2));
@@ -1424,11 +1425,11 @@ module.exports = function(grunt) {
 			return (i || wi) < wrkq.length - 1;
 		};
 		this.pause = function() {
-			// TODO : add settimeout for queue work pausing
 			pausd = true;
-			return que;
+			return tko(rollbacks);
 		};
 		this.resume = function() {
+			tko();
 			if (!pausd) {
 				return 0;
 			}
@@ -1445,11 +1446,11 @@ module.exports = function(grunt) {
 			return es.count();
 		};
 		this.pauseRollback = function() {
-			// TODO : add settimeout for queue rollback pausing
 			rbpausd = true;
-			return que;
+			return tko(self.resumeRollback);
 		};
 		this.resumeRollback = function() {
+			tko();
 			if (!rbpausd) {
 				return 0;
 			}
@@ -1494,11 +1495,30 @@ module.exports = function(grunt) {
 			};
 		}
 		function Rollback(rb) {
-			var n = regexFuncName.exec(rb.toString());
-			this.name = n && n[0] ? n[0] : '';
+			this.name = funcName(rb);
 			this.run = function() {
 				return typeof rb === 'function' ? rb.call(que) : false;
 			};
+		}
+		function funcName(fx) {
+			var n = fx ? regexFuncName.exec(fx.toString()) : null;
+			return n && n[0] ? n[0] : '';
+		}
+		function tko(cb, nm) {
+			if (tm) {
+				clearTimeout(tm);
+			}
+			if (typeof cb === 'function') {
+				tm = setTimeout(function() {
+					que.error('Timeout of '
+							+ options.asyncTimeout
+							+ 'ms reached'
+							+ (cb === rollbacks ? ' rolling back changes'
+									: ' for rollback'));
+					cb();
+				}, options.asyncTimeout);
+			}
+			return que;
 		}
 		function isStack() {
 			return typeof options.rollbackStrategy === 'string'
