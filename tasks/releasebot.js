@@ -655,6 +655,12 @@ module.exports = function(grunt) {
 					+ options.distDir);
 			cmd('git archive -o ' + distTarAsset + ' --format=tar.gz HEAD:'
 					+ options.distDir);
+			if (grunt.option('verbose')) {
+				grunt.verbose.writeln(distZipAsset + ' ('
+						+ fs.statSync(distZipAsset).size + ')');
+				grunt.verbose.writeln(distTarAsset + ' ('
+						+ fs.statSync(distTarAsset).size + ')');
+			}
 		}
 
 		/**
@@ -1254,6 +1260,7 @@ module.exports = function(grunt) {
 					+ (asset.name || commit.versionTag));
 			opts.headers['Content-Type'] = contentType;
 			opts.headers['Content-Length'] = assetObj.size();
+			var resError = null;
 			var res2 = null;
 			var req2 = https.request(opts, function(r) {
 				res2 = r;
@@ -1262,21 +1269,14 @@ module.exports = function(grunt) {
 					grunt.verbose.writeln('Receiving upload response');
 				});
 				res2.on('end', function() {
-					if (gitHubSuccessHttpCodes.indexOf(res2.statusCode) >= 0) {
-						grunt.verbose.writeln('Received upload response');
-						que.add(postRleaseAssetEnd).resume();
-					} else {
-						var dstr = util.inspect(data2);
-						que.error(
-								'Asset upload failed with HTTP status: '
-										+ res2.statusCode + ' data: ' + dstr)
-								.add(cb).resume();
-					}
+					grunt.verbose.writeln('Received upload response');
+					que.add(postRleaseAssetEnd).resume();
 				});
 				grunt.log.writeln('Waiting for response');
 			});
 			req2.on('error', function(e) {
-				que.error('Release asset upload failed', e).add(cb).resume();
+				resError = e;
+				que.add(postRleaseAssetEnd).resume();
 			});
 			// stream asset to remote host
 			fs.createReadStream(asset.path, {
@@ -1284,7 +1284,9 @@ module.exports = function(grunt) {
 			}).pipe(req2);
 
 			function postRleaseAssetEnd() {
-				if (gitHubSuccessHttpCodes.indexOf(res2.statusCode) >= 0) {
+				if (resError) {
+					que.error('Release asset upload failed', resError);
+				} else if (gitHubSuccessHttpCodes.indexOf(res2.statusCode) >= 0) {
 					cf = chk(JSON.parse(data2.replace(regexLines, ' ')));
 					if (cf && cf.state !== 'uploaded') {
 						var msg = 'Asset upload failed with state: ' + cf.state
@@ -1314,7 +1316,9 @@ module.exports = function(grunt) {
 						}
 					}
 				} else {
-					que.error('Asset upload failed!', data2);
+					var dstr = util.inspect(data2);
+					que.error('Asset upload failed with HTTP status: '
+							+ res2.statusCode + ' data: ' + dstr);
 				}
 				// check for more assets to upload
 				que.add(assetObj.size(true) <= 0 ? cb : postReleaseAsset);
