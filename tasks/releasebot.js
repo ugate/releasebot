@@ -653,8 +653,7 @@ module.exports = function(grunt) {
 			cmd('git archive -o ' + distZipAsset + ' --format=zip -'
 					+ options.distAssetCompressRatio + ' HEAD:'
 					+ options.distDir);
-			cmd('git archive -o ' + distTarAsset + ' --format=tar -'
-					+ options.distAssetCompressRatio + ' HEAD:'
+			cmd('git archive -o ' + distTarAsset + ' --format=tar.gz HEAD:'
 					+ options.distDir);
 		}
 
