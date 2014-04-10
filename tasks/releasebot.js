@@ -101,6 +101,8 @@ module.exports = function(grunt) {
 			distAssetCompressRatio : 9,
 			distAssetUpdateFunction : null,
 			distAssetUpdateFiles : [],
+			distBranchUpdateFunction : null,
+			distBranchUpdateFiles : [],
 			rollbackStrategy : 'queue',
 			releaseSkipTasks : [ 'ci' ],
 			asyncTimeout : 60000,
@@ -641,6 +643,9 @@ module.exports = function(grunt) {
 		 * Generates distribution archive assets (i.e. zip/tar)
 		 */
 		function genDistAssets() {
+			// give taskateers a chance to update branch file contents
+			updateFiles(options.distAssetUpdateFiles,
+					options.distAssetUpdateFunction, commit.buildDir);
 			// Create distribution assets
 			distZipAsset = commit.reponame + '-' + commit.version + '-dist.zip';
 			distTarAsset = commit.reponame + '-' + commit.version
@@ -744,8 +749,9 @@ module.exports = function(grunt) {
 								.toString());
 				// cmd('cp -r ' + pth.join(pubDistDir, '*') + ' .');
 
-				// give taskateers a chance to update asset contents
-				updatePublishAssets(commit.buildDir);
+				// give taskateers a chance to update branch file contents
+				updateFiles(options.distBranchUpdateFiles,
+						options.distBranchUpdateFunction, commit.buildDir);
 
 				cmd('git add -A');
 				cmd('git commit -q -m "' + relMsg + '"');
@@ -930,26 +936,27 @@ module.exports = function(grunt) {
 		}
 
 		/**
-		 * Updates any publishing asset content using functions from options
+		 * Updates file contents using a spcified function
 		 * 
+		 * @param files
+		 *            the {Array} of files to read/write
+		 * @param func
+		 *            the function to call for the read/write operation
 		 * @param path
 		 *            the base path to that will be used to prefix each file
 		 *            used in the update process
 		 * @returns {String} the replaced URL (undefined if nothing was
 		 *          replaced)
 		 */
-		function updatePublishAssets(path) {
+		function updateFiles(files, func, path) {
 			try {
-				if (options.distAssetUpdateFiles
-						&& typeof options.distAssetUpdateFunction === 'function') {
-					var paths = options.distAssetUpdateFiles;
-					for (var i = 0; i < paths.length; i++) {
-						var p = pth.join(path, paths[i]), au = '';
+				if (Array.isArray(files) && typeof func === 'function') {
+					for (var i = 0; i < files.length; i++) {
+						var p = pth.join(path, files[i]), au = '';
 						var content = grunt.file.read(p, {
 							encoding : grunt.file.defaultEncoding
 						});
-						var ec = options.distAssetUpdateFunction(content, p,
-								commit);
+						var ec = func(content, p, commit);
 						if (content !== ec) {
 							grunt.file.write(p, ec);
 							return au;

@@ -68,18 +68,35 @@ module.exports = function(grunt) {
 						distAssetUpdateFiles : [ 'README.md' ],
 						distAssetUpdateFunction : function(contents, path,
 								commit) {
-							if (commit.releaseAssetUrl) {
+							var zx = /zip/i;
+							var tx = /tar/i;
+							var zip = asset(commit.releaseAssets, zx);
+							var tar = asset(commit.releaseAssets, tx);
+							if (zip || tar) {
 								// replace master zip/tarball with released
 								// asset download URL
 								contents = contents.replace(regexDistUrl,
 										function(m, prefix, url, suffix) {
-											var au = prefix
-													+ commit.releaseAssetUrl
+											var au = prefix + assetUrl(url)
 													+ suffix;
 											grunt.log.writeln('Replacing "' + m
 													+ '" with "' + au + '"');
 											return au;
 										});
+							}
+							function assetUrl(url) {
+								zx.test(url) && zip ? zip.downloadUrl : tx
+										.test(url)
+										&& tar ? tar.downloadUrl : '';
+							}
+							function asset(a, rx) {
+								for (var i = 0; i < a.length; i++) {
+									if (a[i]
+											&& rx.test(a[i].asset.content_type)) {
+										return a[i];
+									}
+								}
+								return null;
 							}
 							return contents;
 						}

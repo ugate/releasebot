@@ -6,10 +6,10 @@
 1. [Capture](https://www.kernel.org/pub/software/scm/git/docs/git-rev-parse.html) [commit](https://www.kernel.org/pub/software/scm/git/docs/git-show.html) [details](https://www.kernel.org/pub/software/scm/git/docs/git-remote.html) [from Git](https://www.kernel.org/pub/software/scm/git/docs/git-describe.html) (on task registration)
 2. Check for <a href="#default-task-specific-options">release trigger</a> within commit message
 3. Capture/write [change log and/or authors](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) (if directed) &dagger;
-4. [Generate release archive asset](https://www.kernel.org/pub/software/scm/git/docs/git-archive.html) &dagger;
+4. [Generate release archive assets](https://www.kernel.org/pub/software/scm/git/docs/git-archive.html) (zip and tar) &dagger;
 5. [Release](http://developer.github.com/v3/repos/releases/#create-a-release)/[Tag](https://www.kernel.org/pub/software/scm/git/docs/git-tag.html) version (with [change log](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) as description) &dagger; &hearts;
-6. [Upload archive asset](http://developer.github.com/v3/repos/releases/#upload-a-release-asset) &#9679; &dagger; &hearts;
-7. Publish/[Push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) release archive asset contents to distribution/pages branch (creating the branch- if needed) &dagger; &hearts;
+6. [Upload archive assets](http://developer.github.com/v3/repos/releases/#upload-a-release-asset) &#9679; &dagger; &hearts;
+7. Publish/[Push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) release distribution contents to distribution/pages/docs branch (creating the branch- if needed) &dagger; &hearts;
 8. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) &dagger;
 9. [Publish](https://www.npmjs.org/doc/cli/npm-publish.html) release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts;
 
@@ -18,8 +18,8 @@
 &#9679; GitHub only <br/>
 &hearts; Failure will result in the following *default* roll back sequence (<a href="#default-task-specific-options">additional roll back strategies</a>):
 
-1. [Remove remote release archive asset](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release) &Dagger;
-2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published archive asset contents in distribution/pages branch &Dagger;
+1. [Remove remote release archive assets](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release) &Dagger;
+2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published distribution content from distribution/pages/docs branch &Dagger;
 3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html) &Dagger;
 
 ## Usage Examples
@@ -259,10 +259,14 @@ Once the releasebot task has been registered commit datails are captured and mad
   distExcludeFileRegExp : /.?\.zip|tar.?/gmi,
   // The compression ratio for which the distDir will be archived
   distAssetCompressRatio : 9,
-  // Function that will be called for each distAssetUpdateFiles passing: contents, path, commit and returning customized content for the specified distribution asset that will be overwritten before the release asset is pushed
+   // Function that will be called for each distAssetUpdateFiles passing: contents, path, commit and returning customized content for the specified distribution asset that will be overwritten before the release assets are generated
   distAssetUpdateFunction : null,
-  // Array of file paths that will be read/written to before/after distAssetUpdateFunction
+  // Array of file paths that will be read/written to after distAssetUpdateFunction
   distAssetUpdateFiles : [],
+  // Function that will be called for each distBranchUpdateFiles passing: contents, path, commit and returning customized content for the specified distribution branch that will be overwritten before the published/pushed to the specified branch
+  distBranchUpdateFunction : null,
+  // Array of file paths that will be read/written to after distBranchUpdateFunction
+  distBranchUpdateFiles : [],
   // The strategy/order in which roll back actions will be executed ("stack" or "queue")  
   rollbackStrategy : 'queue',
   // Tasks names that will be skipped when releasebot performs commits for package version bumps, publish branch changes, etc. Default: http://docs.travis-ci.com/user/how-to-skip-a-build/
