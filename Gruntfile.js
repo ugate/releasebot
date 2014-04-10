@@ -65,8 +65,8 @@ module.exports = function(grunt) {
 
 				releasebot : {
 					options : {
-						distAssetUpdateFiles : [ 'README.md' ],
-						distAssetUpdateFunction : function(contents, path,
+						distBranchUpdateFiles : [ 'README.md' ],
+						distBranchUpdateFunction : function(contents, path,
 								commit) {
 							var zx = /zip/i;
 							var tx = /tar/i;
@@ -85,9 +85,9 @@ module.exports = function(grunt) {
 										});
 							}
 							function assetUrl(url) {
-								zx.test(url) && zip ? zip.downloadUrl : tx
-										.test(url)
-										&& tar ? tar.downloadUrl : '';
+								return zx.test(url) && zip ? zip.downloadUrl
+										: tx.test(url) && tar ? tar.downloadUrl
+												: '';
 							}
 							function asset(a, rx) {
 								for (var i = 0; i < a.length; i++) {
