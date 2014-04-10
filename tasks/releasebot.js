@@ -98,16 +98,13 @@ module.exports = function(grunt) {
 			distBranchCreateRegExp : /Couldn't find remote ref/i,
 			distExcludeDirRegExp : /.?node_modules.?/gmi,
 			distExcludeFileRegExp : /.?\.zip|tar.?/gmi,
-			distAssetFormat : 'zip',
 			distAssetCompressRatio : 9,
 			distAssetUpdateFunction : null,
 			distAssetUpdateFiles : [],
 			rollbackStrategy : 'queue',
 			releaseSkipTasks : [ 'ci' ],
 			asyncTimeout : 60000,
-			npmTarget : '',
-			npmTag : '',
-			npmDir : 'dist'
+			npmTag : ''
 		});
 		if (options.gitHostname === gitHubHostname && commit.username) {
 			options.hideTokenRegExp = new RegExp('(' + commit.username
@@ -302,7 +299,7 @@ module.exports = function(grunt) {
 	 */
 	function clone(c, incFuncs, excludes) {
 		var cl = {}, cp, t;
-		for ( var keys = Object.keys(c), l = 0; l < keys.length; l++) {
+		for (var keys = Object.keys(c), l = 0; l < keys.length; l++) {
 			cp = c[keys[l]];
 			if (excludes && excludes.indexOf(cp) >= 0) {
 				continue;
@@ -373,12 +370,11 @@ module.exports = function(grunt) {
 		this.gitToken = gitToken || '';
 		this.npmToken = npmToken || '';
 		this.releaseId = null;
-		this.releaseAssetUrl = '';
-		this.releaseAsset = null;
+		this.releaseAssets = [];
 		this.skipTasks = [];
 		this.skipTaskGen = function() {
 			var s = '';
-			for ( var i = 0; i < arguments.length; i++) {
+			for (var i = 0; i < arguments.length; i++) {
 				if (Array.isArray(arguments[i])) {
 					s += self.skipTaskGen.apply(self, arguments[i]);
 				} else if (arguments[i]) {
@@ -502,12 +498,12 @@ module.exports = function(grunt) {
 		var useGitHub = options.gitHostname.toLowerCase() === gitHubHostname;
 		var relMsg = commit.message + ' '
 				+ commit.skipTaskGen(options.releaseSkipTasks);
-		var chgLogRtn = '', distAsset = '', pubSrcDir = '', pubDistDir = '', pubHash = '';
+		var chgLogRtn = '', distZipAsset = '', distTarAsset = '', pubSrcDir = '', pubDistDir = '', pubHash = '';
 
 		// Queue/Start work
 		var que = new Queue(options).add(remoteSetup).add(pkgUpdate).add(
 				changeLog).add(authorsLog);
-		que.add(addAndCommitDistDir).add(genDistAsset);
+		que.add(addAndCommitDistDir).add(genDistAssets);
 		que.add(function() {
 			if (useGitHub) {
 				doneAsync = task.async();
@@ -642,14 +638,17 @@ module.exports = function(grunt) {
 		}
 
 		/**
-		 * Generates distribution archive asset
+		 * Generates distribution archive assets (i.e. zip/tar)
 		 */
-		function genDistAsset() {
+		function genDistAssets() {
 			// Create distribution assets
-			distAsset = commit.reponame + '-' + commit.version + '-dist.'
-					+ options.distAssetFormat;
-			cmd('git archive -o ' + distAsset + ' --format='
-					+ options.distAssetFormat + ' -'
+			distZipAsset = commit.reponame + '-' + commit.version + '-dist.zip';
+			distTarAsset = commit.reponame + '-' + commit.version
+					+ '-dist.tar.gz';
+			cmd('git archive -o ' + distZipAsset + ' --format=zip -'
+					+ options.distAssetCompressRatio + ' HEAD:'
+					+ options.distDir);
+			cmd('git archive -o ' + distTarAsset + ' --format=tar -'
 					+ options.distAssetCompressRatio + ' HEAD:'
 					+ options.distDir);
 		}
@@ -681,11 +680,14 @@ module.exports = function(grunt) {
 					+ options.gitHostname);
 			// GitHub Release API will not remove the tag when removing a
 			// release
-			releaseAndUploadAsset({
-				path : distAsset,
-				name : distAsset
-			}, 'application/zip', commit, chgLogRtn || commit.message, options,
-					que, rollbackTag, function() {
+			releaseAndUploadAsset([ {
+				path : distZipAsset,
+				name : distZipAsset
+			}, {
+				path : distTarAsset,
+				name : distTarAsset
+			} ], 'application/zip', commit, chgLogRtn || commit.message,
+					options, que, rollbackTag, function() {
 						que.add(publish);
 					});
 		}
@@ -702,9 +704,9 @@ module.exports = function(grunt) {
 				grunt.verbose.writeln('Skipping publishing distribution');
 			} else {
 				grunt.log.writeln('Publishing to ' + options.distBranch);
-				if (distAsset) {
+				if (distZipAsset) {
 					// remove uploaded asset file to prevent conflicts
-					fs.unlinkSync(distAsset);
+					fs.unlinkSync(distZipAsset);
 				}
 				pubSrcDir = pth.join(commit.buildDir, options.distDir);
 				pubDistDir = commit.buildDir.replace(commit.reponame,
@@ -760,11 +762,9 @@ module.exports = function(grunt) {
 		 */
 		function publishNpm() {
 			// publish to npm
-			// if (commit.pkgPath && typeof options.npmTarget === 'string') {
-			// var npmc = 'npm publish'
-			// + (options.npmTarget ? ' ' + options.npmTarget : '')
-			// + (options.npmTag ? ' --tag ' + options.npmTag : '')
-			// + (options.npmDir ? ' ' + options.npmDir : '');
+			// if (commit.hasNpmToken && commit.pkgPath) {
+			// var npmc = 'npm publish ' + distTarAsset
+			// + (options.npmTag ? ' --tag ' + options.npmTag : '');
 			// cmd(npmc);
 			// }
 			var pkg = null, auth = [];
@@ -805,15 +805,9 @@ module.exports = function(grunt) {
 					que.error('npm publish failed to be authenticated', e)
 							.resume();
 				} else {
-					var pargs = [];
-					if (options.npmTarget) {
-						pargs.push(options.npmTarget);
-					}
+					var pargs = [ distTarAsset ];
 					if (options.npmTag) {
 						pargs.push('--tag ' + options.npmTag);
-					}
-					if (options.npmDir) {
-						pargs.push(options.npmDir + '/');
 					}
 					grunt.log.writeln('npm publish ' + pargs.join(' '));
 					npm.commands.publish(pargs, function(e) {
@@ -949,7 +943,7 @@ module.exports = function(grunt) {
 				if (options.distAssetUpdateFiles
 						&& typeof options.distAssetUpdateFunction === 'function') {
 					var paths = options.distAssetUpdateFiles;
-					for ( var i = 0; i < paths.length; i++) {
+					for (var i = 0; i < paths.length; i++) {
 						var p = pth.join(path, paths[i]), au = '';
 						var content = grunt.file.read(p, {
 							encoding : grunt.file.defaultEncoding
@@ -1101,9 +1095,9 @@ module.exports = function(grunt) {
 	 * (see
 	 * http://developer.github.com/v3/repos/releases/#upload-a-release-asset )
 	 * 
-	 * @param asset
-	 *            an object containing a <code>path</code> and
-	 *            <code>name</code> of the asset to be uploaded
+	 * @param assets
+	 *            an {Array} of objects each containing a <code>path</code>
+	 *            and <code>name</code> of an asset to be uploaded (optional)
 	 * @param contentType
 	 *            the content type of the file being uploaded
 	 * @param commit
@@ -1120,7 +1114,7 @@ module.exports = function(grunt) {
 	 * @param cb
 	 *            the call back function called when completed successfully
 	 */
-	function releaseAndUploadAsset(asset, contentType, commit, desc, options,
+	function releaseAndUploadAsset(assets, contentType, commit, desc, options,
 			que, fcb, cb) {
 		var authToken = typeof commit.gitToken === 'function' ? commit
 				.gitToken() : commit.gitToken;
@@ -1143,8 +1137,20 @@ module.exports = function(grunt) {
 		json[gitHubReleaseCommitish] = commit.hash;
 		json[gitHubReleasePreFlag] = commit.versionPrereleaseType != null;
 		var jsonStr = JSON.stringify(json);
-		var fstat = asset && asset.path ? fs.statSync(asset.path) : {
-			size : 0
+		var assetObj = {
+			ai : 0,
+			get : function() {
+				return Array.isArray(assets) ? assets[this.ai] : null;
+			},
+			size : function(next) {
+				if (next) {
+					this.ai++;
+				}
+				var a = this.get();
+				return a && a.path ? fs.statSync(a.path) : {
+					size : 0
+				};
+			}
 		};
 		var host = 'api.github.com';
 		var releasePath = '/repos/' + commit.slug + '/releases';
@@ -1213,7 +1219,7 @@ module.exports = function(grunt) {
 					commit.releaseId = rl[gitHubReleaseId];
 					// queue asset uploaded or complete with callback
 					que.addRollbacks(postReleaseRollback, fcb);
-					que.add(fstat.size <= 0 ? cb : postReleaseAsset);
+					que.add(assetObj.size() <= 0 ? cb : postReleaseAsset);
 				} else {
 					que.error(
 							'No tag found for ' + commit.versionTag + ' in '
@@ -1228,6 +1234,7 @@ module.exports = function(grunt) {
 		function postReleaseAsset() {
 			// pause and wait for response
 			que.pause();
+			var asset = assetObj.get();
 			grunt.log.writeln('Uploading "' + asset.path
 					+ '" release asset for ' + commit.versionTag + ' via '
 					+ options.gitHostname);
@@ -1240,7 +1247,7 @@ module.exports = function(grunt) {
 			opts.path = opts.path.replace(gitHubRegexParam, '$1='
 					+ (asset.name || commit.versionTag));
 			opts.headers['Content-Type'] = contentType;
-			opts.headers['Content-Length'] = fstat.size;
+			opts.headers['Content-Length'] = assetObj.size();
 			var res2 = null;
 			var req2 = https.request(opts, function(r) {
 				res2 = r;
@@ -1280,17 +1287,20 @@ module.exports = function(grunt) {
 								});
 						que.error(msg);
 					} else {
-						commit.releaseAsset = cf;
-						commit.releaseAssetUrl = 'https://'
-								+ options.gitHostname + '.com/'
+						var durl = 'https://' + options.gitHostname + '.com/'
 								+ commit.username + '/' + commit.reponame
 								+ '/releases/download/' + commit.versionTag
 								+ '/' + cf[gitHubReleaseName];
+						// make asset avaliable via commit
+						commit.releaseAssets.push({
+							asset : cf,
+							downloadUrl : durl
+						});
 						grunt.log.writeln('Asset ID '
 								+ cf[gitHubReleaseAssetId] + ' successfully '
 								+ cf.state + ' for ' + asset.name + ' '
-								+ asset.path + ' (downloadable at: '
-								+ commit.releaseAssetUrl + ')');
+								+ asset.path + ' (downloadable at: ' + durl
+								+ ')');
 						if (grunt.option('verbose')) {
 							grunt.verbose.writeln(util.inspect(cf, {
 								colors : true
@@ -1300,7 +1310,8 @@ module.exports = function(grunt) {
 				} else {
 					que.error('Asset upload failed!', data2);
 				}
-				que.add(cb);
+				// check for more assets to upload
+				que.add(assetObj.size(true) <= 0 ? cb : postReleaseAsset);
 			}
 		}
 
@@ -1380,7 +1391,7 @@ module.exports = function(grunt) {
 			// maintained regardless of strategy
 			var args = isStack() ? Array.prototype.reverse.call(arguments)
 					: arguments;
-			for ( var i = 0; i < args.length; i++) {
+			for (var i = 0; i < args.length; i++) {
 				que.addRollback(args[i]);
 			}
 		};
@@ -1540,7 +1551,7 @@ module.exports = function(grunt) {
 		 * Logs one or more errors (can be {Error}, {Object} or {String})
 		 */
 		this.log = function() {
-			for ( var i = 0; i < arguments.length; i++) {
+			for (var i = 0; i < arguments.length; i++) {
 				if (util.isArray(arguments[i])) {
 					this.log(arguments[i]);
 				} else {
