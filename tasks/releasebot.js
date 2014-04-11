@@ -814,7 +814,7 @@ module.exports = function(grunt) {
 					que.error('npm publish failed to be authenticated', e)
 							.resume();
 				} else {
-					var pargs = [ '--force' ];
+					var pargs = [ '.', '--force' ];
 					if (options.npmTag) {
 						pargs.push('--tag ' + options.npmTag);
 					}
