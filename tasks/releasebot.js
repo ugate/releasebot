@@ -650,7 +650,7 @@ module.exports = function(grunt) {
 			// Create distribution assets
 			distZipAsset = pth.resolve(options.distAssetDir, commit.reponame
 					+ '-' + commit.version + '-dist.zip');
-			cmd('git archive -o ' + distZipAsset + ' --format=zip -'
+			cmd('git archive -o "' + distZipAsset + '" --format=zip -'
 					+ options.distAssetCompressRatio + ' HEAD:'
 					+ options.distDir);
 			if (grunt.option('verbose')) {
@@ -659,7 +659,7 @@ module.exports = function(grunt) {
 			}
 			distTarAsset = pth.resolve(options.distAssetDir, commit.reponame
 					+ '-' + commit.version + '-dist.tar.gz');
-			cmd('git archive -o ' + distTarAsset + ' --format=tar.gz HEAD:'
+			cmd('git archive -o "' + distTarAsset + '" --format=tar.gz HEAD:'
 					+ options.distDir);
 			if (grunt.option('verbose')) {
 				grunt.verbose.writeln('Created ' + distTarAsset + ' (size: '
@@ -1093,6 +1093,7 @@ module.exports = function(grunt) {
 				}
 				fs.linkSync(src, dest);
 				s.fileCopiedCount++;
+				grunt.verbose.writeln('Copied "' + src + '" to "' + dest + '"');
 			}
 		}
 	}
