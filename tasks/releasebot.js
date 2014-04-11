@@ -99,6 +99,7 @@ module.exports = function(grunt) {
 			distExcludeDirRegExp : /.?node_modules.?/gmi,
 			distExcludeFileRegExp : /.?\.zip|tar.?/gmi,
 			distAssetCompressRatio : 9,
+			distAssetDir : '..',
 			distAssetUpdateFunction : null,
 			distAssetUpdateFiles : [],
 			distBranchUpdateFunction : null,
@@ -647,9 +648,11 @@ module.exports = function(grunt) {
 			updateFiles(options.distAssetUpdateFiles,
 					options.distAssetUpdateFunction, commit.buildDir);
 			// Create distribution assets
-			distZipAsset = commit.reponame + '-' + commit.version + '-dist.zip';
-			distTarAsset = commit.reponame + '-' + commit.version
-					+ '-dist.tar.gz';
+			distZipAsset = pth.join(options.distAssetDir, commit.reponame + '-'
+					+ commit.version + '-dist.zip');
+			distTarAsset = pth.join(options.distAssetDir, commit.reponame + '-'
+					+ commit.version);
+			+'-dist.tar.gz';
 			cmd('git archive -o ' + distZipAsset + ' --format=zip -'
 					+ options.distAssetCompressRatio + ' HEAD:'
 					+ options.distDir);
@@ -692,12 +695,14 @@ module.exports = function(grunt) {
 			// release
 			releaseAndUploadAsset([ {
 				path : distZipAsset,
-				name : distZipAsset
+				name : distZipAsset,
+				contentType : 'application/zip'
 			}, {
 				path : distTarAsset,
-				name : distTarAsset
-			} ], 'application/zip', commit, chgLogRtn || commit.message,
-					options, que, rollbackTag, function() {
+				name : distTarAsset,
+				contentType : 'application/x-compressed'
+			} ], commit, chgLogRtn || commit.message, options, que,
+					rollbackTag, function() {
 						que.add(publish);
 					});
 		}
@@ -714,9 +719,12 @@ module.exports = function(grunt) {
 				grunt.verbose.writeln('Skipping publishing distribution');
 			} else {
 				grunt.log.writeln('Publishing to ' + options.distBranch);
+				// remove uploaded asset file to prevent conflicts
 				if (distZipAsset) {
-					// remove uploaded asset file to prevent conflicts
 					fs.unlinkSync(distZipAsset);
+				}
+				if (distTarAsset) {
+					fs.unlinkSync(distTarAsset);
 				}
 				pubSrcDir = pth.join(commit.buildDir, options.distDir);
 				pubDistDir = commit.buildDir.replace(commit.reponame,
@@ -1108,10 +1116,9 @@ module.exports = function(grunt) {
 	 * http://developer.github.com/v3/repos/releases/#upload-a-release-asset )
 	 * 
 	 * @param assets
-	 *            an {Array} of objects each containing a <code>path</code>
-	 *            and <code>name</code> of an asset to be uploaded (optional)
-	 * @param contentType
-	 *            the content type of the file being uploaded
+	 *            an {Array} of objects each containing a <code>path</code>,
+	 *            <code>contentType</code> and <code>name</code> of an asset
+	 *            to be uploaded (optional)
 	 * @param commit
 	 *            the commit object the asset is for
 	 * @param desc
@@ -1126,8 +1133,7 @@ module.exports = function(grunt) {
 	 * @param cb
 	 *            the call back function called when completed successfully
 	 */
-	function releaseAndUploadAsset(assets, contentType, commit, desc, options,
-			que, fcb, cb) {
+	function releaseAndUploadAsset(assets, commit, desc, options, que, fcb, cb) {
 		var authToken = typeof commit.gitToken === 'function' ? commit
 				.gitToken() : commit.gitToken;
 		if (!authToken) {
@@ -1256,7 +1262,7 @@ module.exports = function(grunt) {
 			});
 			opts.path = opts.path.replace(gitHubRegexParam, '$1='
 					+ (asset.item.name || commit.versionTag));
-			opts.headers['Content-Type'] = contentType;
+			opts.headers['Content-Type'] = asset.item.contentType;
 			opts.headers['Content-Length'] = asset.size;
 			var resData = '', ajson = null;
 			var resError = null;
