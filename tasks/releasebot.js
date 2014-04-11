@@ -1134,7 +1134,7 @@ module.exports = function(grunt) {
 			que.error('Invalid authorization token').add(cb);
 			return;
 		}
-		var data = '', data2 = '', rl = null, cf = null;
+		var rl = null;
 		// check if API responded with an error message
 		function chk(o) {
 			if (o[gitHubReleaseErrorMsg]) {
@@ -1190,12 +1190,13 @@ module.exports = function(grunt) {
 					colors : true
 				}));
 			}
+			var resData = '';
 			var res = null;
 			var req = https.request(opts, function(r) {
 				// var sc = res.statusCode;
 				res = r;
 				res.on('data', function(chunk) {
-					data += chunk;
+					resData += chunk;
 					grunt.verbose
 							.writeln('Receiving post release chunked data');
 				});
@@ -1207,7 +1208,8 @@ module.exports = function(grunt) {
 						que.error(
 								'Release post failed with HTTP status: '
 										+ res.statusCode + ' data: '
-										+ util.inspect(data)).add(cb).resume();
+										+ util.inspect(resData)).add(cb)
+								.resume();
 					}
 				});
 			});
@@ -1217,7 +1219,7 @@ module.exports = function(grunt) {
 			});
 			function postReleaseEnd() {
 				var success = gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0;
-				rl = success ? chk(JSON.parse(data.replace(regexLines, ' ')))
+				rl = success ? chk(JSON.parse(resData.replace(regexLines, ' ')))
 						: null;
 				if (grunt.option('verbose')) {
 					grunt.verbose.writeln(util.inspect(rl, {
@@ -1235,7 +1237,7 @@ module.exports = function(grunt) {
 									+ util.inspect(rl, {
 										colors : true
 									}) + ' HTTP Status: ' + res.statusCode
-									+ ' Response: \n' + data).add(cb);
+									+ ' Response: \n' + resData).add(cb);
 				}
 			}
 		}
@@ -1256,37 +1258,38 @@ module.exports = function(grunt) {
 					+ (asset.item.name || commit.versionTag));
 			opts.headers['Content-Type'] = contentType;
 			opts.headers['Content-Length'] = asset.size;
+			var resData = '', ajson = null;
 			var resError = null;
-			var res2 = null;
-			var req2 = https.request(opts, function(r) {
-				res2 = r;
-				res2.on('data', function(chunk) {
-					data2 += chunk;
+			var res = null;
+			var req = https.request(opts, function(r) {
+				res = r;
+				res.on('data', function(chunk) {
+					resData += chunk;
 					grunt.verbose.writeln('Receiving upload response');
 				});
-				res2.on('end', function() {
+				res.on('end', function() {
 					grunt.verbose.writeln('Received upload response');
 					que.add(postRleaseAssetEnd).resume();
 				});
 				grunt.log.writeln('Waiting for response');
 			});
-			req2.on('error', function(e) {
+			req.on('error', function(e) {
 				resError = e;
 				que.add(postRleaseAssetEnd).resume();
 			});
 			// stream asset to remote host
 			fs.createReadStream(asset.item.path, {
 				'bufferSize' : 64 * 1024
-			}).pipe(req2);
+			}).pipe(req);
 
 			function postRleaseAssetEnd() {
 				if (resError) {
 					que.error('Release asset upload failed', resError);
-				} else if (gitHubSuccessHttpCodes.indexOf(res2.statusCode) >= 0) {
-					cf = chk(JSON.parse(data2.replace(regexLines, ' ')));
-					if (cf && cf.state !== 'uploaded') {
-						var msg = 'Asset upload failed with state: ' + cf.state
-								+ ' for ' + util.inspect(cf, {
+				} else if (gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0) {
+					ajson = chk(JSON.parse(resData.replace(regexLines, ' ')));
+					if (ajson && ajson.state !== 'uploaded') {
+						var msg = 'Asset upload failed with state: '
+								+ ajson.state + ' for ' + util.inspect(ajson, {
 									colors : true
 								});
 						que.error(msg);
@@ -1294,27 +1297,27 @@ module.exports = function(grunt) {
 						var durl = 'https://' + options.gitHostname + '.com/'
 								+ commit.username + '/' + commit.reponame
 								+ '/releases/download/' + commit.versionTag
-								+ '/' + cf[gitHubReleaseName];
+								+ '/' + ajson[gitHubReleaseName];
 						// make asset avaliable via commit
 						commit.releaseAssets.push({
-							asset : cf,
+							asset : ajson,
 							downloadUrl : durl
 						});
 						grunt.log.writeln('Asset ID '
-								+ cf[gitHubReleaseAssetId] + ' successfully '
-								+ cf.state + ' for ' + asset.item.name + ' '
-								+ asset.item.path + ' (downloadable at: ' + durl
-								+ ')');
+								+ ajson[gitHubReleaseAssetId]
+								+ ' successfully ' + ajson.state + ' for '
+								+ asset.item.name + ' ' + asset.item.path
+								+ ' (downloadable at: ' + durl + ')');
 						if (grunt.option('verbose')) {
-							grunt.verbose.writeln(util.inspect(cf, {
+							grunt.verbose.writeln(util.inspect(ajson, {
 								colors : true
 							}));
 						}
 					}
 				} else {
-					var dstr = util.inspect(data2);
+					var dstr = util.inspect(resData);
 					que.error('Asset upload failed with HTTP status: '
-							+ res2.statusCode + ' data: ' + dstr);
+							+ res.statusCode + ' data: ' + dstr);
 				}
 				// check for more assets to upload
 				asset = nextAsset();
