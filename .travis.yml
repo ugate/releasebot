@@ -6,6 +6,7 @@ git:
   branch: master
 before_script:
 - npm install -g grunt-cli
+- echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 - npm link npm
 branches:
   only:
