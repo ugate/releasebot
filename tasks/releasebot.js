@@ -1142,6 +1142,18 @@ module.exports = function(grunt) {
 			}
 			return o;
 		}
+		var assetIndex = -1;
+		var asset = nextAsset();
+		function nextAsset() {
+			assetIndex++;
+			var a = {
+				item : Array.isArray(assets) && assetIndex < assets.length ? assets[assetIndex]
+						: null
+			};
+			a.size = a.item && a.item.path ? fs.statSync(a.item.path).size : 0;
+			a.cb = !a.item || a.size <= 0 ? cb : postReleaseAsset;
+			return a;
+		}
 		var json = {};
 		json[gitHubReleaseTagName] = commit.versionTag;
 		json[gitHubReleaseName] = commit.versionTag;
@@ -1149,21 +1161,6 @@ module.exports = function(grunt) {
 		json[gitHubReleaseCommitish] = commit.hash;
 		json[gitHubReleasePreFlag] = commit.versionPrereleaseType != null;
 		var jsonStr = JSON.stringify(json);
-		var assetObj = {
-			ai : 0,
-			get : function() {
-				return Array.isArray(assets) ? assets[this.ai] : null;
-			},
-			size : function(next) {
-				if (next) {
-					this.ai++;
-				}
-				var a = this.get();
-				return a && a.path ? fs.statSync(a.path) : {
-					size : 0
-				};
-			}
-		};
 		var host = 'api.github.com';
 		var releasePath = '/repos/' + commit.slug + '/releases';
 		var https = require('https');
@@ -1231,7 +1228,7 @@ module.exports = function(grunt) {
 					commit.releaseId = rl[gitHubReleaseId];
 					// queue asset uploaded or complete with callback
 					que.addRollbacks(postReleaseRollback, fcb);
-					que.add(assetObj.size() <= 0 ? cb : postReleaseAsset);
+					que.add(asset.cb);
 				} else {
 					que.error(
 							'No tag found for ' + commit.versionTag + ' in '
@@ -1246,8 +1243,7 @@ module.exports = function(grunt) {
 		function postReleaseAsset() {
 			// pause and wait for response
 			que.pause();
-			var asset = assetObj.get();
-			grunt.log.writeln('Uploading "' + asset.path
+			grunt.log.writeln('Uploading "' + asset.item.path
 					+ '" release asset for ' + commit.versionTag + ' via '
 					+ options.gitHostname);
 			opts.method = 'POST';
@@ -1257,7 +1253,7 @@ module.exports = function(grunt) {
 				return '/';
 			});
 			opts.path = opts.path.replace(gitHubRegexParam, '$1='
-					+ (asset.name || commit.versionTag));
+					+ (asset.item.name || commit.versionTag));
 			opts.headers['Content-Type'] = contentType;
 			opts.headers['Content-Length'] = assetObj.size();
 			var resError = null;
@@ -1279,7 +1275,7 @@ module.exports = function(grunt) {
 				que.add(postRleaseAssetEnd).resume();
 			});
 			// stream asset to remote host
-			fs.createReadStream(asset.path, {
+			fs.createReadStream(asset.item.path, {
 				'bufferSize' : 64 * 1024
 			}).pipe(req2);
 
@@ -1306,8 +1302,8 @@ module.exports = function(grunt) {
 						});
 						grunt.log.writeln('Asset ID '
 								+ cf[gitHubReleaseAssetId] + ' successfully '
-								+ cf.state + ' for ' + asset.name + ' '
-								+ asset.path + ' (downloadable at: ' + durl
+								+ cf.state + ' for ' + asset.item.name + ' '
+								+ asset.item.path + ' (downloadable at: ' + durl
 								+ ')');
 						if (grunt.option('verbose')) {
 							grunt.verbose.writeln(util.inspect(cf, {
@@ -1321,7 +1317,8 @@ module.exports = function(grunt) {
 							+ res2.statusCode + ' data: ' + dstr);
 				}
 				// check for more assets to upload
-				que.add(assetObj.size(true) <= 0 ? cb : postReleaseAsset);
+				asset = nextAsset();
+				que.add(asset.cb);
 			}
 		}
 
