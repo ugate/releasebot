@@ -523,11 +523,6 @@ module.exports = function(grunt) {
 			} catch (e) {
 				que.error('Failed to set global commit result properties', e);
 			}
-			try {
-				cmd('git checkout -q ' + (commit.hash || commit.branch));
-			} catch (e) {
-				que.error(e);
-			}
 			var msg = que.errorCount() > 0 ? 'Processed ' + rbcnt
 					+ ' rollback action(s)' : 'Released ' + commit.versionTag;
 			grunt.log.writeln(msg);
@@ -732,41 +727,47 @@ module.exports = function(grunt) {
 						options.distExcludeFileRegExp).toString());
 				// cmd('cp -r ' + pth.join(pubSrcDir, '*') + ' ' + pubDistDir);
 				try {
-					cmd('git fetch ' + options.repoName + ' '
-							+ options.distBranch);
-					pubHash = cmd('git rev-parse HEAD');
-				} catch (e) {
-					if (util.isRegExp(options.distBranchCreateRegExp)
-							&& options.distBranchCreateRegExp.test(e.message)) {
-						cmd('git checkout -q --orphan ' + options.distBranch);
-					} else {
-						throw e;
+					try {
+						cmd('git fetch ' + options.repoName + ' '
+								+ options.distBranch);
+						pubHash = cmd('git rev-parse HEAD');
+					} catch (e) {
+						if (util.isRegExp(options.distBranchCreateRegExp)
+								&& options.distBranchCreateRegExp
+										.test(e.message)) {
+							cmd('git checkout -q --orphan '
+									+ options.distBranch);
+						} else {
+							throw e;
+						}
 					}
-				}
-				if (pubHash) {
-					cmd('git checkout -q --track ' + options.repoName + '/'
+					if (pubHash) {
+						cmd('git checkout -q --track ' + options.repoName + '/'
+								+ options.distBranch);
+					}
+					cmd('git rm -rfq .');
+					cmd('git clean -dfq .');
+					grunt.log
+							.writeln('Copying publication directories/files from '
+									+ pubDistDir + ' to ' + commit.buildDir);
+					grunt.log.writeln(copyRecursiveSync(pubDistDir,
+							commit.buildDir).toString());
+					// cmd('cp -r ' + pth.join(pubDistDir, '*') + ' .');
+
+					// give taskateers a chance to update branch file contents
+					updateFiles(options.distBranchUpdateFiles,
+							options.distBranchUpdateFunction, commit.buildDir);
+
+					cmd('git add -A');
+					cmd('git commit -q -m "' + relMsg + '"');
+					cmd('git push -f ' + options.repoName + ' '
 							+ options.distBranch);
+
+					que.addRollback(rollbackPublish);
+					que.add(publishNpm);
+				} finally {
+					cmd('git checkout -q ' + (commit.hash || commit.branch));
 				}
-				cmd('git rm -rfq .');
-				cmd('git clean -dfq .');
-				grunt.log.writeln('Copying publication directories/files from '
-						+ pubDistDir + ' to ' + commit.buildDir);
-				grunt.log
-						.writeln(copyRecursiveSync(pubDistDir, commit.buildDir)
-								.toString());
-				// cmd('cp -r ' + pth.join(pubDistDir, '*') + ' .');
-
-				// give taskateers a chance to update branch file contents
-				updateFiles(options.distBranchUpdateFiles,
-						options.distBranchUpdateFunction, commit.buildDir);
-
-				cmd('git add -A');
-				cmd('git commit -q -m "' + relMsg + '"');
-				cmd('git push -f ' + options.repoName + ' '
-						+ options.distBranch);
-
-				que.addRollback(rollbackPublish);
-				que.add(publishNpm);
 			}
 		}
 
@@ -813,16 +814,7 @@ module.exports = function(grunt) {
 					que.error('npm publish failed to be authenticated', e)
 							.resume();
 				} else {
-					var tgz = distTarAsset;
-					for (var i = 0; i < commit.releaseAssets.length; i++) {
-						if (commit.releaseAssets[i].asset
-								&& commit.releaseAssets[i].downloadUrl
-								&& /tar/i
-										.test(commit.releaseAssets[i].asset.name)) {
-							tgz = commit.releaseAssets[i].downloadUrl;
-						}
-					}
-					var pargs = [ tgz, '--force' ];
+					var pargs = [ '--force' ];
 					if (options.npmTag) {
 						pargs.push('--tag ' + options.npmTag);
 					}
