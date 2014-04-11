@@ -651,8 +651,7 @@ module.exports = function(grunt) {
 			distZipAsset = pth.join(options.distAssetDir, commit.reponame + '-'
 					+ commit.version + '-dist.zip');
 			distTarAsset = pth.join(options.distAssetDir, commit.reponame + '-'
-					+ commit.version);
-			+'-dist.tar.gz';
+					+ commit.version + '-dist.tar.gz');
 			cmd('git archive -o ' + distZipAsset + ' --format=zip -'
 					+ options.distAssetCompressRatio + ' HEAD:'
 					+ options.distDir);
