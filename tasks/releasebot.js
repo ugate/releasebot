@@ -1255,7 +1255,7 @@ module.exports = function(grunt) {
 			opts.path = opts.path.replace(gitHubRegexParam, '$1='
 					+ (asset.item.name || commit.versionTag));
 			opts.headers['Content-Type'] = contentType;
-			opts.headers['Content-Length'] = assetObj.size();
+			opts.headers['Content-Length'] = asset.size;
 			var resError = null;
 			var res2 = null;
 			var req2 = https.request(opts, function(r) {
