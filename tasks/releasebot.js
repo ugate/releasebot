@@ -718,13 +718,6 @@ module.exports = function(grunt) {
 				grunt.verbose.writeln('Skipping publishing distribution');
 			} else {
 				grunt.log.writeln('Publishing to ' + options.distBranch);
-				// remove uploaded asset file to prevent conflicts
-				if (distZipAsset) {
-					fs.unlinkSync(distZipAsset);
-				}
-				if (distTarAsset) {
-					fs.unlinkSync(distTarAsset);
-				}
 				pubSrcDir = pth.join(commit.buildDir, options.distDir);
 				pubDistDir = commit.buildDir.replace(commit.reponame,
 						options.distBranch);
@@ -779,14 +772,9 @@ module.exports = function(grunt) {
 		 * npm publish
 		 */
 		function publishNpm() {
-			// publish to npm
-			// if (commit.hasNpmToken && commit.pkgPath) {
-			// var npmc = 'npm publish ' + distTarAsset
-			// + (options.npmTag ? ' --tag ' + options.npmTag : '');
-			// cmd(npmc);
-			// }
 			var pkg = null, auth = [];
 			if (commit.hasNpmToken && commit.pkgPath) {
+				grunt.log.writeln('Publishing to npm');
 				pkg = grunt.file.readJSON(commit.pkgPath);
 				if (!pkg || !pkg.author || !pkg.author.email) {
 					que
@@ -795,10 +783,10 @@ module.exports = function(grunt) {
 				} else {
 					auth = (typeof commit.npmToken === 'function' ? commit
 							.npmToken() : commit.npmToken);
-					auth = auth ? (auth = new Buffer(auth, 'base64').toString()) ? auth
+					auth = typeof auth === 'string'
+							&& (auth = new Buffer(auth, 'base64').toString()) ? auth
 							.split(':')
-							: auth
-							: auth;
+							: [];
 					if (auth.length !== 2) {
 						que.error('npm NPM_TOKEN is missing or invalid');
 					} else {
