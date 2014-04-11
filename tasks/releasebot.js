@@ -648,19 +648,21 @@ module.exports = function(grunt) {
 			updateFiles(options.distAssetUpdateFiles,
 					options.distAssetUpdateFunction, commit.buildDir);
 			// Create distribution assets
-			distZipAsset = pth.join(options.distAssetDir, commit.reponame + '-'
-					+ commit.version + '-dist.zip');
-			distTarAsset = pth.join(options.distAssetDir, commit.reponame + '-'
-					+ commit.version + '-dist.tar.gz');
+			distZipAsset = pth.resolve(options.distAssetDir, commit.reponame
+					+ '-' + commit.version + '-dist.zip');
 			cmd('git archive -o ' + distZipAsset + ' --format=zip -'
 					+ options.distAssetCompressRatio + ' HEAD:'
 					+ options.distDir);
+			if (grunt.option('verbose')) {
+				grunt.verbose.writeln('Created ' + distZipAsset + ' (size: '
+						+ fs.statSync(distZipAsset).size + ')');
+			}
+			distTarAsset = pth.resolve(options.distAssetDir, commit.reponame
+					+ '-' + commit.version + '-dist.tar.gz');
 			cmd('git archive -o ' + distTarAsset + ' --format=tar.gz HEAD:'
 					+ options.distDir);
 			if (grunt.option('verbose')) {
-				grunt.verbose.writeln(distZipAsset + ' ('
-						+ fs.statSync(distZipAsset).size + ')');
-				grunt.verbose.writeln(distTarAsset + ' ('
+				grunt.verbose.writeln('Created ' + distTarAsset + ' (size: '
 						+ fs.statSync(distTarAsset).size + ')');
 			}
 		}
