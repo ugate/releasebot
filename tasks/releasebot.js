@@ -813,7 +813,16 @@ module.exports = function(grunt) {
 					que.error('npm publish failed to be authenticated', e)
 							.resume();
 				} else {
-					var pargs = [ distTarAsset ];
+					var tgz = distTarAsset;
+					for (var i = 0; i < commit.releaseAssets.length; i++) {
+						if (commit.releaseAssets[i].asset
+								&& commit.releaseAssets[i].downloadUrl
+								&& /tar/i
+										.test(commit.releaseAssets[i].asset.name)) {
+							tgz = commit.releaseAssets[i].downloadUrl;
+						}
+					}
+					var pargs = [ tgz, '--force' ];
 					if (options.npmTag) {
 						pargs.push('--tag ' + options.npmTag);
 					}
@@ -1093,7 +1102,8 @@ module.exports = function(grunt) {
 				}
 				fs.linkSync(src, dest);
 				s.fileCopiedCount++;
-				grunt.verbose.writeln('Copied "' + src + '" to "' + dest + '"');
+				// grunt.verbose.writeln('Copied "' + src + '" to "' + dest +
+				// '"');
 			}
 		}
 	}
