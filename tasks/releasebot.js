@@ -302,7 +302,7 @@ module.exports = function(grunt) {
 	 */
 	function clone(c, incFuncs, excludes) {
 		var cl = {}, cp, t;
-		for (var keys = Object.keys(c), l = 0; l < keys.length; l++) {
+		for ( var keys = Object.keys(c), l = 0; l < keys.length; l++) {
 			cp = c[keys[l]];
 			if (excludes && excludes.indexOf(cp) >= 0) {
 				continue;
@@ -377,7 +377,7 @@ module.exports = function(grunt) {
 		this.skipTasks = [];
 		this.skipTaskGen = function() {
 			var s = '';
-			for (var i = 0; i < arguments.length; i++) {
+			for ( var i = 0; i < arguments.length; i++) {
 				if (Array.isArray(arguments[i])) {
 					s += self.skipTaskGen.apply(self, arguments[i]);
 				} else if (arguments[i]) {
@@ -814,7 +814,7 @@ module.exports = function(grunt) {
 					que.error('npm publish failed to be authenticated', e)
 							.resume();
 				} else {
-					var pargs = [ '.', '--force' ];
+					var pargs = [];
 					if (options.npmTag) {
 						pargs.push('--tag ' + options.npmTag);
 					}
@@ -954,7 +954,7 @@ module.exports = function(grunt) {
 		function updateFiles(files, func, path) {
 			try {
 				if (Array.isArray(files) && typeof func === 'function') {
-					for (var i = 0; i < files.length; i++) {
+					for ( var i = 0; i < files.length; i++) {
 						var p = pth.join(path, files[i]), au = '';
 						var content = grunt.file.read(p, {
 							encoding : grunt.file.defaultEncoding
@@ -1399,7 +1399,7 @@ module.exports = function(grunt) {
 			// maintained regardless of strategy
 			var args = isStack() ? Array.prototype.reverse.call(arguments)
 					: arguments;
-			for (var i = 0; i < args.length; i++) {
+			for ( var i = 0; i < args.length; i++) {
 				que.addRollback(args[i]);
 			}
 		};
@@ -1559,7 +1559,7 @@ module.exports = function(grunt) {
 		 * Logs one or more errors (can be {Error}, {Object} or {String})
 		 */
 		this.log = function() {
-			for (var i = 0; i < arguments.length; i++) {
+			for ( var i = 0; i < arguments.length; i++) {
 				if (util.isArray(arguments[i])) {
 					this.log(arguments[i]);
 				} else {
