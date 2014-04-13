@@ -228,6 +228,8 @@ Once the releasebot task has been registered commit datails are captured and mad
 
 ```JavaScript
 {
+  // The name that will appear on GitHub (template parsed using any "commit" property or task "options" property)
+  name : '<%= commit.versionTag %>',
   // The package replacer option sent into JSON.stringify during updates
   pkgJsonReplacer : null,
   // The package space option sent into JSON.stringify during updates
@@ -251,7 +253,7 @@ Once the releasebot task has been registered commit datails are captured and mad
   // Flag to indicate that the release will fail when the change log cannot be validated
   chgLogRequired : true,
   // Regular expression that will be used to skip individual lines from being used within the change log
-  chgLogSkipLineRegExp : /.*(?:(released?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?)))|(\[skip\s*CHANGELOG\]).*\r?\n'/mi,
+  chgLogSkipLineRegExp : /.*(?:(?:(released?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?)))|(\[skip\s*CHANGELOG\])).*\r?\n'/mi,
   // Flag to indicate that the release will fail when the authors log cannot be validated
   authorsRequired : false,
   // Regular expression that will be used to skip individual lines from being used within the authors log

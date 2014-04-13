@@ -77,6 +77,7 @@ module.exports = function(grunt) {
 				+ (process.env.TRAVIS_BUILD_NUMBER ? 'travis-ci.org'
 						: 'example.org');
 		var options = this.options({
+			name : '<%= commit.versionTag %>',
 			pkgJsonReplacer : null,
 			pkgJsonSpace : 2,
 			releaseVersionRegExp : rx,
@@ -88,8 +89,8 @@ module.exports = function(grunt) {
 			authors : 'AUTHORS.md',
 			chgLogLineFormat : '  * %s',
 			chgLogRequired : true,
-			chgLogSkipLineRegExp : new RegExp('.*(?:' + rx.source + ')|('
-					+ regexSkipChgLog.source + ')' + '.*\r?\n', 'g'
+			chgLogSkipLineRegExp : new RegExp('.*(?:(?:' + rx.source + ')|('
+					+ regexSkipChgLog.source + ')' + ').*\r?\n', 'g'
 					+ (rx.multiline ? 'm' : '') + (rx.ignoreCase ? 'i' : '')),
 			authorsRequired : false,
 			authorsSkipLineRegExp : null,
@@ -292,25 +293,25 @@ module.exports = function(grunt) {
 	 * 
 	 * @param c
 	 *            the {Commit} to clone
-	 * @param incFuncs
-	 *            an array of functions that will be included in the clone (null
-	 *            to include all)
-	 * @param excludes
-	 *            an array of property values that will be excluded from the
-	 *            clone
+	 * @param wl
+	 *            an array of white list functions that will be included in the
+	 *            clone (null to include all)
+	 * @param bl
+	 *            an array of black list property values that will be excluded
+	 *            from the clone
 	 * @returns {Object} clone
 	 */
-	function clone(c, incFuncs, excludes) {
+	function clone(c, wl, bl) {
 		var cl = {}, cp, t;
 		for ( var keys = Object.keys(c), l = 0; l < keys.length; l++) {
 			cp = c[keys[l]];
-			if (excludes && excludes.indexOf(cp) >= 0) {
+			if (bl && bl.indexOf(cp) >= 0) {
 				continue;
 			}
 			if (Array.isArray(cp)) {
 				cl[keys[l]] = cp.slice(0);
 			} else if ((t = typeof cp) === 'function') {
-				if (!incFuncs || incFuncs.indexOf(cp) >= 0) {
+				if (!wl || wl.indexOf(cp) >= 0) {
 					cl[keys[l]] = cp; // cp.bind(cp);
 				}
 			} else if (cp == null || t === 'string' || t === 'number'
@@ -318,7 +319,7 @@ module.exports = function(grunt) {
 					|| util.isError(cp)) {
 				cl[keys[l]] = cp;
 			} else if (t !== 'undefined') {
-				cl[keys[l]] = clone(cp, incFuncs, excludes);
+				cl[keys[l]] = clone(cp, wl, bl);
 			}
 		}
 		return cl;
@@ -427,7 +428,7 @@ module.exports = function(grunt) {
 				+ (this.versionPrereleaseType ? vv(12, this.versionPrerelease)
 						: '') : rv.length > 3 ? rv[3] : '';
 		this.versionTag = rv.length > 3 ? rv[2] + this.version : '';
-		this.versionPkg = function(replacer, space, revert, beforeWrite) {
+		this.versionPkg = function(replacer, space, revert, altWrite) {
 			if (self.pkgPath) {
 				var pkg = grunt.file.readJSON(self.pkgPath);
 				var u = pkg && !revert && pkg.version !== self.version
@@ -436,16 +437,43 @@ module.exports = function(grunt) {
 						&& pkg.version !== self.lastCommit.version
 						&& self.lastCommit.version;
 				if (u || r) {
+					var oldVer = pkg.version;
 					pkg.version = r ? self.lastCommit.version : self.version;
-					if (typeof beforeWrite === 'function') {
-						beforeWrite(pkg.version);
-					}
-					grunt.file.write(self.pkgPath, JSON.stringify(pkg,
-							replacer, space));
+					var pkgStr = JSON.stringify(pkg, replacer, space);
+					grunt.file.write(self.pkgPath,
+							typeof altWrite === 'function' ? altWrite(pkg,
+									pkgStr, oldVer, replacer, space, revert)
+									: pkgStr);
+					grunt.verbose.writeln((r ? 'Reverted ' : 'Bumped "')
+							+ self.pkgPath + '" version to: ' + pkg.version);
 					return pkg.version;
 				}
 			}
 		};
+		this.versionValidate = function() {
+			if (!validate(self.version)) {
+				return false;
+			} else if (self.lastCommit.versionTag
+					&& !semver.gte(self.version, self.lastCommit.version)) {
+				throw grunt.util.error(self.version
+						+ ' must be higher than the last release version '
+						+ self.lastCommit.version);
+			}
+			return true;
+		};
+		function validate(v, q) {
+			if (!v) {
+				if (!q) {
+					grunt.verbose.writeln('Non-release commit ' + (v || ''));
+				}
+				return false;
+			} else if (!self.hasGitToken) {
+				throw grunt.util.error('No Git token found, version: ' + v);
+			} else if (!semver.valid(v)) {
+				throw grunt.util.error(v + 'Invalid release version: ' + v);
+			}
+			return true;
+		}
 		function verMatchVal(i) {
 			var v = self.versionMatch[i];
 			var vl = self.lastCommit.versionMatch
@@ -490,7 +518,7 @@ module.exports = function(grunt) {
 		var doneAsync = null;
 
 		// validate commit
-		if (!validateCommit()) {
+		if (!commit.versionValidate()) {
 			return;
 		}
 		grunt.log.writeln('Preparing release: '
@@ -501,7 +529,14 @@ module.exports = function(grunt) {
 		var useGitHub = options.gitHostname.toLowerCase() === gitHubHostname;
 		var relMsg = commit.message + ' '
 				+ commit.skipTaskGen(options.releaseSkipTasks);
-		var chgLogRtn = '', distZipAsset = '', distTarAsset = '', pubSrcDir = '', pubDistDir = '', pubHash = '';
+		var releaseName = grunt.template.process(options.name, {
+			data : {
+				commit : commit,
+				options : options
+			}
+		});
+		var chgLogRtn = '', pubSrcDir = '', pubDistDir = '', pubHash = '';
+		var distZipAsset = '', distTarAsset = '', distZipAssetName = '', distTarAssetName = '';
 
 		// Queue/Start work
 		var que = new Queue(options).add(remoteSetup).add(pkgUpdate).add(
@@ -534,7 +569,7 @@ module.exports = function(grunt) {
 		});
 
 		/**
-		 * Remote Git setup to premit pushes
+		 * Remote Git setup to permit pushes
 		 */
 		function remoteSetup() {
 			var link = '${GH_TOKEN}@github.com/' + commit.slug + '.git';
@@ -555,17 +590,15 @@ module.exports = function(grunt) {
 				upkg(true);
 			});
 			function upkg(revert) {
-				var v = '';
 				if (commit.versionPkg(options.pkgJsonReplacer,
-						options.pkgJsonSpace, revert, function(ver) {
-							v = ver;
-							grunt.log.writeln((revert ? 'Reverting'
-									: 'Updating')
-									+ ' version to '
-									+ v
-									+ ' in '
-									+ commit.pkgPath);
-
+						options.pkgJsonSpace, revert,
+						function(pkg, pkgStr, ov) {
+							grunt.log
+									.writeln((revert ? 'Reverting' : 'Bumping')
+											+ ' version from ' + ov + ' to '
+											+ pkg.version + ' in '
+											+ commit.pkgPath);
+							return pkgStr;
 						})) {
 					// push package version
 					// TODO : check to make sure there isn't any commits
@@ -643,8 +676,9 @@ module.exports = function(grunt) {
 			updateFiles(options.distAssetUpdateFiles,
 					options.distAssetUpdateFunction, commit.buildDir);
 			// Create distribution assets
-			distZipAsset = pth.resolve(options.distAssetDir, commit.reponame
-					+ '-' + commit.version + '-dist.zip');
+			distZipAssetName = commit.reponame + '-' + commit.version
+					+ '-dist.zip';
+			distZipAsset = pth.resolve(options.distAssetDir, distZipAssetName);
 			cmd('git archive -o "' + distZipAsset + '" --format=zip -'
 					+ options.distAssetCompressRatio + ' HEAD:'
 					+ options.distDir);
@@ -652,8 +686,9 @@ module.exports = function(grunt) {
 				grunt.verbose.writeln('Created ' + distZipAsset + ' (size: '
 						+ fs.statSync(distZipAsset).size + ')');
 			}
-			distTarAsset = pth.resolve(options.distAssetDir, commit.reponame
-					+ '-' + commit.version + '-dist.tar.gz');
+			distTarAssetName = commit.reponame + '-' + commit.version
+					+ '-dist.tar.gz';
+			distTarAsset = pth.resolve(options.distAssetDir, distTarAssetName);
 			cmd('git archive -o "' + distTarAsset + '" --format=tar.gz HEAD:'
 					+ options.distDir);
 			if (grunt.option('verbose')) {
@@ -691,14 +726,14 @@ module.exports = function(grunt) {
 			// release
 			releaseAndUploadAsset([ {
 				path : distZipAsset,
-				name : distZipAsset,
+				name : distZipAssetName,
 				contentType : 'application/zip'
 			}, {
 				path : distTarAsset,
-				name : distTarAsset,
+				name : distTarAssetName,
 				contentType : 'application/x-compressed'
-			} ], commit, chgLogRtn || commit.message, options, que,
-					rollbackTag, function() {
+			} ], commit, releaseName, chgLogRtn || commit.message, options,
+					que, rollbackTag, function() {
 						que.add(publish);
 					});
 		}
@@ -990,30 +1025,6 @@ module.exports = function(grunt) {
 			}
 			return true;
 		}
-
-		/**
-		 * @returns {Boolean} true when validation passes
-		 */
-		function validateCommit() {
-			if (!commit.version) {
-				grunt.verbose.writeln('Non-release commit '
-						+ (commit.version || ''));
-				return false;
-			} else if (!commit.hasGitToken) {
-				throw grunt.util.error('Failed to release ' + commit.version
-						+ ' No Git token found');
-			} else if (!semver.valid(commit.version)) {
-				throw grunt.util.error(commit.version
-						+ ' must be higher than the last release version '
-						+ commit.lastCommit.version);
-			} else if (commit.lastCommit.versionTag
-					&& !semver.gt(commit.version, commit.lastCommit.version)) {
-				throw grunt.util.error(commit.version
-						+ ' must be higher than the last release version '
-						+ commit.lastCommit.version);
-			}
-			return true;
-		}
 	}
 
 	/**
@@ -1113,6 +1124,8 @@ module.exports = function(grunt) {
 	 *            to be uploaded (optional)
 	 * @param commit
 	 *            the commit object the asset is for
+	 * @param name
+	 *            of release
 	 * @param desc
 	 *            release description (can be in markdown)
 	 * @param options
@@ -1125,7 +1138,8 @@ module.exports = function(grunt) {
 	 * @param cb
 	 *            the call back function called when completed successfully
 	 */
-	function releaseAndUploadAsset(assets, commit, desc, options, que, fcb, cb) {
+	function releaseAndUploadAsset(assets, commit, name, desc, options, que,
+			fcb, cb) {
 		var authToken = typeof commit.gitToken === 'function' ? commit
 				.gitToken() : commit.gitToken;
 		if (!authToken) {
@@ -1154,7 +1168,7 @@ module.exports = function(grunt) {
 		}
 		var json = {};
 		json[gitHubReleaseTagName] = commit.versionTag;
-		json[gitHubReleaseName] = commit.versionTag;
+		json[gitHubReleaseName] = name || commit.versionTag;
 		json[gitHubReleaseBody] = desc;
 		json[gitHubReleaseCommitish] = commit.hash;
 		json[gitHubReleasePreFlag] = commit.versionPrereleaseType != null;
