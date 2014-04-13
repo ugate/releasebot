@@ -428,9 +428,10 @@ module.exports = function(grunt) {
 				+ (this.versionPrereleaseType ? vv(12, this.versionPrerelease)
 						: '') : rv.length > 3 ? rv[3] : '';
 		this.versionTag = rv.length > 3 ? rv[2] + this.version : '';
-		this.versionPkg = function(replacer, space, revert, altWrite) {
+		this.versionPkg = function(replacer, space, revert, altWrite, cb) {
+			var pkg = null;
 			if (self.pkgPath) {
-				var pkg = grunt.file.readJSON(self.pkgPath);
+				pkg = grunt.file.readJSON(self.pkgPath);
 				var u = pkg && !revert && pkg.version !== self.version
 						&& self.version;
 				var r = pkg && revert
@@ -442,13 +443,16 @@ module.exports = function(grunt) {
 					var pkgStr = JSON.stringify(pkg, replacer, space);
 					grunt.file.write(self.pkgPath,
 							typeof altWrite === 'function' ? altWrite(pkg,
-									pkgStr, oldVer, replacer, space, revert)
+									pkgStr, oldVer, u, r, replacer, space)
 									: pkgStr);
 					grunt.verbose.writeln((r ? 'Reverted ' : 'Bumped "')
 							+ self.pkgPath + '" version to: ' + pkg.version);
-					return pkg.version;
+					if (typeof cb === 'function') {
+						cb(pkg, pkgStr, oldVer, u, r, replacer, space);
+					}
 				}
 			}
+			return pkg;
 		};
 		this.versionValidate = function() {
 			if (!validate(self.version)) {
@@ -590,21 +594,30 @@ module.exports = function(grunt) {
 				upkg(true);
 			});
 			function upkg(revert) {
-				if (commit.versionPkg(options.pkgJsonReplacer,
-						options.pkgJsonSpace, revert,
-						function(pkg, pkgStr, ov) {
-							grunt.log
-									.writeln((revert ? 'Reverting' : 'Bumping')
-											+ ' version from ' + ov + ' to '
-											+ pkg.version + ' in '
-											+ commit.pkgPath);
+				commit.versionPkg(options.pkgJsonReplacer,
+						options.pkgJsonSpace, revert, function(pkg, pkgStr, ov,
+								u, r) {
+							logPkg(pkg, pkgStr, ov, u, r, true);
 							return pkgStr;
-						})) {
-					// push package version
-					// TODO : check to make sure there isn't any commits
-					// ahead of this one
-					cmd('git commit -q -m "' + relMsg + '" ' + commit.pkgPath);
-					cmd('git push ' + options.repoName + ' ' + commit.branch);
+						}, function(pkg, pkgStr, ov, u, r) {
+							// push package version
+							// TODO : check to make sure there isn't any commits
+							// ahead of this one
+							cmd('git commit -q -m "' + relMsg + '" '
+									+ commit.pkgPath);
+							cmd('git push ' + options.repoName + ' '
+									+ commit.branch);
+							logPkg(pkg, pkgStr, ov, u, r, false);
+						});
+			}
+			function logPkg(pkg, pkgStr, ov, u, r, beforeWrite) {
+				var m = (r ? 'Revert' : 'Bump') + (beforeWrite ? 'ing' : 'ed')
+						+ ' version from ' + ov + ' to ' + pkg.version + ' in '
+						+ commit.pkgPath;
+				if (r) {
+					grunt.verbose.writeln(m);
+				} else {
+					grunt.log.writeln(m);
 				}
 			}
 		}
