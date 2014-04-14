@@ -587,9 +587,9 @@ module.exports = function(grunt) {
 		 * and commits/pushes it to remote
 		 */
 		function pkgUpdate() {
-			upkg();
+			chkoutRun(commit.branch, upkg);
 			que.addRollback(function() {
-				upkg(true);
+				chkoutRun(commit.branch, upkg, true);
 			});
 			function upkg(revert) {
 				commit.versionPkg(options.pkgJsonReplacer,
@@ -597,7 +597,6 @@ module.exports = function(grunt) {
 			}
 			function pkgWritable(pkg, pkgStr, ov, u, r) {
 				pkgLog(pkg, pkgStr, ov, u, r, true);
-				grunt.log.write(cmd('git checkout ' + commit.branch));
 				return pkgStr;
 			}
 			function pkgPush(pkg, pkgStr, ov, u, r) {
@@ -778,7 +777,7 @@ module.exports = function(grunt) {
 						options.distExcludeDirRegExp,
 						options.distExcludeFileRegExp).toString());
 				// cmd('cp -r ' + pth.join(pubSrcDir, '*') + ' ' + pubDistDir);
-				try {
+				chkoutRun(function() {
 					try {
 						cmd('git fetch ' + options.repoName + ' '
 								+ options.distBranch);
@@ -817,9 +816,7 @@ module.exports = function(grunt) {
 
 					que.addRollback(rollbackPublish);
 					que.add(publishNpm);
-				} finally {
-					cmd('git checkout -q ' + (commit.hash || commit.branch));
-				}
+				});
 			}
 		}
 
@@ -830,6 +827,11 @@ module.exports = function(grunt) {
 			var pkg = null, auth = [];
 			if (commit.hasNpmToken && commit.pkgPath) {
 				grunt.log.writeln('Publishing to npm');
+				chkoutRun(commit.branch, go);
+			} else {
+				grunt.verbose.writeln('Skipping npm publish');
+			}
+			function go() {
 				pkg = grunt.file.readJSON(commit.pkgPath);
 				if (!pkg || !pkg.author || !pkg.author.email) {
 					que
@@ -849,8 +851,6 @@ module.exports = function(grunt) {
 						npm.load({}, adduser);
 					}
 				}
-			} else {
-				grunt.verbose.writeln('Skipping npm publish');
 			}
 			function adduser(e) {
 				if (e) {
@@ -897,7 +897,7 @@ module.exports = function(grunt) {
 		function rollbackPublish() {
 			try {
 				cmd('git checkout -q ' + options.distBranch);
-				try {
+				chkoutRun(function() {
 					var cph = cmd('git rev-parse HEAD');
 					if (pubHash && pubHash !== cph) {
 						cmd('git checkout -qf ' + pubHash);
@@ -912,9 +912,7 @@ module.exports = function(grunt) {
 								+ options.distBranch + ' for hash "' + pubHash
 								+ '" (current hash: "' + cph + '")');
 					}
-				} finally {
-					cmd('git checkout -q ' + (commit.hash || commit.branch));
-				}
+				});
 			} catch (e) {
 				var msg = 'Failed to rollback publish branch changes!';
 				que.error(msg, e);
@@ -1017,6 +1015,34 @@ module.exports = function(grunt) {
 				}
 			} catch (e) {
 				que.error('Unable to update publish release asset URL', e);
+			}
+		}
+
+		/**
+		 * Wraps an optional function with a finally block that will checkout
+		 * the current commit after execution. All passed arguments will be
+		 * passed (besides the arguments passed into this function) and returned
+		 * 
+		 * @param chkout
+		 *            an optional options appended to a Git checkout command
+		 *            that will be executed prior to executing the specified
+		 *            function
+		 * @param fx
+		 *            optional function that will be wrapped with a finally
+		 *            block that will checkout the current commit
+		 * @returns the return value from the passed function
+		 */
+		function chkoutRun(chkout, fx) {
+			try {
+				if (chkout) {
+					cmd('git checkout ' + chkout);
+				}
+				if (typeof fx === 'function') {
+					return fx.apply(this, Array.prototype.slice.call(arguments,
+							2));
+				}
+			} finally {
+				cmd('git checkout -q ' + (commit.hash || commit.branch));
 			}
 		}
 
