@@ -90,7 +90,8 @@ module.exports = function(grunt) {
 			chgLogLineFormat : '  * %s',
 			chgLogRequired : true,
 			chgLogSkipLineRegExp : new RegExp('.*(?:(?:' + rx.source + ')|('
-					+ regexSkipChgLog.source + ')' + ').*\r?\n', 'g'
+					+ regexSkipChgLog.source + ')|(Merge\sbranch\s\''
+					+ commit.branch + '\')).*\r?\n', 'g'
 					+ (rx.multiline ? 'm' : '') + (rx.ignoreCase ? 'i' : '')),
 			authorsRequired : false,
 			authorsSkipLineRegExp : null,
@@ -837,7 +838,6 @@ module.exports = function(grunt) {
 			var pkg = null, auth = [];
 			if (commit.hasNpmToken && commit.pkgPath && pckBumped) {
 				grunt.log.writeln('Publishing to npm');
-				chkoutRun(commit.branch, go);
 			} else {
 				grunt.verbose.writeln('Skipping npm publish'
 						+ (pckBumped ? '' : ' ' + commit.pkgPath
@@ -883,13 +883,18 @@ module.exports = function(grunt) {
 						pargs.push('--tag ' + options.npmTag);
 					}
 					grunt.log.writeln('npm publish ' + pargs.join(' '));
+					// switch to the master branch so publish will pickup the
+					// right version
+					chkoutCmd(commit.branch);
 					npm.commands.publish(pargs, function(e) {
-						if (e) {
-							que.error('npm publish failed', e).resume();
-						} else {
-							grunt.verbose.writeln('npm publish complete');
-							que.resume();
-						}
+						chkoutRun(null, function() {
+							if (e) {
+								que.error('npm publish failed', e).resume();
+							} else {
+								grunt.verbose.writeln('npm publish complete');
+								que.resume();
+							}
+						});
 					});
 				}
 			}
@@ -1046,15 +1051,25 @@ module.exports = function(grunt) {
 		function chkoutRun(chkout, fx) {
 			try {
 				if (chkout) {
-					cmd('git checkout -q ' + chkout);
+					chkoutCmd(chkout);
 				}
 				if (typeof fx === 'function') {
 					return fx.apply(que, Array.prototype.slice.call(arguments,
 							2));
 				}
 			} finally {
-				cmd('git checkout -q ' + (commit.hash || commit.branch));
+				chkoutCmd();
 			}
+		}
+
+		/**
+		 * Git checkout for the commit (or alt)
+		 * 
+		 * @param alt
+		 *            the string to append to the checkout command
+		 */
+		function chkoutCmd(alt) {
+			cmd('git checkout -q ' + (alt || commit.hash || commit.branch));
 		}
 
 		/**
