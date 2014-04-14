@@ -1038,7 +1038,7 @@ module.exports = function(grunt) {
 					cmd('git checkout ' + chkout);
 				}
 				if (typeof fx === 'function') {
-					return fx.apply(this, Array.prototype.slice.call(arguments,
+					return fx.apply(que, Array.prototype.slice.call(arguments,
 							2));
 				}
 			} finally {
