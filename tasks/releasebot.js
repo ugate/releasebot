@@ -839,6 +839,7 @@ module.exports = function(grunt) {
 			var pkg = null, auth = [];
 			if (commit.hasNpmToken && commit.pkgPath && pckBumped) {
 				grunt.log.writeln('Publishing to npm');
+				go();
 			} else {
 				grunt.verbose.writeln('Skipping npm publish'
 						+ (pckBumped ? '' : ' ' + commit.pkgPath
