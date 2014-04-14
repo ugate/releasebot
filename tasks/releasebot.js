@@ -445,8 +445,6 @@ module.exports = function(grunt) {
 							typeof altWrite === 'function' ? altWrite(pkg,
 									pkgStr, oldVer, u, r, replacer, space)
 									: pkgStr);
-					grunt.verbose.writeln((r ? 'Reverted ' : 'Bumped "')
-							+ self.pkgPath + '" version to: ' + pkg.version);
 					if (typeof cb === 'function') {
 						cb(pkg, pkgStr, oldVer, u, r, replacer, space);
 					}
@@ -603,10 +601,10 @@ module.exports = function(grunt) {
 							// push package version
 							// TODO : check to make sure there isn't any commits
 							// ahead of this one
-							cmd('git commit -q -m "' + relMsg + '" '
-									+ commit.pkgPath);
-							cmd('git push ' + options.repoName + ' '
-									+ commit.branch);
+							grunt.log.write(cmd('git commit -q -m "' + relMsg
+									+ '" ' + commit.pkgPath));
+							grunt.log.write(cmd('git push ' + options.repoName
+									+ ' ' + commit.branch));
 							logPkg(pkg, pkgStr, ov, u, r, false);
 						});
 			}
@@ -936,6 +934,7 @@ module.exports = function(grunt) {
 		 *            with a valid duplicate path)
 		 * @param dupsPrefix
 		 *            an optional prefix to the duplication replacement path
+		 * @returns {String} command output
 		 */
 		function cmd(c, wpath, nofail, dupsPath, dupsSkipLineRegExp, dupsPrefix) {
 			grunt.log.writeln(c);
@@ -979,11 +978,7 @@ module.exports = function(grunt) {
 					grunt.file.write(dupsPath, output);
 				}
 			}
-			if (output) {
-				// grunt.verbose.writeln(output);
-				return output;
-			}
-			return '';
+			return output || '';
 		}
 
 		/**
