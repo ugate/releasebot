@@ -428,10 +428,12 @@ module.exports = function(grunt) {
 				+ (this.versionPrereleaseType ? vv(12, this.versionPrerelease)
 						: '') : rv.length > 3 ? rv[3] : '';
 		this.versionTag = rv.length > 3 ? rv[2] + this.version : '';
-		this.versionPkg = function(replacer, space, revert, altWrite, cb) {
+		this.versionPkg = function(replacer, space, revert, altWrite, cb,
+				altPath) {
 			var pkg = null;
-			if (self.pkgPath) {
-				pkg = grunt.file.readJSON(self.pkgPath);
+			var pth = altPath || self.pkgPath;
+			if (pth) {
+				pkg = grunt.file.readJSON(pth);
 				var u = pkg && !revert && pkg.version !== self.version
 						&& self.version;
 				var r = pkg && revert && self.lastCommit.version;
@@ -439,12 +441,12 @@ module.exports = function(grunt) {
 					var oldVer = pkg.version;
 					pkg.version = r ? self.lastCommit.version : self.version;
 					var pkgStr = JSON.stringify(pkg, replacer, space);
-					grunt.file.write(self.pkgPath,
+					grunt.file.write(pth,
 							typeof altWrite === 'function' ? altWrite(pkg,
-									pkgStr, oldVer, u, r, replacer, space)
+									pkgStr, oldVer, u, r, pth, replacer, space)
 									: pkgStr);
 					if (typeof cb === 'function') {
-						cb(pkg, pkgStr, oldVer, u, r, replacer, space);
+						cb(pkg, pkgStr, oldVer, u, r, pth, replacer, space);
 					}
 				}
 			}
@@ -453,8 +455,8 @@ module.exports = function(grunt) {
 		this.versionValidate = function() {
 			if (!validate(self.version)) {
 				return false;
-			} else if (self.lastCommit.versionTag
-					&& !semver.gte(self.version, self.lastCommit.version)) {
+			} else if (self.lastCommit.version
+					&& semver.lte(self.version, self.lastCommit.version)) {
 				throw grunt.util.error(self.version
 						+ ' must be higher than the last release version '
 						+ self.lastCommit.version);
@@ -470,7 +472,7 @@ module.exports = function(grunt) {
 			} else if (!self.hasGitToken) {
 				throw grunt.util.error('No Git token found, version: ' + v);
 			} else if (!semver.valid(v)) {
-				throw grunt.util.error(v + 'Invalid release version: ' + v);
+				throw grunt.util.error('Invalid release version: ' + v);
 			}
 			return true;
 		}
@@ -584,31 +586,34 @@ module.exports = function(grunt) {
 		 * Updates the package file version using the current {Commit} version
 		 * and commits/pushes it to remote
 		 */
-		function pkgUpdate() {
+		function pkgUpdate(altPkgPath, noPush) {
 			chkoutRun(commit.branch, upkg);
 			que.addRollback(function() {
 				chkoutRun(commit.branch, upkg, true);
 			});
 			function upkg(revert) {
 				commit.versionPkg(options.pkgJsonReplacer,
-						options.pkgJsonSpace, revert, pkgWritable, pkgPush);
+						options.pkgJsonSpace, revert, pkgWritable, pkgPush,
+						altPkgPath);
 			}
-			function pkgWritable(pkg, pkgStr, ov, u, r) {
-				pkgLog(pkg, pkgStr, ov, u, r, true);
+			function pkgWritable(pkg, pkgStr, ov, u, r, p) {
+				pkgLog(pkg, pkgStr, ov, u, r, p, true);
 				return pkgStr;
 			}
-			function pkgPush(pkg, pkgStr, ov, u, r) {
+			function pkgPush(pkg, pkgStr, ov, u, r, p) {
 				// TODO : check to make sure there isn't any commits ahead of
 				// this one
-				cmd('git commit -q -m "' + relMsg + '" ' + commit.pkgPath);
-				cmd('git push ' + options.repoName + ' ' + commit.branch);
-				pckBumped = u;
-				pkgLog(pkg, pkgStr, ov, u, r, false);
+				if (!noPush) {
+					cmd('git commit -q -m "' + relMsg + '" ' + p);
+					cmd('git push ' + options.repoName + ' ' + commit.branch);
+					pckBumped = u;
+				}
+				pkgLog(pkg, pkgStr, ov, u, r, p, false);
 			}
-			function pkgLog(pkg, pkgStr, ov, u, r, beforeWrite) {
+			function pkgLog(pkg, pkgStr, ov, u, r, p, beforeWrite) {
 				var m = (r ? 'Revert' : 'Bump') + (beforeWrite ? 'ing' : 'ed')
 						+ ' version from ' + ov + ' to ' + pkg.version + ' in '
-						+ commit.pkgPath;
+						+ p;
 				if (r) {
 					grunt.verbose.writeln(m);
 				} else {
@@ -671,6 +676,11 @@ module.exports = function(grunt) {
 		 * Adds/Commits everything in the distribution directory for tracking
 		 */
 		function addAndCommitDistDir() {
+			if (commit.pkgPath && commit.distDir
+					&& !/\.|\//.test(commit.distDir)) {
+				// need to update the package included in the distribution
+				pkgUpdate(pth.join(commit.distDir, commit.pkgPath), true);
+			}
 			// Commit changes (needed to generate archive asset)
 			cmd('git add --force ' + options.distDir);
 			cmd('git commit -q -m "' + relMsg + '"');
