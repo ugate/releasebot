@@ -434,9 +434,7 @@ module.exports = function(grunt) {
 				pkg = grunt.file.readJSON(self.pkgPath);
 				var u = pkg && !revert && pkg.version !== self.version
 						&& self.version;
-				var r = pkg && revert
-						&& pkg.version !== self.lastCommit.version
-						&& self.lastCommit.version;
+				var r = pkg && revert && self.lastCommit.version;
 				if (u || r) {
 					var oldVer = pkg.version;
 					pkg.version = r ? self.lastCommit.version : self.version;
@@ -537,7 +535,7 @@ module.exports = function(grunt) {
 				options : options
 			}
 		});
-		var chgLogRtn = '', pubSrcDir = '', pubDistDir = '', pubHash = '';
+		var chgLogRtn = '', pubSrcDir = '', pubDistDir = '', pubHash = '', pckBumped = false;
 		var distZipAsset = '', distTarAsset = '', distZipAssetName = '', distTarAssetName = '';
 
 		// Queue/Start work
@@ -604,6 +602,7 @@ module.exports = function(grunt) {
 				// this one
 				cmd('git commit -q -m "' + relMsg + '" ' + commit.pkgPath);
 				cmd('git push ' + options.repoName + ' ' + commit.branch);
+				pckBumped = u;
 				pkgLog(pkg, pkgStr, ov, u, r, false);
 			}
 			function pkgLog(pkg, pkgStr, ov, u, r, beforeWrite) {
@@ -826,11 +825,13 @@ module.exports = function(grunt) {
 		 */
 		function publishNpm() {
 			var pkg = null, auth = [];
-			if (commit.hasNpmToken && commit.pkgPath) {
+			if (commit.hasNpmToken && commit.pkgPath && pckBumped) {
 				grunt.log.writeln('Publishing to npm');
 				chkoutRun(commit.branch, go);
 			} else {
-				grunt.verbose.writeln('Skipping npm publish');
+				grunt.verbose.writeln('Skipping npm publish'
+						+ (pckBumped ? '' : ' ' + commit.pkgPath
+								+ ' not bumped to ' + commit.version));
 			}
 			function go() {
 				pkg = grunt.file.readJSON(commit.pkgPath);
