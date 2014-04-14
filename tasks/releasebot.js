@@ -90,7 +90,7 @@ module.exports = function(grunt) {
 			chgLogLineFormat : '  * %s',
 			chgLogRequired : true,
 			chgLogSkipLineRegExp : new RegExp('.*(?:(?:' + rx.source + ')|('
-					+ regexSkipChgLog.source + ')|(Merge\sbranch\s\''
+					+ regexSkipChgLog.source + ')|(Merge\\sbranch\\s\''
 					+ commit.branch + '\')).*\r?\n', 'g'
 					+ (rx.multiline ? 'm' : '') + (rx.ignoreCase ? 'i' : '')),
 			authorsRequired : false,
@@ -440,7 +440,8 @@ module.exports = function(grunt) {
 				var r = pkg && revert && self.lastCommit.version;
 				if (u || r) {
 					var oldVer = pkg.version;
-					pkg.version = r ? self.lastCommit.version : self.version;
+					pkg.version = r ? self.lastCommit.version || '0.0.0'
+							: self.version;
 					var pkgStr = JSON.stringify(pkg, replacer, space);
 					grunt.file.write(pth,
 							typeof altWrite === 'function' ? altWrite(pkg,
