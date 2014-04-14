@@ -602,16 +602,9 @@ module.exports = function(grunt) {
 			function pkgPush(pkg, pkgStr, ov, u, r) {
 				// TODO : check to make sure there isn't any commits ahead of
 				// this one
-				try {
-					grunt.log.write(cmd('git commit -m "' + relMsg + '" '
-							+ commit.pkgPath));
-					grunt.log.write(cmd('git push ' + options.repoName + ' '
-							+ commit.branch));
-					pkgLog(pkg, pkgStr, ov, u, r, false);
-				} finally {
-					grunt.log.write(cmd('git checkout -q '
-							+ (commit.hash || commit.branch)));
-				}
+				cmd('git commit -q -m "' + relMsg + '" ' + commit.pkgPath);
+				cmd('git push ' + options.repoName + ' ' + commit.branch);
+				pkgLog(pkg, pkgStr, ov, u, r, false);
 			}
 			function pkgLog(pkg, pkgStr, ov, u, r, beforeWrite) {
 				var m = (r ? 'Revert' : 'Bump') + (beforeWrite ? 'ing' : 'ed')
@@ -777,46 +770,54 @@ module.exports = function(grunt) {
 						options.distExcludeDirRegExp,
 						options.distExcludeFileRegExp).toString());
 				// cmd('cp -r ' + pth.join(pubSrcDir, '*') + ' ' + pubDistDir);
-				chkoutRun(function() {
-					try {
-						cmd('git fetch ' + options.repoName + ' '
-								+ options.distBranch);
-						pubHash = cmd('git rev-parse HEAD');
-					} catch (e) {
-						if (util.isRegExp(options.distBranchCreateRegExp)
-								&& options.distBranchCreateRegExp
-										.test(e.message)) {
-							cmd('git checkout -q --orphan '
+				chkoutRun(
+						null,
+						function() {
+							try {
+								cmd('git fetch ' + options.repoName + ' '
+										+ options.distBranch);
+								pubHash = cmd('git rev-parse HEAD');
+							} catch (e) {
+								if (util
+										.isRegExp(options.distBranchCreateRegExp)
+										&& options.distBranchCreateRegExp
+												.test(e.message)) {
+									cmd('git checkout -q --orphan '
+											+ options.distBranch);
+								} else {
+									throw e;
+								}
+							}
+							if (pubHash) {
+								cmd('git checkout -q --track '
+										+ options.repoName + '/'
+										+ options.distBranch);
+							}
+							cmd('git rm -rfq .');
+							cmd('git clean -dfq .');
+							grunt.log
+									.writeln('Copying publication directories/files from '
+											+ pubDistDir
+											+ ' to '
+											+ commit.buildDir);
+							grunt.log.writeln(copyRecursiveSync(pubDistDir,
+									commit.buildDir).toString());
+							// cmd('cp -r ' + pth.join(pubDistDir, '*') + ' .');
+
+							// give taskateers a chance to update branch file
+							// contents
+							updateFiles(options.distBranchUpdateFiles,
+									options.distBranchUpdateFunction,
+									commit.buildDir);
+
+							cmd('git add -A');
+							cmd('git commit -q -m "' + relMsg + '"');
+							cmd('git push -f ' + options.repoName + ' '
 									+ options.distBranch);
-						} else {
-							throw e;
-						}
-					}
-					if (pubHash) {
-						cmd('git checkout -q --track ' + options.repoName + '/'
-								+ options.distBranch);
-					}
-					cmd('git rm -rfq .');
-					cmd('git clean -dfq .');
-					grunt.log
-							.writeln('Copying publication directories/files from '
-									+ pubDistDir + ' to ' + commit.buildDir);
-					grunt.log.writeln(copyRecursiveSync(pubDistDir,
-							commit.buildDir).toString());
-					// cmd('cp -r ' + pth.join(pubDistDir, '*') + ' .');
 
-					// give taskateers a chance to update branch file contents
-					updateFiles(options.distBranchUpdateFiles,
-							options.distBranchUpdateFunction, commit.buildDir);
-
-					cmd('git add -A');
-					cmd('git commit -q -m "' + relMsg + '"');
-					cmd('git push -f ' + options.repoName + ' '
-							+ options.distBranch);
-
-					que.addRollback(rollbackPublish);
-					que.add(publishNpm);
-				});
+							que.addRollback(rollbackPublish);
+							que.add(publishNpm);
+						});
 			}
 		}
 
@@ -896,8 +897,7 @@ module.exports = function(grunt) {
 		 */
 		function rollbackPublish() {
 			try {
-				cmd('git checkout -q ' + options.distBranch);
-				chkoutRun(function() {
+				chkoutRun(options.distBranch, function() {
 					var cph = cmd('git rev-parse HEAD');
 					if (pubHash && pubHash !== cph) {
 						cmd('git checkout -qf ' + pubHash);
@@ -1035,7 +1035,7 @@ module.exports = function(grunt) {
 		function chkoutRun(chkout, fx) {
 			try {
 				if (chkout) {
-					cmd('git checkout ' + chkout);
+					cmd('git checkout -q ' + chkout);
 				}
 				if (typeof fx === 'function') {
 					return fx.apply(que, Array.prototype.slice.call(arguments,
