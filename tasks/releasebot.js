@@ -593,22 +593,28 @@ module.exports = function(grunt) {
 			});
 			function upkg(revert) {
 				commit.versionPkg(options.pkgJsonReplacer,
-						options.pkgJsonSpace, revert, function(pkg, pkgStr, ov,
-								u, r) {
-							logPkg(pkg, pkgStr, ov, u, r, true);
-							return pkgStr;
-						}, function(pkg, pkgStr, ov, u, r) {
-							// push package version
-							// TODO : check to make sure there isn't any commits
-							// ahead of this one
-							grunt.log.write(cmd('git commit -m "' + relMsg
-									+ '" ' + commit.pkgPath));
-							grunt.log.write(cmd('git push ' + options.repoName
-									+ ' ' + commit.branch));
-							logPkg(pkg, pkgStr, ov, u, r, false);
-						});
+						options.pkgJsonSpace, revert, pkgWritable, pkgPush);
 			}
-			function logPkg(pkg, pkgStr, ov, u, r, beforeWrite) {
+			function pkgWritable(pkg, pkgStr, ov, u, r) {
+				pkgLog(pkg, pkgStr, ov, u, r, true);
+				grunt.log.write(cmd('git checkout ' + commit.branch));
+				return pkgStr;
+			}
+			function pkgPush(pkg, pkgStr, ov, u, r) {
+				// TODO : check to make sure there isn't any commits ahead of
+				// this one
+				try {
+					grunt.log.write(cmd('git commit -m "' + relMsg + '" '
+							+ commit.pkgPath));
+					grunt.log.write(cmd('git push ' + options.repoName + ' '
+							+ commit.branch));
+					pkgLog(pkg, pkgStr, ov, u, r, false);
+				} finally {
+					grunt.log.write(cmd('git checkout -q '
+							+ (commit.hash || commit.branch)));
+				}
+			}
+			function pkgLog(pkg, pkgStr, ov, u, r, beforeWrite) {
 				var m = (r ? 'Revert' : 'Bump') + (beforeWrite ? 'ing' : 'ed')
 						+ ' version from ' + ov + ' to ' + pkg.version + ' in '
 						+ commit.pkgPath;
@@ -894,7 +900,7 @@ module.exports = function(grunt) {
 				try {
 					var cph = cmd('git rev-parse HEAD');
 					if (pubHash && pubHash !== cph) {
-						cmd('git checkout ' + pubHash);
+						cmd('git checkout -qf ' + pubHash);
 						cmd('git commit -q -m "Rollback ' + relMsg + '"');
 						cmd('git push -f ' + options.repoName + ' '
 								+ options.distBranch);
