@@ -1,9 +1,12 @@
 {
   "name": "releasebot",
   "description": "Grunt task for triggering a release when a commit message matches a predefined regular expression or when manually invoked",
-  "version": "0.0.0",
+  "version": "0.0.1-alpha.1",
   "main": "releasebot.js",
-  "files": [ "releasebot.js" ],
+  "files": [
+    "releasebot.js",
+    "LICENSE"
+  ],
   "homepage": "https://github.com/ugate/releasebot",
   "author": {
     "name": "ugate",
@@ -45,9 +48,5 @@
   "dependencies": {
     "shelljs": "~0.2.6",
     "semver": "~2.2.1"
-  },
-  "files": [
-    "releasebot.js",
-    "LICENSE"
-  ]
+  }
 }
