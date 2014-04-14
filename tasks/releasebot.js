@@ -601,7 +601,7 @@ module.exports = function(grunt) {
 							// push package version
 							// TODO : check to make sure there isn't any commits
 							// ahead of this one
-							grunt.log.write(cmd('git commit -q -m "' + relMsg
+							grunt.log.write(cmd('git commit -m "' + relMsg
 									+ '" ' + commit.pkgPath));
 							grunt.log.write(cmd('git push ' + options.repoName
 									+ ' ' + commit.branch));
