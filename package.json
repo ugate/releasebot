@@ -1,0 +1,52 @@
+{
+  "name": "releasebot",
+  "description": "Grunt task for triggering a release when a commit message matches a predefined regular expression or when manually invoked",
+  "version": "0.0.0",
+  "main": "releasebot.js",
+  "files": [
+    "releasebot.js",
+    "LICENSE"
+  ],
+  "homepage": "https://github.com/ugate/releasebot",
+  "author": {
+    "name": "ugate",
+    "email": "ugate.public@gmail.com",
+    "url": "http://ugate.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/ugate/releasebot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ugate/releasebot/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/ugate/releasebot/blob/master/LICENSE"
+    }
+  ],
+  "scripts": {
+    "test": "grunt test -v --stack"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.2",
+    "grunt-contrib-clean": "~0.5.0",
+    "grunt-contrib-copy": "~0.5.0",
+    "grunt-contrib-jshint": "~0.10.0",
+    "grunt-contrib-nodeunit": "~0.3.3",
+    "grunt-banner": "~0.2.0"
+  },
+  "peerDependencies": {
+    "grunt": "~0.4.2"
+  },
+  "keywords": [
+    "gruntplugin",
+    "release",
+    "publish"
+  ],
+  "dependencies": {
+    "shelljs": "~0.2.6",
+    "semver": "~2.2.1"
+  }
+}
