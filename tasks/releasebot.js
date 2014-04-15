@@ -107,8 +107,8 @@ module.exports = function(grunt) {
 			distBranchUpdateFunction : null,
 			distBranchUpdateFiles : [],
 			rollbackStrategy : 'queue',
+			rollbackAsyncTimeout : 60000,
 			releaseSkipTasks : [ 'ci' ],
-			asyncTimeout : 60000,
 			npmTag : ''
 		});
 		if (options.gitHostname === gitHubHostname && commit.username) {
@@ -1612,12 +1612,12 @@ module.exports = function(grunt) {
 			if (typeof cb === 'function') {
 				tm = setTimeout(function() {
 					que.error('Timeout of '
-							+ options.asyncTimeout
+							+ options.rollbackAsyncTimeout
 							+ 'ms reached'
 							+ (cb === rollbacks ? ' rolling back changes'
 									: ' for rollback'));
 					cb();
-				}, options.asyncTimeout);
+				}, options.rollbackAsyncTimeout);
 			}
 			return que;
 		}
