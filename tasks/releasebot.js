@@ -874,7 +874,7 @@ module.exports = function(grunt) {
 					}
 				}
 			}
-			function adduser(e) {
+			function adduser() {
 				npm.config.set('email', pkg.author.email, 'user');
 				npm.registry.adduser(auth[0], auth[1], pkg.author.email, aucb);
 				function aucb(e) {
@@ -1624,7 +1624,7 @@ module.exports = function(grunt) {
 				}
 			}
 		}
-		function Work(fx, rb, args, isRb) {
+		function Work(fx, rb, args) {
 			this.func = fx;
 			this.rb = rb ? new Rollback(rb, args) : null;
 			this.args = args;
