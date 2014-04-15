@@ -31,9 +31,9 @@ The commit message below will result in a release of version `1.0.0` (surroundin
 This is Release v1.0.0 of my app
 ```
 
-To release version `0.0.1.alpha.1` when no prior releases have been made:
+To release version `0.0.1-alpha.1` when no prior releases have been made:
 ```shell
-release v*.*.+.alpha.+
+release v*.*.+-alpha.+
 ```
 
 To release version `1.0.2` when the latest release is `1.0.0`:
@@ -253,8 +253,9 @@ Once the releasebot task has been registered commit datails are captured and mad
   chgLogLineFormat : '  * %s',
   // Flag to indicate that the release will fail when the change log cannot be validated
   chgLogRequired : true,
-  // Regular expression that will be used to skip individual lines from being used within the change log ("master" will be replaced by commit.branch)
-  chgLogSkipLineRegExp : /.*(?:(?:(released?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?)))|(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
+  // Regular expression that will be used to exclude change log content 
+  // Default: any change log new line that matches the release trigger, [skip changelog] or merge branch ("master" will be replaced with the value from commit.branch)
+  chgLogSkipRegExp : /.*(?:(?:(released?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?)))|(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
   // Flag to indicate that the release will fail when the authors log cannot be validated
   authorsRequired : false,
   // Regular expression that will be used to skip individual lines from being used within the authors log
@@ -287,6 +288,8 @@ Once the releasebot task has been registered commit datails are captured and mad
   rollbackStrategy : 'queue',
   // Number of milliseconds that an asynchronous rollback action will wait for completion before throwing an error
   rollbackAsyncTimeout : 60000,
+  // Number of milliseconds that an asynchronous step will wait for completion before throwing an error
+  asyncTimeout : 60000,
   // Tasks names that will be skipped when releasebot performs commits for package version bumps, publish branch changes, etc. Default: http://docs.travis-ci.com/user/how-to-skip-a-build/
   releaseSkipTasks : [ 'ci' ],
   // The optional npm publish tag

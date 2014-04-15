@@ -89,7 +89,7 @@ module.exports = function(grunt) {
 			authors : 'AUTHORS.md',
 			chgLogLineFormat : '  * %s',
 			chgLogRequired : true,
-			chgLogSkipLineRegExp : new RegExp('.*(?:(?:' + rx.source + ')|('
+			chgLogSkipRegExp : new RegExp('.*(?:(?:' + rx.source + ')|('
 					+ regexSkipChgLog.source + ')|(Merge\\sbranch\\s\''
 					+ commit.branch + '\')).*\r?\n', 'g'
 					+ (rx.multiline ? 'm' : '') + (rx.ignoreCase ? 'i' : '')),
@@ -108,6 +108,7 @@ module.exports = function(grunt) {
 			distBranchUpdateFiles : [],
 			rollbackStrategy : 'queue',
 			rollbackAsyncTimeout : 60000,
+			asyncTimeout : 60000,
 			releaseSkipTasks : [ 'ci' ],
 			npmTag : ''
 		});
@@ -304,7 +305,7 @@ module.exports = function(grunt) {
 	 */
 	function clone(c, wl, bl) {
 		var cl = {}, cp, t;
-		for ( var keys = Object.keys(c), l = 0; l < keys.length; l++) {
+		for (var keys = Object.keys(c), l = 0; l < keys.length; l++) {
 			cp = c[keys[l]];
 			if (bl && bl.indexOf(cp) >= 0) {
 				continue;
@@ -379,7 +380,7 @@ module.exports = function(grunt) {
 		this.skipTasks = [];
 		this.skipTaskGen = function() {
 			var s = '';
-			for ( var i = 0; i < arguments.length; i++) {
+			for (var i = 0; i < arguments.length; i++) {
 				if (Array.isArray(arguments[i])) {
 					s += self.skipTaskGen.apply(self, arguments[i]);
 				} else if (arguments[i]) {
@@ -647,7 +648,7 @@ module.exports = function(grunt) {
 			chgLogRtn = cmd('git --no-pager log ' + lastGitLog
 					+ ' --pretty=format:"' + options.chgLogLineFormat + '" > '
 					+ chgLogPath, null, false, chgLogPath,
-					options.chgLogSkipLineRegExp, '<!-- Commit ' + commit.hash
+					options.chgLogSkipRegExp, '<!-- Commit ' + commit.hash
 							+ ' -->\n')
 					|| '';
 			validateFile(chgLogPath);
@@ -861,42 +862,50 @@ module.exports = function(grunt) {
 					if (auth.length !== 2) {
 						que.error('npm NPM_TOKEN is missing or invalid');
 					} else {
-						que.pause();
-						npm.load({}, adduser);
+						que.pause(function() {
+							npm.load({}, function(e) {
+								if (e) {
+									que.error('npm load failed', e).resume();
+								} else {
+									que.pause(adduser);
+								}
+							});
+						});
 					}
 				}
 			}
 			function adduser(e) {
-				if (e) {
-					que.error('npm load failed', e).resume();
-				} else {
-					npm.config.set('email', pkg.author.email, 'user');
-					npm.registry.adduser(auth[0], auth[1], pkg.author.email,
-							pub);
+				npm.config.set('email', pkg.author.email, 'user');
+				npm.registry.adduser(auth[0], auth[1], pkg.author.email, aucb);
+				function aucb(e) {
+					if (e) {
+						que.error('npm publish failed to be authenticated', e)
+								.resume();
+					} else {
+						que.pause(pub);
+					}
 				}
 			}
-			function pub(e) {
-				if (e) {
-					que.error('npm publish failed to be authenticated', e)
-							.resume();
-				} else {
-					var pargs = [];
-					if (options.npmTag) {
-						pargs.push('--tag ' + options.npmTag);
+			function pub() {
+				var pargs = [];
+				if (options.npmTag) {
+					pargs.push('--tag ' + options.npmTag);
+				}
+				grunt.log.writeln('npm publish ' + pargs.join(' '));
+				// switch to the master branch so publish will pickup the
+				// right version
+				chkoutCmd(commit.branch);
+				npm.commands.publish(pargs, function(e) {
+					if (e) {
+						que.error('npm publish failed', e).resume();
+					} else {
+						que.pause(postPub);
 					}
-					grunt.log.writeln('npm publish ' + pargs.join(' '));
-					// switch to the master branch so publish will pickup the
-					// right version
-					chkoutCmd(commit.branch);
-					npm.commands.publish(pargs, function(e) {
-						chkoutRun(null, function() {
-							if (e) {
-								que.error('npm publish failed', e).resume();
-							} else {
-								grunt.verbose.writeln('npm publish complete');
-								que.resume();
-							}
-						});
+				});
+				function postPub() {
+					chkoutRun(null, function() {
+						grunt.verbose.writeln('npm publish complete');
+						que.resume();
 					});
 				}
 			}
@@ -1019,7 +1028,7 @@ module.exports = function(grunt) {
 		function updateFiles(files, func, path) {
 			try {
 				if (Array.isArray(files) && typeof func === 'function') {
-					for ( var i = 0; i < files.length; i++) {
+					for (var i = 0; i < files.length; i++) {
 						var p = pth.join(path, files[i]), au = '';
 						var content = grunt.file.read(p, {
 							encoding : grunt.file.defaultEncoding
@@ -1231,7 +1240,15 @@ module.exports = function(grunt) {
 						: null
 			};
 			a.size = a.item && a.item.path ? fs.statSync(a.item.path).size : 0;
-			a.cb = !a.item || a.size <= 0 ? cb : postReleaseAsset;
+			a.cb = function() {
+				if (!a.item || a.size <= 0) {
+					// queue completion callback
+					que.add(cb);
+				} else {
+					// pause and wait for response
+					que.pause(postReleaseAsset);
+				}
+			};
 			return a;
 		}
 		var json = {};
@@ -1257,12 +1274,10 @@ module.exports = function(grunt) {
 			'Content-Length' : jsonStr.length
 		};
 
-		// queue request
-		que.add(postRelease);
+		// pause queue and wait for response
+		que.pause(postRelease);
 
 		function postRelease() {
-			// pause and wait for response
-			que.pause();
 			grunt.log.writeln('Posting the following to ' + opts.hostname
 					+ releasePath);
 			if (grunt.option('verbose')) {
@@ -1310,7 +1325,7 @@ module.exports = function(grunt) {
 					commit.releaseId = rl[gitHubReleaseId];
 					// queue asset uploaded or complete with callback
 					que.addRollbacks(postReleaseRollback, fcb);
-					que.add(asset.cb);
+					asset.cb();
 				} else {
 					que.error(
 							'No tag found for ' + commit.versionTag + ' in '
@@ -1323,8 +1338,6 @@ module.exports = function(grunt) {
 		}
 
 		function postReleaseAsset() {
-			// pause and wait for response
-			que.pause();
 			grunt.log.writeln('Uploading "' + asset.item.path
 					+ '" release asset for ' + commit.versionTag + ' via '
 					+ options.gitHostname);
@@ -1401,7 +1414,7 @@ module.exports = function(grunt) {
 				}
 				// check for more assets to upload
 				asset = nextAsset();
-				que.add(asset.cb);
+				asset.cb();
 			}
 		}
 
@@ -1481,18 +1494,13 @@ module.exports = function(grunt) {
 			// maintained regardless of strategy
 			var args = isStack() ? Array.prototype.reverse.call(arguments)
 					: arguments;
-			for ( var i = 0; i < args.length; i++) {
+			for (var i = 0; i < args.length; i++) {
 				que.addRollback(args[i]);
 			}
 		};
 		this.addRollback = function(rb) {
 			if (typeof rb === 'function') {
-				if (typeof options.rollbackStrategy === 'string'
-						&& /stack/i.test(options.rollbackStrategy)) {
-					wrkrb.unshift(new Rollback(rb));
-				} else {
-					wrkrb.push(new Rollback(rb));
-				}
+				addRollbackObj(new Rollback(rb));
 			}
 		};
 		this.work = function() {
@@ -1525,9 +1533,11 @@ module.exports = function(grunt) {
 		this.hasQueued = function(i) {
 			return (i || wi) < wrkq.length - 1;
 		};
-		this.pause = function() {
+		this.pause = function(fx, rb) {
 			pausd = true;
-			return tko(rollbacks);
+			var rtn = tko(rollbacks);
+			runNow(fx, rb, Array.prototype.slice.call(arguments, 2));
+			return rtn;
 		};
 		this.resume = function() {
 			tko();
@@ -1546,9 +1556,11 @@ module.exports = function(grunt) {
 		this.errorCount = function() {
 			return es.count();
 		};
-		this.pauseRollback = function() {
+		this.pauseRollback = function(fx, rb) {
 			rbpausd = true;
-			return tko(que.resumeRollback);
+			var rtn = tko(que.resumeRollback);
+			runNow(fx, rb, Array.prototype.slice.call(arguments, 2), true);
+			return rtn;
 		};
 		this.resumeRollback = function() {
 			tko();
@@ -1583,13 +1595,42 @@ module.exports = function(grunt) {
 			}
 			return endc ? endc.call(que, rbcnt) : rbcnt;
 		}
-		function Work(fx, rb, args) {
+		function runNow(fx, rb, args, isRb) {
+			if (typeof fx === 'function') {
+				var stop = null;
+				try {
+					if (isRb) {
+						// immediately ran rollback needs to be tracked
+						var rbo = addRollbackObj(new Rollback(fx));
+						rbi++;
+						rbcnt++;
+						rbo.run();
+					} else {
+						var wrk = new Work(fx, rb, args, isRb);
+						wrk.run();
+					}
+				} catch (e) {
+					stop = e;
+					que.error(e);
+				} finally {
+					if (stop) {
+						// rollback for the rollback
+						if (isRb) {
+							runNow(rb, null, null, true);
+						} else {
+							rollbacks();
+						}
+					}
+				}
+			}
+		}
+		function Work(fx, rb, args, isRb) {
 			this.func = fx;
 			this.rb = rb ? new Rollback(rb, args) : null;
 			this.args = args;
 			this.rtn = undefined;
 			this.run = function() {
-				this.rtn = fx.apply(que, this.args);
+				this.rtn = this.func.apply(que, this.args);
 				wrkd.push(this);
 				que.addRollback(this.rb);
 				return this.rtn;
@@ -1601,6 +1642,15 @@ module.exports = function(grunt) {
 				return typeof rb === 'function' ? rb.call(que) : false;
 			};
 		}
+		function addRollbackObj(rbo) {
+			if (typeof options.rollbackStrategy === 'string'
+					&& /stack/i.test(options.rollbackStrategy)) {
+				wrkrb.unshift(rbo);
+			} else {
+				wrkrb.push(rbo);
+			}
+			return rbo;
+		}
 		function funcName(fx) {
 			var n = fx ? regexFuncName.exec(fx.toString()) : null;
 			return n && n[0] ? n[0] : '';
@@ -1610,14 +1660,14 @@ module.exports = function(grunt) {
 				clearTimeout(tm);
 			}
 			if (typeof cb === 'function') {
+				var to = cb === rollbacks ? options.rollbackAsyncTimeout
+						: options.asyncTimeout;
+				var rbm = cb === rollbacks ? ' rolling back changes'
+						: ' for rollback';
 				tm = setTimeout(function() {
-					que.error('Timeout of '
-							+ options.rollbackAsyncTimeout
-							+ 'ms reached'
-							+ (cb === rollbacks ? ' rolling back changes'
-									: ' for rollback'));
+					que.error('Timeout of ' + to + 'ms reached' + rbm);
 					cb();
-				}, options.rollbackAsyncTimeout);
+				}, to);
 			}
 			return que;
 		}
@@ -1641,7 +1691,7 @@ module.exports = function(grunt) {
 		 * Logs one or more errors (can be {Error}, {Object} or {String})
 		 */
 		this.log = function() {
-			for ( var i = 0; i < arguments.length; i++) {
+			for (var i = 0; i < arguments.length; i++) {
 				if (util.isArray(arguments[i])) {
 					this.log(arguments[i]);
 				} else {
