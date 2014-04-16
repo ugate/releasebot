@@ -5,22 +5,23 @@
 
 1. [Capture](https://www.kernel.org/pub/software/scm/git/docs/git-rev-parse.html) [commit](https://www.kernel.org/pub/software/scm/git/docs/git-show.html) [details](https://www.kernel.org/pub/software/scm/git/docs/git-remote.html) [from Git](https://www.kernel.org/pub/software/scm/git/docs/git-describe.html) (on task registration)
 2. Check for <a href="#default-task-specific-options">release trigger</a> within commit message
-3. Capture/write [change log and/or authors](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) (if directed) &dagger;
-4. [Generate release archive assets](https://www.kernel.org/pub/software/scm/git/docs/git-archive.html) (zip and tar) &dagger;
-5. [Release](http://developer.github.com/v3/repos/releases/#create-a-release)/[Tag](https://www.kernel.org/pub/software/scm/git/docs/git-tag.html) version (with [change log](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) as description) &dagger; &hearts;
-6. [Upload archive assets](http://developer.github.com/v3/repos/releases/#upload-a-release-asset) &#9679; &dagger; &hearts;
-7. Publish/[Push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) release distribution contents to distribution/pages/docs branch (creating the branch- if needed) &dagger; &hearts;
-8. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) &dagger;
-9. [Publish](https://www.npmjs.org/doc/cli/npm-publish.html) release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts;
+3. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) to current release version (if needed) &dagger; &spades;
+4. Capture/write [change log and/or authors](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) (if directed) &dagger; &spades;
+5. [Generate release archive assets](https://www.kernel.org/pub/software/scm/git/docs/git-archive.html) (zip and tar) &dagger; &spades;
+6. [Release](http://developer.github.com/v3/repos/releases/#create-a-release)/[Tag](https://www.kernel.org/pub/software/scm/git/docs/git-tag.html) version (with [change log](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) as description) &dagger; &hearts;
+7. [Upload archive assets](http://developer.github.com/v3/repos/releases/#upload-a-release-asset) &#9679; &dagger; &hearts; &spades;
+8. Publish/[Push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) release distribution contents to distribution/pages/docs branch (creating the branch- if needed) &dagger; &hearts; &spades;
+10. [Publish](https://www.npmjs.org/doc/cli/npm-publish.html) release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts; &spades;
+11. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) to next release version &dagger; &spades;
 
 &dagger; Performed when only when release is triggered <br/>
-&Dagger; When previously completed successfully <br/>
 &#9679; GitHub only <br/>
+&spades; Optional <br/>
 &hearts; Failure will result in the following *default* roll back sequence (<a href="#default-task-specific-options">additional roll back strategies</a>):
 
-1. [Remove remote release archive assets](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release) &Dagger;
-2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published distribution content from distribution/pages/docs branch &Dagger;
-3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html) &Dagger;
+1. [Remove remote release archive assets](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release) (if needed)
+2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published distribution content from distribution/pages/docs branch (if needed)
+3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html) (if needed)
 
 ## Usage Examples
 
