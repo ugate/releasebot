@@ -93,12 +93,11 @@ module.exports = function(grunt) {
 		authors : 'AUTHORS.md',
 		chgLogLineFormat : '  * %s',
 		chgLogRequired : true,
-		chgLogSkipRegExp : new RegExp('.*(?:(?:'
-				+ commit.releaseVersionRegExp.source + ')|('
-				+ regexSkipChgLog.source + ')|(Merge\\sbranch\\s\''
+		chgLogSkipRegExp : new RegExp('.*(?:(?:' + commit.versionRegExp.source
+				+ ')|(' + regexSkipChgLog.source + ')|(Merge\\sbranch\\s\''
 				+ commit.branch + '\')).*\r?\n', 'g'
-				+ (commit.releaseVersionRegExp.multiline ? 'm' : '')
-				+ (commit.releaseVersionRegExp.ignoreCase ? 'i' : '')),
+				+ (commit.versionRegExp.multiline ? 'm' : '')
+				+ (commit.versionRegExp.ignoreCase ? 'i' : '')),
 		authorsRequired : false,
 		authorsSkipLineRegExp : null,
 		distBranch : 'gh-pages',
@@ -392,12 +391,13 @@ module.exports = function(grunt) {
 			pkgPath, buildDir, branch, slug, username, reponame, gitToken,
 			npmToken) {
 		var cm = typeof cmo === 'string' ? cmo : cmo.message;
-		var rx = typeof cmo === 'object' && cmo.matcher ? cmo.matcher : relRx;
+		this.versionRegExp = typeof cmo === 'object' && cmo.matcher ? cmo.matcher
+				: relRx;
 		var rv = cm.match(rx);
 		if ((!rv || !rv.length) && typeof cmo === 'object'
 				&& typeof cmo.altMessage === 'string') {
-			rx = cmo.altMatcher || cmo.matcher;
-			rv = cmo.altMessage.match(rx);
+			this.versionRegExp = cmo.altMatcher || cmo.matcher;
+			rv = cmo.altMessage.match(this.versionRegExp);
 		}
 		if (!rv) {
 			rv = [];
