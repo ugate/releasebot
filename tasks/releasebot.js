@@ -289,6 +289,10 @@ module.exports = function(grunt) {
 		if (c.next.versionMatch) {
 			bl.push(c.next.versionMatch);
 		}
+		bl.push(c.prev.prev);
+		bl.push(c.prev.next);
+		bl.push(c.next.prev);
+		bl.push(c.next.next);
 		var cc = clone(c, wl, bl);
 		grunt.config.set(configCommit, cc);
 		msg = typeof msg === 'string' ? msg + '\n'
@@ -346,25 +350,25 @@ module.exports = function(grunt) {
 	 * 
 	 * @constructor
 	 * @param relRx
-	 *            the regular expression to use for matching a release on the commit
-	 *            message
-	 * @param bumpRx
-	 *            the regular expression to use for matching the next version on the
+	 *            the regular expression to use for matching a release on the
 	 *            commit message
+	 * @param bumpRx
+	 *            the regular expression to use for matching the next version on
+	 *            the commit message
 	 * @param cm
-	 *            the commit message string or object with a "message", an optional
-	 *            regular expression "matcher" to use to match on the message, an
-	 *            optional alternative message "altMessage" to use when no matches
-	 *            are found within the "message" and an alternative regular
-	 *            expression "altMatcher" to use when no matches are found within
-	 *            the "message")
+	 *            the commit message string or object with a "message", an
+	 *            optional regular expression "matcher" to use to match on the
+	 *            message, an optional alternative message "altMessage" to use
+	 *            when no matches are found within the "message" and an
+	 *            alternative regular expression "altMatcher" to use when no
+	 *            matches are found within the "message")
 	 * @param pver
 	 *            an optional previous release version (or {Commit})
 	 * @param nver
 	 *            true to extract or generate the next version (or {Commit})
 	 * @param gitCliSubstitute
-	 *            the optional command replacement that will be substituted for the
-	 *            "git" CLI (when applicable)
+	 *            the optional command replacement that will be substituted for
+	 *            the "git" CLI (when applicable)
 	 * @param cn
 	 *            the commit hash
 	 * @param pkgPath
@@ -384,8 +388,9 @@ module.exports = function(grunt) {
 	 * @param npmToken
 	 *            a function that will be used to extract the npm token
 	 */
-	function Commit(relRx, bumpRx, cmo, pver, nver, gitCliSubstitute, ch, pkgPath,
-			buildDir, branch, slug, username, reponame, gitToken, npmToken) {
+	function Commit(relRx, bumpRx, cmo, pver, nver, gitCliSubstitute, ch,
+			pkgPath, buildDir, branch, slug, username, reponame, gitToken,
+			npmToken) {
 		var cm = typeof cmo === 'string' ? cmo : cmo.message;
 		var rx = typeof cmo === 'object' && cmo.matcher ? cmo.matcher : relRx;
 		var rv = cm.match(rx);
@@ -439,17 +444,17 @@ module.exports = function(grunt) {
 		this.message = cm;
 		this.versionMatch = rv;
 		this.versionBumpedIndices = [];
-		this.versionLastIndices = [];
+		this.versionPrevIndices = [];
 		this.versionVacant = function() {
-			return !this.versionMajor && !this.versionMinor && !this.versionPatch
-					&& !this.versionPrerelease;
+			return !this.versionMajor && !this.versionMinor
+					&& !this.versionPatch && !this.versionPrerelease;
 		};
 		this.versionLabel = rv.length > 1 ? rv[1] : '';
 		this.versionType = rv.length > 2 ? rv[2] : '';
 		this.prev = pver instanceof Commit ? pver
 				: typeof pver === 'string' ? new Commit(relRx, bumpRx,
-						self.versionLabel + ' ' + self.versionType + pver, null,
-						self) : {
+						self.versionLabel + ' ' + self.versionType + pver,
+						null, self) : {
 					version : '0.0.0',
 					versionMatch : []
 				};
@@ -458,7 +463,7 @@ module.exports = function(grunt) {
 		this.versionMinor = rv.length > 6 ? verMatchVal(6) : 0;
 		this.versionPatch = rv.length > 8 ? verMatchVal(8) : 0;
 		this.versionPrerelease = rv.length > 12 ? verMatchVal(12) : 0;
-		this.version = this.versionLastIndices.length
+		this.version = this.versionPrevIndices.length
 				|| this.versionBumpedIndices.length ? vver()
 				: rv.length > 3 ? rv[3] : '';
 		this.versionTag = rv.length > 3 ? rv[2] + this.version : '';
@@ -470,7 +475,8 @@ module.exports = function(grunt) {
 				pkg = grunt.file.readJSON(pth);
 				var u = pkg && !revert && !next && pkg.version !== self.version
 						&& self.version;
-				var n = pkg && !revert && next && pkg.version !== self.next.version
+				var n = pkg && !revert && next
+						&& pkg.version !== self.next.version
 						&& self.next.version;
 				var r = pkg && revert && self.prev.version;
 				if (u || n || r) {
@@ -478,9 +484,9 @@ module.exports = function(grunt) {
 					pkg.version = r ? self.prev.version : n ? self.next.version
 							: self.version;
 					var pkgStr = JSON.stringify(pkg, replacer, space);
-					grunt.file
-							.write(pth, typeof altWrite === 'function' ? altWrite(
-									pkg, pkgStr, oldVer, u, r, n, pth, replacer,
+					grunt.file.write(pth,
+							typeof altWrite === 'function' ? altWrite(pkg,
+									pkgStr, oldVer, u, r, n, pth, replacer,
 									space) : pkgStr);
 					if (typeof cb === 'function') {
 						cb(pkg, pkgStr, oldVer, u, r, n, pth, replacer, space);
@@ -528,7 +534,8 @@ module.exports = function(grunt) {
 		}
 		function verMatchVal(i) {
 			var v = self.versionMatch[i];
-			var vl = self.prev.versionMatch && self.prev.versionMatch.length > i
+			var vl = self.prev.versionMatch
+					&& self.prev.versionMatch.length > i
 					&& self.prev.versionMatch[i] ? parseInt(self.prev.versionMatch[i])
 					: 0;
 			var vr = 0;
@@ -540,7 +547,7 @@ module.exports = function(grunt) {
 				vr = vl + m.length;
 			} else if (v && regexVerCurr.test(v)) {
 				// use the last release value for the given slot
-				self.versionLastIndices.push(si);
+				self.versionPrevIndices.push(si);
 				vr = vl;
 			} else if (v) {
 				vr = parseInt(v);
@@ -554,12 +561,13 @@ module.exports = function(grunt) {
 					+ vv(5)
 					+ vv(6, self.versionMinor)
 					+ vv(7)
-					+ vv(8, self.versionPatch, inc && !self.versionPrereleaseType)
+					+ vv(8, self.versionPatch, inc
+							&& !self.versionPrereleaseType)
 					+ vv(9)
 					+ vv(10, self.versionPrereleaseType)
 					+ vv(11)
-					+ (self.versionPrereleaseType ? vv(12, self.versionPrerelease,
-							inc) : '');
+					+ (self.versionPrereleaseType ? vv(12,
+							self.versionPrerelease, inc) : '');
 		}
 		function vv(i, v, inc) {
 			if (self.versionMatch.length > i) {

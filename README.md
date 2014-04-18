@@ -211,8 +211,8 @@ Once the releasebot task has been registered commit datails are captured and mad
   hasNpmToken : false,
   // The indices for each version "slot" that was incremented (e.g. 0.0.1 to 0.1.2 would contain [1,2])
   versionBumpedIndices : [],
-  // The indices for each version "slot" that was extracted from the last release
-  versionLastIndices : [],
+  // The indices for each version "slot" that was extracted from the previous release
+  versionPrevIndices : [],
   // Previous released commit object containing similar properties as the current commit
   prev : {},
   // Next staged/bumped release commit object containing similar properties as the current commit
