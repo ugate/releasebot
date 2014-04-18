@@ -284,7 +284,10 @@ module.exports = function(grunt) {
 		var wl = [ c.skipTaskCheck, c.skipTaskGen, c.versionPkg ];
 		var bl = [ c.versionMatch, c.gitCliSubstitute, c.pkgPath, undefined ];
 		if (c.prev.versionMatch) {
-			ex.push(c.prev.versionMatch);
+			bl.push(c.prev.versionMatch);
+		}
+		if (c.next.versionMatch) {
+			bl.push(c.next.versionMatch);
 		}
 		var cc = clone(c, wl, bl);
 		grunt.config.set(configCommit, cc);
