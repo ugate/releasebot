@@ -2,16 +2,18 @@
 
 var shell = require('shelljs');
 var semver = require('semver');
-var npm = require("npm");
+var npm = require('npm');
 var fs = require('fs');
 var pth = require('path');
 var util = require('util');
 var pluginName = 'releasebot';
 var configEnv = pluginName + '.env';
 var configCommit = pluginName + '.commit';
-var dfltVersionLabel = 'Release';
-var dfltVersionType = 'v';
-var regexRelease = /(released?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?))/mi;
+var regexVersion = /(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?))/mi;
+var regexRelease = new RegExp(/(releas(?:e|ed|ing))\s*/.source
+		+ regexVersion.source, 'mi');
+var regexBump = new RegExp(/(bump(?:ed|ing)?)\s*/.source + regexVersion.source,
+		'mi');
 var pluginDesc = 'Git commit message triggered grunt task that tags a release (GitHub Release API '
 		+ 'supported), generates/uploads a release distribution asset archive, publishes a '
 		+ 'distribution asset\'s content to a specified branch and publishes to npm when a '
@@ -25,6 +27,7 @@ var regexSkips = /\[\s?skip\s+(.+)\]/gmi;
 var regexSkipChgLog = /\[skip\s*CHANGELOG\]/gmi;
 var regexSlug = /^(?:.+\/)(.+\/[^\.]+)/;
 var regexLines = /(\r?\n)/g;
+var regexVerLines = /^v|(\r?\n)/g;
 var regexDupLines = /^(.*)(\r?\n\1)+$/gm;
 var regexKey = /(https?:\/\/|:)+(?=[^:]*$)[a-z0-9]+(@)/gmi;
 var regexFuncName = /(?!\W*function\s+)[\w\$]+(?=\()/;
@@ -64,7 +67,9 @@ module.exports = function(grunt) {
 		commitHash : process.env.TRAVIS_COMMIT,
 		commitMessage : process.env.TRAVIS_COMMIT_MESSAGE,
 		repoSlug : process.env.TRAVIS_REPO_SLUG,
-		lastVersionMsgIgnoreRegExp : /No names found/i,
+		releaseVersionRegExp : regexRelease,
+		bumpVersionRegExp : regexBump,
+		prevVersionMsgIgnoreRegExp : /No names found/i,
 		gitToken : process.env.GH_TOKEN,
 		npmToken : process.env.NPM_TOKEN
 	});
@@ -72,12 +77,11 @@ module.exports = function(grunt) {
 	// initialize default task options
 	var defTskOpts = {
 		name : '<%= commit.versionTag %>',
-		pkgCurrVerBumpMsg : 'Bumped <%= commit.pckPath %> version to <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
-		pkgNextVerBumpMsg : 'Bumped <%= commit.pckPath %> version to <%= commit.next.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
-		distBranchMsg : 'Publish <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
+		pkgCurrVerBumpMsg : 'Updating <%= commit.pckPath %> version to match release version <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
+		pkgNextVerBumpMsg : 'Bumping <%= commit.pckPath %> version to <%= commit.next.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
+		distBranchPubMsg : 'Publishing <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
 		pkgJsonReplacer : null,
 		pkgJsonSpace : 2,
-		releaseVersionRegExp : regexRelease,
 		gitHostname : gitHubHostname,
 		repoName : 'origin',
 		repoUser : pluginName,
@@ -89,11 +93,12 @@ module.exports = function(grunt) {
 		authors : 'AUTHORS.md',
 		chgLogLineFormat : '  * %s',
 		chgLogRequired : true,
-		chgLogSkipRegExp : new RegExp('.*(?:(?:' + regexRelease.source + ')|('
+		chgLogSkipRegExp : new RegExp('.*(?:(?:'
+				+ commit.releaseVersionRegExp.source + ')|('
 				+ regexSkipChgLog.source + ')|(Merge\\sbranch\\s\''
 				+ commit.branch + '\')).*\r?\n', 'g'
-				+ (regexRelease.multiline ? 'm' : '')
-				+ (regexRelease.ignoreCase ? 'i' : '')),
+				+ (commit.releaseVersionRegExp.multiline ? 'm' : '')
+				+ (commit.releaseVersionRegExp.ignoreCase ? 'i' : '')),
 		authorsRequired : false,
 		authorsSkipLineRegExp : null,
 		distBranch : 'gh-pages',
@@ -238,28 +243,30 @@ module.exports = function(grunt) {
 		if (rs) {
 			grunt.verbose.writeln('Found repo slug: "' + rs + '"');
 		}
-		var lver = execCmd('git describe --abbrev=0 --tags',
+		var pver = execCmd('git describe --abbrev=0 --tags',
 				env.gitCliSubstitute);
 		var lverno = false;
-		if (lver.code !== 0
-				&& (!util.isRegExp(env.lastVersionMsgIgnoreRegExp) || !(lverno = env.lastVersionMsgIgnoreRegExp
-						.test(lver.output)))) {
-			throw new Error('Error capturing last version ' + lver.output);
+		if (pver.code !== 0
+				&& (!util.isRegExp(env.prevVersionMsgIgnoreRegExp) || !(lverno = env.prevVersionMsgIgnoreRegExp
+						.test(pver.output)))) {
+			throw new Error('Error capturing previous release version '
+					+ pver.output);
 		}
-		if (!lverno && lver.output) {
-			lver = lver.output.replace(regexLines, '');
-			grunt.log.writeln('Found last release version "' + lver
+		if (!lverno && pver.output) {
+			pver = pver.output.replace(regexVerLines, '');
+			grunt.log.writeln('Found previous release version "' + pver
 					+ '" from git');
 		} else {
-			lver = '';
+			pver = '';
 			var pkg = grunt.file.readJSON(env.pkgPath);
 			if (pkg.version) {
-				lver = dfltVersionType + pkg.version;
-				grunt.log.writeln('Found last release version "' + lver
+				pver = pkg.version;
+				grunt.log.writeln('Found previous release version "' + pver
 						+ '" from ' + env.pkgPath);
 			}
 		}
-		var c = new Commit(cm, lver, '', env.gitCliSubstitute, ch, env.pkgPath,
+		var c = new Commit(env.releaseVersionRegExp, env.bumpVersionRegExp, cm,
+				pver, true, env.gitCliSubstitute, ch, env.pkgPath,
 				env.buildDir, br, rs, un, rn, env.gitToken, env.npmToken);
 		cloneAndSetCommit(c);
 		return c;
@@ -274,12 +281,12 @@ module.exports = function(grunt) {
 	 *            alternative verbose message (null prevents log output)
 	 */
 	function cloneAndSetCommit(c, msg) {
-		var ic = [ c.skipTaskCheck, c.skipTaskGen, c.versionPkg ];
-		var ex = [ c.versionMatch, c.gitCliSubstitute, c.pkgPath, undefined ];
+		var wl = [ c.skipTaskCheck, c.skipTaskGen, c.versionPkg ];
+		var bl = [ c.versionMatch, c.gitCliSubstitute, c.pkgPath, undefined ];
 		if (c.prev.versionMatch) {
 			ex.push(c.prev.versionMatch);
 		}
-		var cc = clone(c, ic, ex);
+		var cc = clone(c, wl, bl);
 		grunt.config.set(configCommit, cc);
 		msg = typeof msg === 'string' ? msg + '\n'
 				: typeof msg === 'undefined' ? 'The following read-only object is now accessible via grunt.config.get("'
@@ -335,17 +342,26 @@ module.exports = function(grunt) {
 	 * Basic Commit {Object} that extracts/bumps/sets version numbers
 	 * 
 	 * @constructor
+	 * @param relRx
+	 *            the regular expression to use for matching a release on the commit
+	 *            message
+	 * @param bumpRx
+	 *            the regular expression to use for matching the next version on the
+	 *            commit message
 	 * @param cm
-	 *            the commit message to extract the versions from
+	 *            the commit message string or object with a "message", an optional
+	 *            regular expression "matcher" to use to match on the message, an
+	 *            optional alternative message "altMessage" to use when no matches
+	 *            are found within the "message" and an alternative regular
+	 *            expression "altMatcher" to use when no matches are found within
+	 *            the "message")
 	 * @param pver
-	 *            an optional previous release version tag (or {Commit})
+	 *            an optional previous release version (or {Commit})
 	 * @param nver
-	 *            an optional next release version tag (or {Commit}) (when an
-	 *            empty string an attempt will be made to semver.inc on the
-	 *            current version - if it exists)
+	 *            true to extract or generate the next version (or {Commit})
 	 * @param gitCliSubstitute
-	 *            the optional command replacement that will be substituted for
-	 *            the "git" CLI (when applicable)
+	 *            the optional command replacement that will be substituted for the
+	 *            "git" CLI (when applicable)
 	 * @param cn
 	 *            the commit hash
 	 * @param pkgPath
@@ -365,9 +381,16 @@ module.exports = function(grunt) {
 	 * @param npmToken
 	 *            a function that will be used to extract the npm token
 	 */
-	function Commit(cm, pver, nver, gitCliSubstitute, ch, pkgPath, buildDir,
-			branch, slug, username, reponame, gitToken, npmToken) {
-		var rv = cm ? cm.match(regexRelease) : [];
+	function Commit(relRx, bumpRx, cmo, pver, nver, gitCliSubstitute, ch, pkgPath,
+			buildDir, branch, slug, username, reponame, gitToken, npmToken) {
+		var cm = typeof cmo === 'string' ? cmo : cmo.message;
+		var rx = typeof cmo === 'object' && cmo.matcher ? cmo.matcher : relRx;
+		var rv = cm.match(rx);
+		if ((!rv || !rv.length) && typeof cmo === 'object'
+				&& typeof cmo.altMessage === 'string') {
+			rx = cmo.altMatcher || cmo.matcher;
+			rv = cmo.altMessage.match(rx);
+		}
 		if (!rv) {
 			rv = [];
 		}
@@ -415,27 +438,26 @@ module.exports = function(grunt) {
 		this.versionBumpedIndices = [];
 		this.versionLastIndices = [];
 		this.versionVacant = function() {
-			return !this.versionMajor && !this.versionMinor
-					&& !this.versionPatch && !this.versionPrerelease;
+			return !this.versionMajor && !this.versionMinor && !this.versionPatch
+					&& !this.versionPrerelease;
 		};
 		this.versionLabel = rv.length > 1 ? rv[1] : '';
 		this.versionType = rv.length > 2 ? rv[2] : '';
+		this.prev = pver instanceof Commit ? pver
+				: typeof pver === 'string' ? new Commit(relRx, bumpRx,
+						self.versionLabel + ' ' + self.versionType + pver, null,
+						self) : {
+					version : '0.0.0',
+					versionMatch : []
+				};
 		this.versionPrereleaseType = rv.length > 10 ? rv[10] : '';
 		this.versionMajor = rv.length > 4 ? verMatchVal(4) : 0;
 		this.versionMinor = rv.length > 6 ? verMatchVal(6) : 0;
 		this.versionPatch = rv.length > 8 ? verMatchVal(8) : 0;
 		this.versionPrerelease = rv.length > 12 ? verMatchVal(12) : 0;
 		this.version = this.versionLastIndices.length
-				|| this.versionBumpedIndices.length ? vv(4, this.versionMajor)
-				+ vv(5)
-				+ vv(6, this.versionMinor)
-				+ vv(7)
-				+ vv(8, this.versionPatch)
-				+ vv(9)
-				+ vv(10, this.versionPrereleaseType)
-				+ vv(11)
-				+ (this.versionPrereleaseType ? vv(12, this.versionPrerelease)
-						: '') : rv.length > 3 ? rv[3] : '';
+				|| this.versionBumpedIndices.length ? vver()
+				: rv.length > 3 ? rv[3] : '';
 		this.versionTag = rv.length > 3 ? rv[2] + this.version : '';
 		this.versionPkg = function(replacer, space, revert, next, altWrite, cb,
 				altPath) {
@@ -445,8 +467,7 @@ module.exports = function(grunt) {
 				pkg = grunt.file.readJSON(pth);
 				var u = pkg && !revert && !next && pkg.version !== self.version
 						&& self.version;
-				var n = pkg && !revert && next
-						&& pkg.version !== self.next.version
+				var n = pkg && !revert && next && pkg.version !== self.next.version
 						&& self.next.version;
 				var r = pkg && revert && self.prev.version;
 				if (u || n || r) {
@@ -454,9 +475,9 @@ module.exports = function(grunt) {
 					pkg.version = r ? self.prev.version : n ? self.next.version
 							: self.version;
 					var pkgStr = JSON.stringify(pkg, replacer, space);
-					grunt.file.write(pth,
-							typeof altWrite === 'function' ? altWrite(pkg,
-									pkgStr, oldVer, u, r, n, pth, replacer,
+					grunt.file
+							.write(pth, typeof altWrite === 'function' ? altWrite(
+									pkg, pkgStr, oldVer, u, r, n, pth, replacer,
 									space) : pkgStr);
 					if (typeof cb === 'function') {
 						cb(pkg, pkgStr, oldVer, u, r, n, pth, replacer, space);
@@ -481,16 +502,14 @@ module.exports = function(grunt) {
 			}
 			return true;
 		};
-		this.prev = pver ? pver instanceof Commit ? pver : new Commit(
-				dfltVersionLabel + ' ' + pver, null, this) : {
-			version : '0.0.0'
+		this.next = nver === true && this.version ? new Commit(relRx, bumpRx, {
+			matcher : bumpRx,
+			message : cm,
+			altMatcher : relRx,
+			altMessage : self.versionLabel + ' ' + vver(true, true)
+		}, self) : nver instanceof Commit ? nver : {
+			version : ''
 		};
-		this.next = typeof nver === 'string' && this.version ? new Commit(
-				dfltVersionLabel + ' '
-						+ (nver.length ? nver : semver.inc(this.version)), this)
-				: nver instanceof Commit ? nver : {
-					version : ''
-				};
 		function validate(v, q) {
 			if (!v) {
 				if (!q) {
@@ -506,8 +525,7 @@ module.exports = function(grunt) {
 		}
 		function verMatchVal(i) {
 			var v = self.versionMatch[i];
-			var vl = self.prev.versionMatch
-					&& self.prev.versionMatch.length > i
+			var vl = self.prev.versionMatch && self.prev.versionMatch.length > i
 					&& self.prev.versionMatch[i] ? parseInt(self.prev.versionMatch[i])
 					: 0;
 			var vr = 0;
@@ -527,11 +545,28 @@ module.exports = function(grunt) {
 			vt += vr;
 			return vr;
 		}
-		function vv(i, v) {
-			return self.versionMatch.length > i ? typeof v !== 'undefined' ? v
-					: typeof self.versionMatch[i] !== 'undefined' ? self.versionMatch[i]
-							: ''
-					: '';
+		function vver(pt, inc) {
+			return (pt ? vv(2) : '')
+					+ vv(4, self.versionMajor)
+					+ vv(5)
+					+ vv(6, self.versionMinor)
+					+ vv(7)
+					+ vv(8, self.versionPatch, inc && !self.versionPrereleaseType)
+					+ vv(9)
+					+ vv(10, self.versionPrereleaseType)
+					+ vv(11)
+					+ (self.versionPrereleaseType ? vv(12, self.versionPrerelease,
+							inc) : '');
+		}
+		function vv(i, v, inc) {
+			if (self.versionMatch.length > i) {
+				if (typeof v !== 'undefined') {
+					return inc && !isNaN(v) ? v + 1 : v;
+				} else if (typeof self.versionMatch[i] !== 'undefined') {
+					return self.versionMatch[i];
+				}
+			}
+			return '';
 		}
 	}
 
