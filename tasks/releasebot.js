@@ -393,7 +393,7 @@ module.exports = function(grunt) {
 		var cm = typeof cmo === 'string' ? cmo : cmo.message;
 		this.versionRegExp = typeof cmo === 'object' && cmo.matcher ? cmo.matcher
 				: relRx;
-		var rv = cm.match(rx);
+		var rv = cm.match(this.versionRegExp);
 		if ((!rv || !rv.length) && typeof cmo === 'object'
 				&& typeof cmo.altMessage === 'string') {
 			this.versionRegExp = cmo.altMatcher || cmo.matcher;

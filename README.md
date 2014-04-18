@@ -217,6 +217,8 @@ Once the releasebot task has been registered commit datails are captured and mad
   prev : {},
   // Next staged/bumped release commit object containing similar properties as the current commit
   next : {},
+  // Same as corresponding global env option
+  versionRegExp : '',
   // The release label used within the commit message
   versionLabel : 'Release',
   // The release version label used within the commit message
