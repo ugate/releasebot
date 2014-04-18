@@ -21,6 +21,7 @@ exports.globals = {
 		var c = grunt.config.get('releasebot.commit');
 		test.ok(c, 'Cannot find grunt.config.get("releasebot.commit")');
 
+		test.ok(c.versionRegExp, 'Cannot find commit.versionRegExp');
 		test.ok(c.hash, 'Cannot find commit.hash');
 		test.ok(c.buildDir, 'Cannot find commit.buildDir');
 		test.ok(c.branch, 'Cannot find commit.branch');
@@ -30,9 +31,9 @@ exports.globals = {
 		test.ok(c.message, 'Cannot find commit.message');
 		test.ok(Array.isArray(c.versionBumpedIndices),
 				'Cannot find commit.versionBumpedIndices');
-		test.ok(Array.isArray(c.versionLastIndices),
-				'Cannot find commit.versionLastIndices');
-		test.ok(c.lastCommit, 'Cannot find commit.lastCommit');
+		test.ok(Array.isArray(c.versionPrevIndices),
+				'Cannot find commit.versionPrevIndices');
+		test.ok(c.prev, 'Cannot find commit.prev');
 
 		test.done();
 	}

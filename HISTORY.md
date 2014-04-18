@@ -1,3 +1,2 @@
-<!-- Commit 2a0ab1d48406023a63d74bdf806a980e7874fbd6 -->
-  * Updated documentation
-  * Release v0.0.1-alpha.1 [skip ci]
+<!-- Commit 46480bc7c43dc6bccd357bf17167e5497e8801bf -->
+  * Added additional async timeout options.Release v*.*.*-alpha.+ [skip ci]

@@ -5,26 +5,27 @@
 
 1. [Capture](https://www.kernel.org/pub/software/scm/git/docs/git-rev-parse.html) [commit](https://www.kernel.org/pub/software/scm/git/docs/git-show.html) [details](https://www.kernel.org/pub/software/scm/git/docs/git-remote.html) [from Git](https://www.kernel.org/pub/software/scm/git/docs/git-describe.html) (on task registration)
 2. Check for <a href="#default-task-specific-options">release trigger</a> within commit message
-3. Capture/write [change log and/or authors](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) (if directed) &dagger;
-4. [Generate release archive assets](https://www.kernel.org/pub/software/scm/git/docs/git-archive.html) (zip and tar) &dagger;
-5. [Release](http://developer.github.com/v3/repos/releases/#create-a-release)/[Tag](https://www.kernel.org/pub/software/scm/git/docs/git-tag.html) version (with [change log](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) as description) &dagger; &hearts;
-6. [Upload archive assets](http://developer.github.com/v3/repos/releases/#upload-a-release-asset) &#9679; &dagger; &hearts;
-7. Publish/[Push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) release distribution contents to distribution/pages/docs branch (creating the branch- if needed) &dagger; &hearts;
-8. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) &dagger;
-9. [Publish](https://www.npmjs.org/doc/cli/npm-publish.html) release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts;
+3. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) to current release version (if needed) &dagger; &spades;
+4. Capture/write [change log and/or authors](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) (if directed) &dagger; &spades;
+5. [Generate release archive assets](https://www.kernel.org/pub/software/scm/git/docs/git-archive.html) (zip and tar) &dagger; &spades;
+6. [Release](http://developer.github.com/v3/repos/releases/#create-a-release)/[Tag](https://www.kernel.org/pub/software/scm/git/docs/git-tag.html) version (with [change log](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) as description) &dagger; &hearts;
+7. [Upload archive assets](http://developer.github.com/v3/repos/releases/#upload-a-release-asset) &#9679; &dagger; &hearts; &spades;
+8. Publish/[Push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) release distribution contents to distribution/pages/docs branch (creating the branch- if needed) &dagger; &hearts; &spades;
+10. [Publish](https://www.npmjs.org/doc/cli/npm-publish.html) release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts; &spades;
+11. [Update/Bump package version](https://www.npmjs.org/doc/cli/npm-update.html) to next release version (auto increment or specified in commit message) &dagger; &spades;
 
 &dagger; Performed when only when release is triggered <br/>
-&Dagger; When previously completed successfully <br/>
 &#9679; GitHub only <br/>
+&spades; Optional <br/>
 &hearts; Failure will result in the following *default* roll back sequence (<a href="#default-task-specific-options">additional roll back strategies</a>):
 
-1. [Remove remote release archive assets](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release) &Dagger;
-2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published distribution content from distribution/pages/docs branch &Dagger;
-3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html) &Dagger;
+1. [Remove remote release archive assets](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release) (if needed)
+2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published distribution content from distribution/pages/docs branch (if needed)
+3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html) (if needed)
 
 ## Usage Examples
 
-Each commit message will be checked for the presence of a version to release. The default expression checks for `release v` followed by a <a href="http://semver.org/">semantic compliant version</a> or a `+` or `*` within the appropriate version *slot* indicating the version should be either *incremented* by one or that the value should be replaced by the *last/current* released version (respectively).
+Each commit message will be checked for the presence of a version to release. The default expression checks for `release v` followed by a <a href="http://semver.org/">semantic compliant version</a> or a `+` or `*` within the appropriate version *slot* indicating the version should be either *incremented* by one or that the value should be replaced by the *last/currently* released version (respectively).
 
 The commit message below will result in a release of version `1.0.0` (surrounding text will be ignored):
 ```shell
@@ -60,6 +61,27 @@ To release version `2.0.0` when the latest release is `1.1.1` via the [grunt cli
 ```shell
 grunt releasebot --releasebot.commitMessage="Release v+.0.0"
 ```
+
+#### Bumping versions
+
+In all of the prior [usage examples](#usage-examples) the version is incremented on the package once the release successfully completes (optional). First, the bump version expression is used against the commit message to determine what the next version will be. If it cannot find a bump version it will auto-increment the current release version by one and use that value as the next release version.
+
+To release version `1.1.0` when the latest release is `1.0.0` (next version is auto-incremented to `1.1.1`)
+```shell
+release v*.+.0
+```
+
+To release version `1.1.1-beta.1` when the latest release is `1.1.0` (next version is auto-incremented to `1.1.1-beta.2`)
+```shell
+release v*.*.+-beta.1
+```
+
+To release version `1.1.1-beta.1` when the latest release is `1.1.0` and explicitly set the next version to `1.1.1-rc.1`
+```shell
+release v*.*.+-beta.1 bump v*.*.*-rc.*
+```
+
+As you can see the *release* version use of `*` and `+` is relative to the *last/currently* released version. In contrast, the *bump* version use of `*` and `+` is based upon the version that's being released.
 
 ## Getting Started
 If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
@@ -150,8 +172,12 @@ The following **global plug-in environment options** can be set using one of the
   commitMessage : '',
   // The repository slug the release is for (default: global env option extraction or from current checkout)
   repoSlug : '',
-  // The regular expression that will be used to ignore non-error output when extracting the last release version from Git
-  lastVersionMsgIgnoreRegExp: /No names found/i,
+  // The regular expression used to check the commit message for the presence of a release to trigger (match order must be maintained)
+  releaseVersionRegExp : /(releas(?:e|ed|ing))\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
+  // The regular expression used to check the commit message for the presence of a bump version that will be used once the release completes (match order must be maintained)
+  bumpVersionRegExp : /(bump(?:ed|ing)?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
+  // The regular expression that will be used to ignore non-error output when extracting the previous release version from Git
+  prevVersionMsgIgnoreRegExp: /No names found/i,
   // Function that will return the token used for authorization of remote Git pushes (default: returns process.env.GH_TOKEN)
   gitToken : [Function],
   // Function that will return the token used for authorization of npm publish (default: returns process.env.NPM_TOKEN)
@@ -185,10 +211,14 @@ Once the releasebot task has been registered commit datails are captured and mad
   hasNpmToken : false,
   // The indices for each version "slot" that was incremented (e.g. 0.0.1 to 0.1.2 would contain [1,2])
   versionBumpedIndices : [],
-  // The indices for each version "slot" that was extracted from the last release
-  versionLastIndices : [],
-  // Last released commit object containing similar properties as the current commit
-  lastCommit : {},
+  // The indices for each version "slot" that was extracted from the previous release
+  versionPrevIndices : [],
+  // Previous released commit object containing similar properties as the current commit
+  prev : {},
+  // Next staged/bumped release commit object containing similar properties as the current commit
+  next : {},
+  // Same as corresponding global env option
+  versionRegExp : '',
   // The release label used within the commit message
   versionLabel : 'Release',
   // The release version label used within the commit message
@@ -231,12 +261,16 @@ Once the releasebot task has been registered commit datails are captured and mad
 {
   // The name that will appear on GitHub (grunt template parsed using any "commit" property or task "options" property)
   name : '<%= commit.versionTag %>',
+  // Commit message used when the package version does not match the version being released and needs to be updated
+  pkgCurrVerBumpMsg : 'Updating <%= commit.pckPath %> version to match release version <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
+  // Commit message used for incrementing to the next release version once the current release completes (null to disable feature)
+  pkgNextVerBumpMsg : 'Bumping <%= commit.pckPath %> version to <%= commit.next.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
+  // Commit message used when publishing to the distribution branch
+  distBranchPubMsg : 'Publishing <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
   // The package replacer option sent into JSON.stringify during package version updates
   pkgJsonReplacer : null,
   // The package space option sent into JSON.stringify during package version updates
   pkgJsonSpace : 2,
-  // The regular expression used to check the commit message for in order to trigger a release
-  releaseVersionRegExp : /(released?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
   // The host name of the Git provider (null will use generic Git releases)
   gitHostname : 'github',
   // The repository name
