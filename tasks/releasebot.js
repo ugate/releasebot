@@ -1,14 +1,13 @@
 'use strict';
 
-var shell = require('shelljs');
-var semver = require('semver');
 var npm = require('npm');
 var fs = require('fs');
 var pth = require('path');
 var util = require('util');
+var utils = require('./utils');
+var RollCall = require('./rollcall');
+var github = require('./github');
 var pluginName = 'releasebot';
-var configEnv = pluginName + '.env';
-var configCommit = pluginName + '.commit';
 var regexVersion = /(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?))/mi;
 var regexRelease = new RegExp(/(releas(?:e|ed|ing))\s*/.source
 		+ regexVersion.source, 'mi');
@@ -21,33 +20,10 @@ var pluginDesc = 'Git commit message triggered grunt task that tags a release (G
 		+ regexRelease
 		+ ' (for Travis CI set git: depth: in .travis.yml to a higher value than the default value '
 		+ ' of 1 in order to properly capture change log)';
-var regexVerCurr = /\*/;
-var regexVerBump = /\+/g;
-var regexSkips = /\[\s?skip\s+(.+)\]/gmi;
 var regexSkipChgLog = /\[skip\s*CHANGELOG\]/gmi;
-var regexSlug = /^(?:.+\/)(.+\/[^\.]+)/;
 var regexLines = /(\r?\n)/g;
-var regexVerLines = /^v|(\r?\n)/g;
 var regexDupLines = /^(.*)(\r?\n\1)+$/gm;
 var regexKey = /(https?:\/\/|:)+(?=[^:]*$)[a-z0-9]+(@)/gmi;
-var regexFuncName = /(?!\W*function\s+)[\w\$]+(?=\()/;
-var regexHost = /^https?\:\/\/([^\/?#]+)(?:[\/?#]|$)/i;
-var regexKeyVal = /="(.+)"$/;
-var regexGitCmd = /^git/;
-var gitHubHostname = 'github';
-var gitHubRegexParam = /{(\?.+)}/;
-var gitHubReleaseTagName = 'tag_name';
-var gitHubReleaseUploadUrl = 'upload_url';
-var gitHubReleaseCommitish = 'target_commitish';
-var gitHubReleaseAssetId = 'id';
-var gitHubReleaseId = 'id';
-var gitHubReleaseName = 'name';
-var gitHubReleaseBody = 'body';
-// var gitHubReleaseDraftFlag = 'draft';
-var gitHubReleasePreFlag = 'prerelease';
-// var gitHubReleaseErrors = 'errors';
-var gitHubReleaseErrorMsg = 'message';
-var gitHubSuccessHttpCodes = [ 200, 201, 204 ];
 
 /**
  * When a commit message contains "release v" followed by a valid version number
@@ -59,7 +35,7 @@ var gitHubSuccessHttpCodes = [ 200, 201, 204 ];
 module.exports = function(grunt) {
 
 	// initialize global release environment options
-	var commit = initEnv({
+	var commit = require('./commit')(grunt, pluginName, regexLines, {
 		pkgPath : grunt.config('pkgFile') || 'package.json',
 		gitCliSubstitute : '',
 		buildDir : process.env.TRAVIS_BUILD_DIR || process.cwd(),
@@ -82,7 +58,7 @@ module.exports = function(grunt) {
 		distBranchPubMsg : 'Publishing <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
 		pkgJsonReplacer : null,
 		pkgJsonSpace : 2,
-		gitHostname : gitHubHostname,
+		gitHostname : github.hostname,
 		repoName : 'origin',
 		repoUser : pluginName,
 		repoEmail : pluginName
@@ -129,459 +105,6 @@ module.exports = function(grunt) {
 	});
 
 	/**
-	 * Initializes the global environment and returns {Commit} related data
-	 * 
-	 * @param env
-	 *            the environment object
-	 * @returns {Commit}
-	 */
-	function initEnv(env) {
-		var gconfig = grunt.config.get(configEnv) || {};
-		var nargv = null;
-		// find via node node CLI argument in the format key="value"
-		function argv(k) {
-			if (!nargv) {
-				nargv = process.argv.slice(0, 2);
-			}
-			var v = '', m = null;
-			var x = new RegExp(k + regexKeyVal.source);
-			nargv.every(function(e) {
-				m = e.match(x);
-				if (m && m.length) {
-					v = m[0];
-					return false;
-				}
-			});
-			return v;
-		}
-		function getv(k) {
-			return gconfig[k] || grunt.option(pluginName + '.' + k)
-					|| argv(pluginName + '.' + k) || '';
-		}
-		function token(tkn) {
-			return typeof tkn === 'function' ? tkn : function() {
-				return tkn;
-			};
-		}
-		// loop through and set the values
-		var tk = /token$/i;
-		Object.keys(env).forEach(function(key) {
-			if (!env[key]) {
-				env[key] = getv(key);
-			}
-			// use function to prevent accidental log leaking of tokens
-			if (env[key] && tk.test(key)) {
-				env[key] = token(env[key]);
-			}
-		});
-		return genCommit(env);
-	}
-
-	/**
-	 * Initializes commit details and sets the results in the grunt
-	 * configuration using the plug-in name
-	 * 
-	 * @param env
-	 *            the global environment
-	 */
-	function genCommit(env) {
-		grunt.config.set(configEnv, env);
-		grunt.verbose
-				.writeln('Global environment available via grunt.config.get("'
-						+ configEnv + '"):\n' + util.inspect(env, {
-							colors : true,
-							depth : 3
-						}));
-		var ch = env.commitHash;
-		var cm = env.commitMessage;
-		var br = env.branch;
-		var rs = env.repoSlug;
-		var un = '', rn = '';
-		grunt.verbose.writeln('Searching for commit details...');
-		function cmd(c) {
-			var rtn = execCmd(c, env.gitCliSubstitute);
-			if (rtn.code !== 0) {
-				var e = new Error('Error "' + rtn.code + '" for ' + c + ' '
-						+ rtn.output);
-				grunt.log.error(e);
-				throw e;
-			}
-			return rtn.output.replace(regexLines, '');
-		}
-		function sur(s) {
-			var ss = s.split('/');
-			un = ss[0];
-			rn = ss[1];
-			rs = s;
-		}
-		if (!br) {
-			br = cmd('git rev-parse --abbrev-ref HEAD');
-			grunt.verbose.writeln('Found branch: "' + br + '"');
-		}
-		if (!ch) {
-			ch = cmd('git rev-parse HEAD');
-			grunt.verbose.writeln('Found commit hash: "' + ch + '"');
-		}
-		if (!cm) {
-			// fall back on either last commit message or the commit message for
-			// the current commit hash
-			cm = cmd("git show -s --format=%B " + env.commitHash);
-			grunt.verbose.writeln('Found commit message: "' + cm + '"');
-		}
-		if (!rs) {
-			// fall back on capturing the repository slug from the current
-			// remote
-			rs = cmd("git ls-remote --get-url");
-			rs.replace(regexSlug, function(m, s) {
-				sur(s);
-				rs = s;
-			});
-		} else {
-			sur(rs);
-		}
-		if (rs) {
-			grunt.verbose.writeln('Found repo slug: "' + rs + '"');
-		}
-		var pver = execCmd('git describe --abbrev=0 --tags',
-				env.gitCliSubstitute);
-		var lverno = false;
-		if (pver.code !== 0
-				&& (!util.isRegExp(env.prevVersionMsgIgnoreRegExp) || !(lverno = env.prevVersionMsgIgnoreRegExp
-						.test(pver.output)))) {
-			throw new Error('Error capturing previous release version '
-					+ pver.output);
-		}
-		if (!lverno && pver.output) {
-			pver = pver.output.replace(regexVerLines, '');
-			grunt.log.writeln('Found previous release version "' + pver
-					+ '" from git');
-		} else {
-			pver = '';
-			var pkg = grunt.file.readJSON(env.pkgPath);
-			if (pkg.version) {
-				pver = pkg.version;
-				grunt.log.writeln('Found previous release version "' + pver
-						+ '" from ' + env.pkgPath);
-			}
-		}
-		var c = new Commit(env.releaseVersionRegExp, env.bumpVersionRegExp, cm,
-				pver, true, env.gitCliSubstitute, ch, env.pkgPath,
-				env.buildDir, br, rs, un, rn, env.gitToken, env.npmToken);
-		cloneAndSetCommit(c);
-		return c;
-	}
-
-	/**
-	 * Clones a {Commit} and sets the cloned value in the Grunt configuration
-	 * 
-	 * @param c
-	 *            the {Commit} to clone
-	 * @param msg
-	 *            alternative verbose message (null prevents log output)
-	 */
-	function cloneAndSetCommit(c, msg) {
-		var wl = [ c.skipTaskCheck, c.skipTaskGen, c.versionPkg ];
-		var bl = [ c.versionMatch, c.gitCliSubstitute, c.pkgPath, undefined ];
-		if (c.prev.versionMatch) {
-			bl.push(c.prev.versionMatch);
-		}
-		if (c.next.versionMatch) {
-			bl.push(c.next.versionMatch);
-		}
-		bl.push(c.prev.prev);
-		bl.push(c.prev.next);
-		bl.push(c.next.prev);
-		bl.push(c.next.next);
-		var cc = clone(c, wl, bl);
-		grunt.config.set(configCommit, cc);
-		msg = typeof msg === 'string' ? msg + '\n'
-				: typeof msg === 'undefined' ? 'The following read-only object is now accessible via grunt.config.get("'
-						+ configCommit + '"):\n'
-						: msg;
-		if (msg) {
-			grunt.verbose.writeln(msg + util.inspect(cc, {
-				colors : true,
-				depth : 3
-			}));
-			// grunt.log.writeflags(c, msg);
-		}
-	}
-
-	/**
-	 * Clones an object
-	 * 
-	 * @param c
-	 *            the {Commit} to clone
-	 * @param wl
-	 *            an array of white list functions that will be included in the
-	 *            clone (null to include all)
-	 * @param bl
-	 *            an array of black list property values that will be excluded
-	 *            from the clone
-	 * @returns {Object} clone
-	 */
-	function clone(c, wl, bl) {
-		var cl = {}, cp, t;
-		for (var keys = Object.keys(c), l = 0; l < keys.length; l++) {
-			cp = c[keys[l]];
-			if (bl && bl.indexOf(cp) >= 0) {
-				continue;
-			}
-			if (Array.isArray(cp)) {
-				cl[keys[l]] = cp.slice(0);
-			} else if ((t = typeof cp) === 'function') {
-				if (!wl || wl.indexOf(cp) >= 0) {
-					cl[keys[l]] = cp; // cp.bind(cp);
-				}
-			} else if (cp == null || t === 'string' || t === 'number'
-					|| t === 'boolean' || util.isRegExp(cp) || util.isDate(cp)
-					|| util.isError(cp)) {
-				cl[keys[l]] = cp;
-			} else if (t !== 'undefined') {
-				cl[keys[l]] = clone(cp, wl, bl);
-			}
-		}
-		return cl;
-	}
-
-	/**
-	 * Basic Commit {Object} that extracts/bumps/sets version numbers
-	 * 
-	 * @constructor
-	 * @param relRx
-	 *            the regular expression to use for matching a release on the
-	 *            commit message
-	 * @param bumpRx
-	 *            the regular expression to use for matching the next version on
-	 *            the commit message
-	 * @param cm
-	 *            the commit message string or object with a "message", an
-	 *            optional regular expression "matcher" to use to match on the
-	 *            message, an optional alternative message "altMessage" to use
-	 *            when no matches are found within the "message" and an
-	 *            alternative regular expression "altMatcher" to use when no
-	 *            matches are found within the "message")
-	 * @param pver
-	 *            an optional previous release version (or {Commit})
-	 * @param nver
-	 *            true to extract or generate the next version (or {Commit})
-	 * @param gitCliSubstitute
-	 *            the optional command replacement that will be substituted for
-	 *            the "git" CLI (when applicable)
-	 * @param cn
-	 *            the commit hash
-	 * @param pkgPath
-	 *            the path to the package file
-	 * @param buildDir
-	 *            the directory to the build
-	 * @param branch
-	 *            the branch name
-	 * @param slug
-	 *            the repository slug
-	 * @param username
-	 *            the name of the Git user
-	 * @param reponame
-	 *            the repository name
-	 * @param gitToken
-	 *            a function that will be used to extract the Git token
-	 * @param npmToken
-	 *            a function that will be used to extract the npm token
-	 */
-	function Commit(relRx, bumpRx, cmo, pver, nver, gitCliSubstitute, ch,
-			pkgPath, buildDir, branch, slug, username, reponame, gitToken,
-			npmToken) {
-		var cm = typeof cmo === 'string' ? cmo : cmo.message;
-		this.versionRegExp = typeof cmo === 'object' && cmo.matcher ? cmo.matcher
-				: relRx;
-		var rv = cm.match(this.versionRegExp);
-		if ((!rv || !rv.length) && typeof cmo === 'object'
-				&& typeof cmo.altMessage === 'string') {
-			this.versionRegExp = cmo.altMatcher || cmo.matcher;
-			rv = cmo.altMessage.match(this.versionRegExp);
-		}
-		if (!rv) {
-			rv = [];
-		}
-		var self = this;
-		var vt = 0, si = -1;
-		this.gitCliSubstitute = gitCliSubstitute;
-		this.pkgPath = pkgPath;
-		this.hash = ch;
-		this.buildDir = buildDir;
-		this.branch = branch;
-		this.slug = slug;
-		this.username = username;
-		this.reponame = reponame;
-		this.gitToken = gitToken || '';
-		this.npmToken = npmToken || '';
-		this.releaseId = null;
-		this.releaseAssets = [];
-		this.skipTasks = [];
-		this.skipTaskGen = function() {
-			var s = '';
-			for (var i = 0; i < arguments.length; i++) {
-				if (Array.isArray(arguments[i])) {
-					s += self.skipTaskGen.apply(self, arguments[i]);
-				} else if (arguments[i]) {
-					s += '[skip ' + arguments[i] + ']';
-				}
-			}
-			return s;
-		};
-		this.skipTaskCheck = function(task) {
-			return self.skipTasks && self.skipTasks.indexOf(task) >= 0;
-		};
-		if (cm) {
-			// extract skip tasks in format: [skip someTask]
-			cm.replace(regexSkips, function(m, t) {
-				self.skipTasks.push(t);
-			});
-		}
-		this.hasGitToken = typeof gitToken === 'function' ? gitToken().length > 0
-				: typeof gitToken === 'string' && gitToken.length > 0;
-		this.hasNpmToken = typeof npmToken === 'function' ? npmToken().length > 0
-				: typeof npmToken === 'string' && npmToken.length > 0;
-		this.message = cm;
-		this.versionMatch = rv;
-		this.versionBumpedIndices = [];
-		this.versionPrevIndices = [];
-		this.versionVacant = function() {
-			return !this.versionMajor && !this.versionMinor
-					&& !this.versionPatch && !this.versionPrerelease;
-		};
-		this.versionLabel = rv.length > 1 ? rv[1] : '';
-		this.versionType = rv.length > 2 ? rv[2] : '';
-		this.prev = pver instanceof Commit ? pver
-				: typeof pver === 'string' ? new Commit(relRx, bumpRx,
-						self.versionLabel + ' ' + self.versionType + pver,
-						null, self) : {
-					version : '0.0.0',
-					versionMatch : []
-				};
-		this.versionPrereleaseType = rv.length > 10 ? rv[10] : '';
-		this.versionMajor = rv.length > 4 ? verMatchVal(4) : 0;
-		this.versionMinor = rv.length > 6 ? verMatchVal(6) : 0;
-		this.versionPatch = rv.length > 8 ? verMatchVal(8) : 0;
-		this.versionPrerelease = rv.length > 12 ? verMatchVal(12) : 0;
-		this.version = this.versionPrevIndices.length
-				|| this.versionBumpedIndices.length ? vver()
-				: rv.length > 3 ? rv[3] : '';
-		this.versionTag = rv.length > 3 ? rv[2] + this.version : '';
-		this.versionPkg = function(replacer, space, revert, next, altWrite, cb,
-				altPath) {
-			var pkg = null;
-			var pth = altPath || self.pkgPath;
-			if (pth) {
-				pkg = grunt.file.readJSON(pth);
-				var u = pkg && !revert && !next && pkg.version !== self.version
-						&& self.version;
-				var n = pkg && !revert && next
-						&& pkg.version !== self.next.version
-						&& self.next.version;
-				var r = pkg && revert && self.prev.version;
-				if (u || n || r) {
-					var oldVer = pkg.version;
-					pkg.version = r ? self.prev.version : n ? self.next.version
-							: self.version;
-					var pkgStr = JSON.stringify(pkg, replacer, space);
-					grunt.file.write(pth,
-							typeof altWrite === 'function' ? altWrite(pkg,
-									pkgStr, oldVer, u, r, n, pth, replacer,
-									space) : pkgStr);
-					if (typeof cb === 'function') {
-						cb(pkg, pkgStr, oldVer, u, r, n, pth, replacer, space);
-					}
-				}
-			}
-			return pkg;
-		};
-		this.versionValidate = function() {
-			if (!validate(self.version)) {
-				return false;
-			} else if (self.prev.version
-					&& semver.lte(self.version, self.prev.version)) {
-				throw grunt.util.error(self.version
-						+ ' must be higher than the previous release version '
-						+ self.prev.version);
-			} else if (self.next.version
-					&& semver.gte(self.version, self.next.version)) {
-				throw grunt.util.error(self.version
-						+ ' must be lower than the next release version '
-						+ self.next.version);
-			}
-			return true;
-		};
-		this.next = nver === true && this.version ? new Commit(relRx, bumpRx, {
-			matcher : bumpRx,
-			message : cm,
-			altMatcher : relRx,
-			altMessage : self.versionLabel + ' ' + vver(true, true)
-		}, self) : nver instanceof Commit ? nver : {
-			version : ''
-		};
-		function validate(v, q) {
-			if (!v) {
-				if (!q) {
-					grunt.verbose.writeln('Non-release commit ' + (v || ''));
-				}
-				return false;
-			} else if (!self.hasGitToken) {
-				throw grunt.util.error('No Git token found, version: ' + v);
-			} else if (!semver.valid(v)) {
-				throw grunt.util.error('Invalid release version: ' + v);
-			}
-			return true;
-		}
-		function verMatchVal(i) {
-			var v = self.versionMatch[i];
-			var vl = self.prev.versionMatch
-					&& self.prev.versionMatch.length > i
-					&& self.prev.versionMatch[i] ? parseInt(self.prev.versionMatch[i])
-					: 0;
-			var vr = 0;
-			si++;
-			if (v && regexVerBump.test(v)) {
-				// increment the value for the given slot
-				self.versionBumpedIndices.push(si);
-				var m = v.match(regexVerBump);
-				vr = vl + m.length;
-			} else if (v && regexVerCurr.test(v)) {
-				// use the last release value for the given slot
-				self.versionPrevIndices.push(si);
-				vr = vl;
-			} else if (v) {
-				vr = parseInt(v);
-			}
-			vt += vr;
-			return vr;
-		}
-		function vver(pt, inc) {
-			return (pt ? vv(2) : '')
-					+ vv(4, self.versionMajor)
-					+ vv(5)
-					+ vv(6, self.versionMinor)
-					+ vv(7)
-					+ vv(8, self.versionPatch, inc
-							&& !self.versionPrereleaseType)
-					+ vv(9)
-					+ vv(10, self.versionPrereleaseType)
-					+ vv(11)
-					+ (self.versionPrereleaseType ? vv(12,
-							self.versionPrerelease, inc) : '');
-		}
-		function vv(i, v, inc) {
-			if (self.versionMatch.length > i) {
-				if (typeof v !== 'undefined') {
-					return inc && !isNaN(v) ? v + 1 : v;
-				} else if (typeof self.versionMatch[i] !== 'undefined') {
-					return self.versionMatch[i];
-				}
-			}
-			return '';
-		}
-	}
-
-	/**
 	 * When a release commit message is received a release is performed and a
 	 * repository web site is published
 	 * 
@@ -601,7 +124,7 @@ module.exports = function(grunt) {
 				+ ' (last release: '
 				+ (commit.prev.versionTag ? commit.prev.versionTag : 'N/A')
 				+ ')');
-		var useGitHub = options.gitHostname.toLowerCase() === gitHubHostname;
+		var useGitHub = options.gitHostname.toLowerCase() === github.hostname;
 		var templateData = {
 			data : {
 				process : process,
@@ -620,20 +143,20 @@ module.exports = function(grunt) {
 		var distZipAsset = '', distTarAsset = '', distZipAssetName = '', distTarAssetName = '';
 
 		// Start work
-		var prom = new Promise(options).then(remoteSetup).then(pkgUpdate).then(
-				changeLog).then(authorsLog);
-		prom.then(addAndCommitDistDir).then(genDistAssets);
-		prom.then(function() {
+		var rollCall = new RollCall(grunt, options).then(remoteSetup).then(
+				pkgUpdate).then(changeLog).then(authorsLog);
+		rollCall.then(addAndCommitDistDir).then(genDistAssets);
+		rollCall.then(function() {
 			if (useGitHub) {
 				doneAsync = task.async();
-				prom.then(gitHubRelease);
+				rollCall.then(gitHubRelease);
 			} else {
-				prom.then(gitRelease);
+				rollCall.then(gitRelease);
 			}
 		});
 		// begin release
-		prom.start(function(rbcnt) {
-			var ecnt = prom.errorCount();
+		rollCall.start(function(rbcnt) {
+			var ecnt = rollCall.errorCount();
 			var msg = ecnt > 0 ? 'Processed ' + rbcnt + ' rollback action(s)'
 					: 'Released ' + commit.versionTag;
 			grunt.log.writeln(msg);
@@ -645,12 +168,13 @@ module.exports = function(grunt) {
 					pkgUpdate(null, false, true);
 				}
 			} catch (e) {
-				prom.error('Failed to bump next release version', e);
+				rollCall.error('Failed to bump next release version', e);
 			}
 			try {
 				cloneAndSetCommit(commit, null);
 			} catch (e) {
-				prom.error('Failed to set global commit result properties', e);
+				rollCall.error('Failed to set global commit result properties',
+						e);
 			}
 
 			// complete
@@ -665,7 +189,8 @@ module.exports = function(grunt) {
 		 * Remote Git setup to permit pushes
 		 */
 		function remoteSetup() {
-			var link = '${GH_TOKEN}@github.com/' + commit.slug + '.git';
+			var link = '${GH_TOKEN}@' + options.gitHostname + '/' + commit.slug
+					+ '.git';
 			cmd('git config --global user.email "' + options.repoEmail + '"');
 			cmd('git config --global user.name "' + options.repoUser + '"');
 			cmd('git remote rm ' + options.repoName);
@@ -687,7 +212,7 @@ module.exports = function(grunt) {
 		 */
 		function pkgUpdate(altPkgPath, noPush, isNext) {
 			chkoutRun(commit.branch, upkg, false, isNext);
-			prom.addRollback(function() {
+			rollCall.addRollback(function() {
 				chkoutRun(commit.branch, upkg, true);
 			});
 			function upkg(revert, next) {
@@ -747,7 +272,7 @@ module.exports = function(grunt) {
 					options.chgLogSkipRegExp, '<!-- Commit ' + commit.hash
 							+ ' -->\n')
 					|| '';
-			validateFile(chgLogPath);
+			utils.validateFile(chgLogPath, rollCall);
 		}
 
 		/**
@@ -768,7 +293,7 @@ module.exports = function(grunt) {
 			var authorsPath = options.distDir + '/' + options.authors;
 			cmd('git --no-pager shortlog -sen HEAD > ' + authorsPath, null,
 					false, authorsPath, options.authorsSkipLineRegExp);
-			validateFile(authorsPath);
+			utils.validateFile(authorsPath, rollCall);
 		}
 
 		/**
@@ -828,8 +353,8 @@ module.exports = function(grunt) {
 							: commit.message) + '"');
 			cmd('git push -f ' + options.repoName + ' ' + commit.versionTag);
 			// TODO : upload asset?
-			prom.addRollback(rollbackTag);
-			prom.then(publish);
+			rollCall.addRollback(rollbackTag);
+			rollCall.then(publish);
 		}
 
 		/**
@@ -841,7 +366,7 @@ module.exports = function(grunt) {
 					+ options.gitHostname);
 			// GitHub Release API will not remove the tag when removing a
 			// release
-			releaseAndUploadAsset([ {
+			github.releaseAndUploadAsset([ {
 				path : distZipAsset,
 				name : distZipAssetName,
 				contentType : 'application/zip'
@@ -849,9 +374,9 @@ module.exports = function(grunt) {
 				path : distTarAsset,
 				name : distTarAssetName,
 				contentType : 'application/x-compressed'
-			} ], commit, releaseName, chgLogRtn || commit.message, options,
-					prom, rollbackTag, function() {
-						prom.then(publish);
+			} ], regexLines, commit, releaseName, chgLogRtn || commit.message,
+					options, rollCall, rollbackTag, function() {
+						rollCall.then(publish);
 					});
 		}
 
@@ -874,8 +399,8 @@ module.exports = function(grunt) {
 						+ pubSrcDir + ' to ' + pubDistDir);
 				// copy all directories/files over that need to be published
 				// so that they are not removed by the following steps
-				grunt.log.writeln(copyRecursiveSync(pubSrcDir, pubDistDir,
-						options.distExcludeDirRegExp,
+				grunt.log.writeln(utils.copyRecursiveSync(pubSrcDir,
+						pubDistDir, options.distExcludeDirRegExp,
 						options.distExcludeFileRegExp).toString());
 				// cmd('cp -r ' + pth.join(pubSrcDir, '*') + ' ' + pubDistDir);
 				chkoutRun(
@@ -908,8 +433,8 @@ module.exports = function(grunt) {
 											+ pubDistDir
 											+ ' to '
 											+ commit.buildDir);
-							grunt.log.writeln(copyRecursiveSync(pubDistDir,
-									commit.buildDir).toString());
+							grunt.log.writeln(utils.copyRecursiveSync(
+									pubDistDir, commit.buildDir).toString());
 							// cmd('cp -r ' + pth.join(pubDistDir, '*') + ' .');
 
 							// give taskateers a chance to update branch file
@@ -923,8 +448,8 @@ module.exports = function(grunt) {
 							cmd('git push -f ' + options.repoName + ' '
 									+ options.distBranch);
 
-							prom.addRollback(rollbackPublish);
-							prom.then(publishNpm);
+							rollCall.addRollback(rollbackPublish);
+							rollCall.then(publishNpm);
 						});
 			}
 		}
@@ -945,7 +470,7 @@ module.exports = function(grunt) {
 			function go() {
 				pkg = grunt.file.readJSON(commit.pkgPath);
 				if (!pkg || !pkg.author || !pkg.author.email) {
-					prom
+					rollCall
 							.error('npm publish failed due to missing author.email in '
 									+ commit.pkgPath);
 				} else {
@@ -956,14 +481,15 @@ module.exports = function(grunt) {
 							.split(':')
 							: [];
 					if (auth.length !== 2) {
-						prom.error('npm NPM_TOKEN is missing or invalid');
+						rollCall.error('npm NPM_TOKEN is missing or invalid');
 					} else {
-						prom.pause(function() {
+						rollCall.pause(function() {
 							npm.load({}, function(e) {
 								if (e) {
-									prom.error('npm load failed', e).resume();
+									rollCall.error('npm load failed', e)
+											.resume();
 								} else {
-									prom.pause(adduser);
+									rollCall.pause(adduser);
 								}
 							});
 						});
@@ -975,10 +501,11 @@ module.exports = function(grunt) {
 				npm.registry.adduser(auth[0], auth[1], pkg.author.email, aucb);
 				function aucb(e) {
 					if (e) {
-						prom.error('npm publish failed to be authenticated', e)
+						rollCall.error(
+								'npm publish failed to be authenticated', e)
 								.resume();
 					} else {
-						prom.pause(pub);
+						rollCall.pause(pub);
 					}
 				}
 			}
@@ -993,15 +520,15 @@ module.exports = function(grunt) {
 				chkoutCmd(commit.branch);
 				npm.commands.publish(pargs, function(e) {
 					if (e) {
-						prom.error('npm publish failed', e).resume();
+						rollCall.error('npm publish failed', e).resume();
 					} else {
-						prom.pause(postPub);
+						rollCall.pause(postPub);
 					}
 				});
 				function postPub() {
 					chkoutRun(null, function() {
 						grunt.verbose.writeln('npm publish complete');
-						prom.resume();
+						rollCall.resume();
 					});
 				}
 			}
@@ -1038,7 +565,7 @@ module.exports = function(grunt) {
 				});
 			} catch (e) {
 				var msg = 'Failed to rollback publish branch changes!';
-				prom.error(msg, e);
+				rollCall.error(msg, e);
 			}
 		}
 
@@ -1067,15 +594,15 @@ module.exports = function(grunt) {
 			grunt.log.writeln(c);
 			var rtn = null;
 			if (typeof c === 'string') {
-				rtn = execCmd(c, commit.gitCliSubstitute);
+				rtn = utils.execCmd(c, commit.gitCliSubstitute);
 			} else {
-				rtn = shell[c.shell].apply(shell, c.args);
+				rtn = utils.shell[c.shell].apply(utils.shell, c.args);
 			}
 			if (rtn.code !== 0) {
 				var e = 'Error "' + rtn.code + '" for commit hash '
 						+ commit.hash + ' ' + rtn.output;
 				if (nofail) {
-					prom.error(e);
+					rollCall.error(e);
 					return;
 				}
 				throw grunt.util.error(e);
@@ -1137,7 +664,7 @@ module.exports = function(grunt) {
 					}
 				}
 			} catch (e) {
-				prom.error('Unable to update publish release asset URL', e);
+				rollCall.error('Unable to update publish release asset URL', e);
 			}
 		}
 
@@ -1161,8 +688,8 @@ module.exports = function(grunt) {
 					chkoutCmd(chkout);
 				}
 				if (typeof fx === 'function') {
-					return fx.apply(prom, Array.prototype.slice.call(arguments,
-							2));
+					return fx.apply(rollCall, Array.prototype.slice.call(
+							arguments, 2));
 				}
 			} finally {
 				chkoutCmd();
@@ -1177,650 +704,6 @@ module.exports = function(grunt) {
 		 */
 		function chkoutCmd(alt) {
 			cmd('git checkout -q ' + (alt || commit.hash || commit.branch));
-		}
-
-		/**
-		 * Determines if a file has content and logs an error when the the file
-		 * is empty
-		 * 
-		 * @param path
-		 *            the path to the file
-		 * @returns true when the file contains data or the path is invalid
-		 */
-		function validateFile(path) {
-			var stat = path ? fs.statSync(path) : {
-				size : 0
-			};
-			if (!stat.size) {
-				prom.error('Failed to find any entries in "' + path
-						+ '" (file size: ' + stat.size + ')');
-				return false;
-			}
-			return true;
-		}
-	}
-
-	/**
-	 * Executes a shell command
-	 * 
-	 * @param c
-	 *            the command to execute
-	 * @param gcr
-	 *            the optional command replacement that will be substituted for
-	 *            the "git" CLI (when applicable)
-	 */
-	function execCmd(c, gcr) {
-		return shell.exec(gcr ? c.replace(regexGitCmd, gcr) : c, {
-			silent : true
-		});
-	}
-
-	/**
-	 * Copies files/directories recursively
-	 * 
-	 * @param src
-	 *            the source path
-	 * @param dest
-	 *            the destination path
-	 * @param dirExp
-	 *            an optional regular expression that will be tested for
-	 *            exclusion before each directory is copied
-	 * @param fileExp
-	 *            an optional regular expression that will be tested for
-	 *            exclusion before each file is copied
-	 * @returns {Object} status of the copied resources
-	 */
-	function copyRecursiveSync(src, dest, dirExp, fileExp) {
-		var stats = {
-			dirCopiedCount : 0,
-			dirSkips : [],
-			fileCopiedCount : 0,
-			fileSkips : [],
-			toString : function() {
-				return this.dirCopiedCount
-						+ ' directories/'
-						+ this.fileCopiedCount
-						+ ' files copied'
-						+ (this.dirSkips.length > 0 ? ' Skipped directories: '
-								+ this.dirSkips.join(',') : '')
-						+ (this.fileSkips.length > 0 ? ' Skipped files: '
-								+ this.fileSkips.join(',') : '');
-			}
-		};
-		crs(stats, src, dest, dirExp, fileExp);
-		return stats;
-		function safeStatsSync(s) {
-			var r = {};
-			r.exists = fs.existsSync(s);
-			r.stats = r.exists && fs.statSync(s);
-			r.isDir = r.exists && r.stats.isDirectory();
-			return r;
-		}
-		function crs(s, src, dest, dirExp, fileExp) {
-			var srcStats = safeStatsSync(src);
-			if (srcStats.exists && srcStats.isDir) {
-				if (dirExp && util.isRegExp(dirExp) && dirExp.test(src)) {
-					s.dirSkips.push(src);
-					return;
-				}
-				var destStats = safeStatsSync(dest);
-				if (!destStats.exists) {
-					fs.mkdirSync(dest);
-				}
-				s.dirCopiedCount++;
-				fs.readdirSync(src).forEach(function(name) {
-					crs(s, pth.join(src, name), pth.join(dest, name));
-				});
-			} else {
-				if (fileExp && util.isRegExp(fileExp) && fileExp.test(src)) {
-					s.fileSkips.push(src);
-					return;
-				}
-				fs.linkSync(src, dest);
-				s.fileCopiedCount++;
-				// grunt.verbose.writeln('Copied "' + src + '" to "' + dest +
-				// '"');
-			}
-		}
-	}
-
-	/**
-	 * Tags/Releases from default branch (see
-	 * http://developer.github.com/v3/repos/releases/#create-a-release ) and
-	 * Uploads the file asset and associates it with a specified tagged release
-	 * (see
-	 * http://developer.github.com/v3/repos/releases/#upload-a-release-asset )
-	 * 
-	 * @param assets
-	 *            an {Array} of objects each containing a <code>path</code>,
-	 *            <code>contentType</code> and <code>name</code> of an asset
-	 *            to be uploaded (optional)
-	 * @param commit
-	 *            the commit object the asset is for
-	 * @param name
-	 *            of release
-	 * @param desc
-	 *            release description (can be in markdown)
-	 * @param options
-	 *            the task options
-	 * @param prom
-	 *            the {Promise} instance
-	 * @param fcb
-	 *            the call back function that will be called when the release
-	 *            fails
-	 * @param cb
-	 *            the call back function called when completed successfully
-	 */
-	function releaseAndUploadAsset(assets, commit, name, desc, options, prom,
-			fcb, cb) {
-		var authToken = typeof commit.gitToken === 'function' ? commit
-				.gitToken() : commit.gitToken;
-		if (!authToken) {
-			prom.error('Invalid authorization token').then(cb);
-			return;
-		}
-		var rl = null;
-		// check if API responded with an error message
-		function chk(o) {
-			if (o[gitHubReleaseErrorMsg]) {
-				throw grunt.util.error(JSON.stringify(o));
-			}
-			return o;
-		}
-		var assetIndex = -1;
-		var asset = nextAsset();
-		function nextAsset() {
-			assetIndex++;
-			var a = {
-				item : Array.isArray(assets) && assetIndex < assets.length ? assets[assetIndex]
-						: null
-			};
-			a.size = a.item && a.item.path ? fs.statSync(a.item.path).size : 0;
-			a.cb = function() {
-				if (!a.item || a.size <= 0) {
-					// Promise completion callback
-					prom.then(cb);
-				} else {
-					// pause and wait for response
-					prom.pause(postReleaseAsset);
-				}
-			};
-			return a;
-		}
-		var json = {};
-		json[gitHubReleaseTagName] = commit.versionTag;
-		json[gitHubReleaseName] = name || commit.versionTag;
-		json[gitHubReleaseBody] = desc;
-		json[gitHubReleaseCommitish] = commit.hash;
-		json[gitHubReleasePreFlag] = commit.versionPrereleaseType != null;
-		var jsonStr = JSON.stringify(json);
-		var host = 'api.github.com';
-		var releasePath = '/repos/' + commit.slug + '/releases';
-		var https = require('https');
-		var opts = {
-			hostname : host,
-			port : 443,
-			path : releasePath,
-			method : 'POST'
-		};
-		opts.headers = {
-			'User-Agent' : commit.slug,
-			'Authorization' : 'token ' + authToken,
-			'Content-Type' : 'application/json',
-			'Content-Length' : jsonStr.length
-		};
-
-		// pause Promise and wait for response
-		prom.pause(postRelease);
-
-		function postRelease() {
-			grunt.log.writeln('Posting the following to ' + opts.hostname
-					+ releasePath);
-			if (grunt.option('verbose')) {
-				grunt.verbose.writeln(util.inspect(json, {
-					colors : true
-				}));
-			}
-			var resData = '';
-			var res = null;
-			var req = https.request(opts, function(r) {
-				// var sc = res.statusCode;
-				res = r;
-				res.on('data', function(chunk) {
-					resData += chunk;
-					grunt.verbose
-							.writeln('Receiving post release chunked data');
-				});
-				res.on('end', function() {
-					if (gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0) {
-						grunt.verbose.writeln('Received post release data');
-						prom.then(postReleaseEnd).resume();
-					} else {
-						prom.error(
-								'Release post failed with HTTP status: '
-										+ res.statusCode + ' data: '
-										+ util.inspect(resData)).then(cb)
-								.resume();
-					}
-				});
-			});
-			req.end(jsonStr);
-			req.on('error', function(e) {
-				prom.error('Release post failed', e).then(cb).resume();
-			});
-			function postReleaseEnd() {
-				var success = gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0;
-				rl = success ? chk(JSON.parse(resData.replace(regexLines, ' ')))
-						: null;
-				if (grunt.option('verbose')) {
-					grunt.verbose.writeln(util.inspect(rl, {
-						colors : true
-					}));
-				}
-				if (rl && rl[gitHubReleaseTagName] === commit.versionTag) {
-					commit.releaseId = rl[gitHubReleaseId];
-					// Promise asset uploaded or complete with callback
-					prom.addRollbacks(postReleaseRollback, fcb);
-					asset.cb();
-				} else {
-					prom.error(
-							'No tag found for ' + commit.versionTag + ' in '
-									+ util.inspect(rl, {
-										colors : true
-									}) + ' HTTP Status: ' + res.statusCode
-									+ ' Response: \n' + resData).then(cb);
-				}
-			}
-		}
-
-		function postReleaseAsset() {
-			grunt.log.writeln('Uploading "' + asset.item.path
-					+ '" release asset for ' + commit.versionTag + ' via '
-					+ options.gitHostname);
-			opts.method = 'POST';
-			opts.path = rl[gitHubReleaseUploadUrl].replace(regexHost, function(
-					m, h) {
-				opts.hostname = h;
-				return '/';
-			});
-			opts.path = opts.path.replace(gitHubRegexParam, '$1='
-					+ (asset.item.name || commit.versionTag));
-			opts.headers['Content-Type'] = asset.item.contentType;
-			opts.headers['Content-Length'] = asset.size;
-			var resData = '', ajson = null;
-			var resError = null;
-			var res = null;
-			var req = https.request(opts, function(r) {
-				res = r;
-				res.on('data', function(chunk) {
-					resData += chunk;
-					grunt.verbose.writeln('Receiving upload response');
-				});
-				res.on('end', function() {
-					grunt.verbose.writeln('Received upload response');
-					prom.then(postRleaseAssetEnd).resume();
-				});
-				grunt.log.writeln('Waiting for response');
-			});
-			req.on('error', function(e) {
-				resError = e;
-				prom.then(postRleaseAssetEnd).resume();
-			});
-			// stream asset to remote host
-			fs.createReadStream(asset.item.path, {
-				'bufferSize' : 64 * 1024
-			}).pipe(req);
-
-			function postRleaseAssetEnd() {
-				if (resError) {
-					prom.error('Release asset upload failed', resError);
-				} else if (gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0) {
-					ajson = chk(JSON.parse(resData.replace(regexLines, ' ')));
-					if (ajson && ajson.state !== 'uploaded') {
-						var msg = 'Asset upload failed with state: '
-								+ ajson.state + ' for ' + util.inspect(ajson, {
-									colors : true
-								});
-						prom.error(msg);
-					} else {
-						var durl = 'https://' + options.gitHostname + '.com/'
-								+ commit.username + '/' + commit.reponame
-								+ '/releases/download/' + commit.versionTag
-								+ '/' + ajson[gitHubReleaseName];
-						// make asset avaliable via commit
-						commit.releaseAssets.push({
-							asset : ajson,
-							downloadUrl : durl
-						});
-						grunt.log.writeln('Asset ID '
-								+ ajson[gitHubReleaseAssetId]
-								+ ' successfully ' + ajson.state + ' for '
-								+ asset.item.name + ' ' + asset.item.path
-								+ ' (downloadable at: ' + durl + ')');
-						if (grunt.option('verbose')) {
-							grunt.verbose.writeln(util.inspect(ajson, {
-								colors : true
-							}));
-						}
-					}
-				} else {
-					var dstr = util.inspect(resData);
-					prom.error('Asset upload failed with HTTP status: '
-							+ res.statusCode + ' data: ' + dstr);
-				}
-				// check for more assets to upload
-				asset = nextAsset();
-				asset.cb();
-			}
-		}
-
-		function postReleaseRollback() {
-			var res = null, rrdata = '';
-			try {
-				// pause and wait for response
-				prom.pauseRollback();
-				opts.path = releasePath + '/' + commit.releaseId.toString();
-				opts.method = 'DELETE';
-				opts.hostname = host;
-				opts.headers['Content-Length'] = 0;
-				grunt.log.writeln('Rolling back ' + commit.versionTag
-						+ ' release via ' + options.gitHostname + ' '
-						+ opts.method + ' ' + opts.path);
-				var rreq = https.request(opts, function(r) {
-					res = r;
-					res.on('data', function(chunk) {
-						grunt.verbose
-								.writeln('Receiving release rollback data');
-						rrdata += chunk;
-					});
-					res.on('end', postReleaseRollbackEnd);
-				});
-				rreq.end();
-				rreq.on('error', function(e) {
-					var em = 'Failed to rollback release ID '
-							+ commit.releaseId;
-					prom.error(em, e).resumeRollback();
-				});
-			} catch (e) {
-				prom.error('Failed to request rollback for release ID '
-						+ commit.releaseId, e);
-			}
-			function postReleaseRollbackEnd() {
-				try {
-					var msg = 'Release rollback for release ID: '
-							+ commit.releaseId;
-					if (gitHubSuccessHttpCodes.indexOf(res.statusCode) >= 0) {
-						grunt.log.writeln(msg + ' complete');
-						grunt.verbose.writeln(rrdata);
-					} else {
-						prom.error(msg + ' failed', rrdata);
-					}
-				} finally {
-					prom.resumeRollback();
-				}
-			}
-		}
-	}
-
-	/**
-	 * Synchronous promise that provides a means to add a function to a waiting
-	 * promise queue along with an optional rollback function that will be
-	 * called in a queued or stack order whenever an {Error} is either thrown
-	 * (stops further promise functions from firing) or when all promiesed
-	 * functions have been called, but {Error}s have been logged
-	 * 
-	 * @constructor
-	 * @param options
-	 *            the task options
-	 */
-	function Promise(options) {
-		var wrk = null, wrkq = [], wrkd = [], wrkrb = [], prom = this, wi = -1, endc = null;
-		var pausd = false, rbpausd = false, rbi = -1, rbcnt = 0, tm = null, es = new Errors(
-				options);
-		this.then = function(fx, rb) {
-			wrk = new Work(fx, rb, Array.prototype.slice.call(arguments, 2));
-			wrkq.push(wrk);
-			return prom;
-		};
-		this.addRollbacks = function() {
-			if (arguments.length === 0) {
-				return;
-			}
-			// make sure the order of the passed rollback functions is
-			// maintained regardless of strategy
-			var args = isStack() ? Array.prototype.reverse.call(arguments)
-					: arguments;
-			for (var i = 0; i < args.length; i++) {
-				prom.addRollback(args[i]);
-			}
-		};
-		this.addRollback = function(rb) {
-			if (typeof rb === 'function') {
-				addRollbackObj(new Rollback(rb));
-			}
-		};
-		this.work = function() {
-			return wrk;
-		};
-		this.start = function(end) {
-			endc = end || endc;
-			var stop = null;
-			pausd = false;
-			if (!prom.hasPromises()) {
-				return rollbacks();
-			}
-			for (wi++; wi < wrkq.length; wi++) {
-				wrk = wrkq[wi];
-				try {
-					wrk.run();
-					if (pausd) {
-						return;
-					}
-				} catch (e) {
-					stop = e;
-					prom.error(e);
-				} finally {
-					if (stop || (!pausd && !prom.hasPromises())) {
-						return rollbacks();
-					}
-				}
-			}
-		};
-		this.hasPromises = function(i) {
-			return (i || wi) < wrkq.length - 1;
-		};
-		this.pause = function(fx, rb) {
-			pausd = true;
-			var rtn = tko(rollbacks);
-			runNow(fx, rb, Array.prototype.slice.call(arguments, 2));
-			return rtn;
-		};
-		this.resume = function() {
-			tko();
-			if (!pausd) {
-				return 0;
-			}
-			return prom.start();
-		};
-		this.worked = function() {
-			return wrkd.slice(0);
-		};
-		this.error = function() {
-			es.log.apply(es, arguments);
-			return prom;
-		};
-		this.errorCount = function() {
-			return es.count();
-		};
-		this.pauseRollback = function(fx, rb) {
-			rbpausd = true;
-			var rtn = tko(prom.resumeRollback);
-			runNow(fx, rb, Array.prototype.slice.call(arguments, 2), true);
-			return rtn;
-		};
-		this.resumeRollback = function() {
-			tko();
-			if (!rbpausd) {
-				return 0;
-			}
-			return rollbacks();
-		};
-		this.hasRollbacks = function() {
-			return rbi < wrkrb.length - 1;
-		};
-		function rollbacks() {
-			rbpausd = false;
-			if (prom.errorCount() > 0) {
-				grunt.log.writeln('Processing ' + (wrkrb.length - rbcnt)
-						+ ' rollback action(s)');
-				for (rbi++; rbi < wrkrb.length; rbi++) {
-					grunt.verbose
-							.writeln('Calling rollback ' + wrkrb[rbi].name);
-					try {
-						wrkrb[rbi].run();
-						rbcnt++;
-						if (rbpausd) {
-							grunt.verbose.writeln('Pausing after rollback '
-									+ wrkrb[rbi].name);
-							return rbcnt;
-						}
-					} catch (e) {
-						prom.error(e);
-					}
-				}
-			}
-			return endc ? endc.call(prom, rbcnt) : rbcnt;
-		}
-		function runNow(fx, rb, args, isRb) {
-			if (typeof fx === 'function') {
-				var stop = null;
-				try {
-					if (isRb) {
-						// immediately ran rollback needs to be tracked
-						var rbo = addRollbackObj(new Rollback(fx));
-						rbi++;
-						rbcnt++;
-						rbo.run();
-					} else {
-						var wrk = new Work(fx, rb, args, isRb);
-						wrk.run();
-					}
-				} catch (e) {
-					stop = e;
-					prom.error(e);
-				} finally {
-					if (stop) {
-						// rollback for the rollback
-						if (isRb) {
-							runNow(rb, null, null, true);
-						} else {
-							rollbacks();
-						}
-					}
-				}
-			}
-		}
-		function Work(fx, rb, args) {
-			this.func = fx;
-			this.rb = rb ? new Rollback(rb, args) : null;
-			this.args = args;
-			this.rtn = undefined;
-			this.run = function() {
-				this.rtn = this.func.apply(prom, this.args);
-				wrkd.push(this);
-				prom.addRollback(this.rb);
-				return this.rtn;
-			};
-		}
-		function Rollback(rb) {
-			this.name = funcName(rb);
-			this.run = function() {
-				return typeof rb === 'function' ? rb.call(prom) : false;
-			};
-		}
-		function addRollbackObj(rbo) {
-			if (typeof options.rollbackStrategy === 'string'
-					&& /stack/i.test(options.rollbackStrategy)) {
-				wrkrb.unshift(rbo);
-			} else {
-				wrkrb.push(rbo);
-			}
-			return rbo;
-		}
-		function funcName(fx) {
-			var n = fx ? regexFuncName.exec(fx.toString()) : null;
-			return n && n[0] ? n[0] : '';
-		}
-		function tko(cb) {
-			if (tm) {
-				clearTimeout(tm);
-			}
-			if (typeof cb === 'function') {
-				var to = cb === rollbacks ? options.rollbackAsyncTimeout
-						: options.asyncTimeout;
-				var rbm = cb === rollbacks ? ' rolling back changes'
-						: ' for rollback';
-				tm = setTimeout(function() {
-					prom.error('Timeout of ' + to + 'ms reached' + rbm);
-					cb();
-				}, to);
-			}
-			return prom;
-		}
-		function isStack() {
-			return typeof options.rollbackStrategy === 'string'
-					&& /stack/i.test(options.rollbackStrategy);
-		}
-	}
-
-	/**
-	 * Work/Error tracking
-	 * 
-	 * @constructor
-	 * @param options
-	 *            the task options
-	 */
-	function Errors(options) {
-		var errors = [];
-
-		/**
-		 * Logs one or more errors (can be {Error}, {Object} or {String})
-		 */
-		this.log = function() {
-			for (var i = 0; i < arguments.length; i++) {
-				if (util.isArray(arguments[i])) {
-					this.log(arguments[i]);
-				} else {
-					logError(arguments[i]);
-				}
-			}
-		};
-
-		/**
-		 * @returns the number of errors logged
-		 */
-		this.count = function() {
-			return errors.length;
-		};
-
-		/**
-		 * Logs an error
-		 * 
-		 * @param e
-		 *            the {Error} object or string
-		 */
-		function logError(e) {
-			e = e instanceof Error ? e : e ? grunt.util.error(e) : null;
-			if (e) {
-				if (options && util.isRegExp(options.hideTokenRegExp)) {
-					e.message = e.message.replace(options.hideTokenRegExp,
-							function(match, prefix, token, suffix) {
-								return prefix + '[SECURE]' + suffix;
-							});
-				}
-				errors.unshift(e);
-				grunt.log.error(e.stack || e.message);
-			}
 		}
 	}
 };

@@ -57,6 +57,11 @@ To release version `2.0.0` when the latest release is `1.1.1`:
 release v+.0.0
 ```
 
+To release version `0.0.1-beta.1` when the latest release is `0.0.1-alpha.3`:
+```shell
+release v*.*.*-+.1
+```
+
 To release version `2.0.0` when the latest release is `1.1.1` via the [grunt cli](http://gruntjs.com/using-the-cli):
 ```shell
 grunt releasebot --releasebot.commitMessage="Release v+.0.0"
