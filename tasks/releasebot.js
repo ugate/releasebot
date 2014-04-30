@@ -36,7 +36,7 @@ var regexKey = /(https?:\/\/|:)+(?=[^:]*$)[a-z0-9]+(@)/gmi;
 module.exports = function(grunt) {
 
 	// initialize global release environment options
-	var commit = committer(grunt, pluginName, regexLines, {
+	var commit = committer.init(grunt, pluginName, regexLines, {
 		pkgPath : grunt.config('pkgFile') || 'package.json',
 		gitCliSubstitute : '',
 		buildDir : process.env.TRAVIS_BUILD_DIR || process.cwd(),
@@ -172,7 +172,7 @@ module.exports = function(grunt) {
 				rollCall.error('Failed to bump next release version', e);
 			}
 			try {
-				cloneAndSetCommit(commit, null);
+				committer.cloneAndSetCommit(commit, null);
 			} catch (e) {
 				rollCall.error('Failed to set global commit result properties',
 						e);
