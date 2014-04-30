@@ -27,10 +27,10 @@ var host = exports.apiHost = 'api.' + hostName;
  *            an {Array} of objects each containing a <code>path</code>,
  *            <code>contentType</code> and <code>name</code> of an asset to
  *            be uploaded (optional)
- * @param commit
- *            the commit object the asset is for
  * @param regexLines
  *            the regular expression used to remove duplicate lines
+ * @param commit
+ *            the commit object the asset is for
  * @param name
  *            of release
  * @param desc

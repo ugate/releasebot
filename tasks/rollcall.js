@@ -19,7 +19,7 @@ module.exports = RollCall;
  *            the task options
  */
 function RollCall(grunt, options) {
-	var wrk = null, wrkq = [], wrkd = [], wrkrb = [], prom = this, wi = -1, endc = null;
+	var wrk = null, wrkq = [], wrkd = [], wrkrb = [], that = this, wi = -1, endc = null;
 	var pausd = false, rbpausd = false, rbi = -1, rbcnt = 0, tm = null, es = new Errors(
 			options);
 	this.then = function(fx, rb) {
