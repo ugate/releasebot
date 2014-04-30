@@ -13,7 +13,7 @@ var regexKeyVal = /="(.+)"$/;
 var regexToken = /token$/i;
 var preReleaseTypes = [ 'alpha', 'beta', 'rc' ];
 var grunt = null, pluginName = '', configEnv = '', configCommit = '', regexLines = '';
-module.exports = create;
+exports = module.exports = initEnv;
 
 /**
  * Initializes the global environment and returns {Commit} related data
@@ -28,7 +28,7 @@ module.exports = create;
  *            the environment object
  * @returns {Commit}
  */
-function create(grnt, name, rxLines, env) {
+function initEnv(grnt, name, rxLines, env) {
 	grunt = grnt;
 	pluginName = name;
 	configEnv = pluginName + '.env';
