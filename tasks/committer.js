@@ -13,7 +13,7 @@ var regexKeyVal = /="(.+)"$/;
 var regexToken = /token$/i;
 var preReleaseTypes = [ 'alpha', 'beta', 'rc' ];
 var grunt = null, pluginName = '', configEnv = '', configCommit = '', regexLines = '';
-exports = module.exports = create;
+module.exports = create;
 
 /**
  * Initializes the global environment and returns {Commit} related data

@@ -5,6 +5,7 @@ var fs = require('fs');
 var pth = require('path');
 var util = require('util');
 var utils = require('./utils');
+var committer = require('./committer');
 var RollCall = require('./rollcall');
 var github = require('./github');
 var pluginName = 'releasebot';
@@ -35,7 +36,7 @@ var regexKey = /(https?:\/\/|:)+(?=[^:]*$)[a-z0-9]+(@)/gmi;
 module.exports = function(grunt) {
 
 	// initialize global release environment options
-	var commit = require('./commit')(grunt, pluginName, regexLines, {
+	var commit = committer(grunt, pluginName, regexLines, {
 		pkgPath : grunt.config('pkgFile') || 'package.json',
 		gitCliSubstitute : '',
 		buildDir : process.env.TRAVIS_BUILD_DIR || process.cwd(),
