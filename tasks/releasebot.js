@@ -375,8 +375,9 @@ module.exports = function(grunt) {
 				path : distTarAsset,
 				name : distTarAssetName,
 				contentType : 'application/x-compressed'
-			} ], regexLines, commit, releaseName, chgLogRtn || commit.message,
-					options, rollCall, rollbackTag, function() {
+			} ], grunt, regexLines, commit, releaseName, chgLogRtn
+					|| commit.message, options, rollCall, rollbackTag,
+					function() {
 						rollCall.then(publish);
 					});
 		}
