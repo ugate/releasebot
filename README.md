@@ -294,7 +294,7 @@ Once the releasebot task has been registered commit datails are captured and mad
   chgLogRequired : true,
   // Regular expression that will be used to exclude change log content 
   // Default: any change log new line that matches the release trigger, [skip changelog] or merge branch ("master" will be replaced with the value from commit.branch)
-  chgLogSkipRegExp : /.*(?:(?:(released?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?)))|(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
+  chgLogSkipRegExp : /.*(?:(?:(releas(?:e|ed|ing))\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?)))|(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
   // Flag to indicate that the release will fail when the authors log cannot be validated
   authorsRequired : false,
   // Regular expression that will be used to skip individual lines from being used within the authors log
