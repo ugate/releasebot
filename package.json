@@ -46,7 +46,7 @@
     "publish"
   ],
   "dependencies": {
-    "shelljs": "~0.2.6",
-    "semver": "~2.2.1"
+    "shelljs": "~0.3.0",
+    "semver": "~2.3.0"
   }
 }
