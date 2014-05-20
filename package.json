@@ -1,7 +1,7 @@
 {
   "name": "releasebot",
   "description": "Grunt task for triggering a release when a commit message matches a predefined regular expression or when manually invoked",
-  "version": "0.0.1-alpha.4",
+  "version": "0.0.1-alpha.3",
   "main": "releasebot.js",
   "files": [
     "releasebot.js",
@@ -46,7 +46,7 @@
     "publish"
   ],
   "dependencies": {
-    "shelljs": "~0.2.6",
-    "semver": "~2.2.1"
+    "shelljs": "~0.3.0",
+    "semver": "~2.3.0"
   }
 }

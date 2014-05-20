@@ -9,7 +9,7 @@ var committer = require('../lib/committer');
 var RollCall = require('../lib/rollcall');
 var github = require('../lib/github');
 var pluginName = 'releasebot';
-var regexVersion = /(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc?)(?:(\.)?(\d+|\+|\*))?)?))/mi;
+var regexVersion = /(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?))/mi;
 var regexRelease = new RegExp(/(releas(?:e|ed|ing))\s*/.source
 		+ regexVersion.source, 'mi');
 var regexBump = new RegExp(/(bump(?:ed|ing)?)\s*/.source + regexVersion.source,
