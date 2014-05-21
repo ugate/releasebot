@@ -44,6 +44,7 @@ module.exports = function(grunt) {
 		commitHash : process.env.TRAVIS_COMMIT,
 		commitMessage : process.env.TRAVIS_COMMIT_MESSAGE,
 		repoSlug : process.env.TRAVIS_REPO_SLUG,
+		releaseVersionDefaultLabel : 'release',
 		releaseVersionRegExp : regexRelease,
 		bumpVersionRegExp : regexBump,
 		prevVersionMsgIgnoreRegExp : /No names found/i,

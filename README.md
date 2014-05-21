@@ -205,7 +205,9 @@ The following **global plug-in environment options** can be set using one of the
   commitMessage : '',
   // The repository slug the release is for (default: global env option extraction or from current checkout)
   repoSlug : '',
-  // The regular expression used to check the commit message for the presence of a release to trigger (match order must be maintained)
+  // The default release label used against releaseVersionRegExp
+  releaseVersionDefaultLabel : 'release',
+  // The regular expression used to check the commit message for the presence of a release to trigger (match order must be maintained and should contain releaseVersionDefaultLabel)
   releaseVersionRegExp : /(releas(?:e|ed|ing))\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
   // The regular expression used to check the commit message for the presence of a bump version that will be used once the release completes (match order must be maintained)
   bumpVersionRegExp : /(bump(?:ed|ing)?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
@@ -320,7 +322,7 @@ Once the releasebot task has been registered commit datails are captured and mad
   chgLogLineFormat : '  * %s',
   // Flag to indicate that the release will fail when the change log cannot be validated
   chgLogRequired : true,
-  // Regular expression that will be used to exclude change log content 
+  // Regular expression that will be used to exclude change log content
   // Default: any change log new line that matches the release trigger, [skip changelog] or merge branch ("master" will be replaced with the value from commit.branch)
   chgLogSkipRegExp : /.*(?:(?:(releas(?:e|ed|ing))\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?)))|(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
   // Flag to indicate that the release will fail when the authors log cannot be validated
