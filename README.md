@@ -23,6 +23,8 @@
 2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published distribution content from distribution/pages/docs branch (if needed)
 3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html) (if needed)
 
+#### See [this link](//github.com/ugate/releasebot/releases) for example GitHub releasebot generated releases!
+
 ## Usage Examples
 
 Each commit message will be checked for the presence of a version to release. The default expression checks for `release v` followed by a <a href="http://semver.org/">semantic compliant version</a> or a `+` or `*` within the appropriate version *slot* indicating the version should be either *incremented* by one or that the value should be replaced by the *last/currently* released version (respectively).
@@ -144,6 +146,32 @@ before_script:
 - echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 ```
 
+### Skips Indicators
+Skip indicators are used within commit messages to notify underlying systems that a particular operation should not be performed for a particular commit. An example of which is the [skip option for travis-ci](http://docs.travis-ci.com/user/how-to-skip-a-build/). By default, releasebot adds a flag to `releaseSkipTasks` in order to skip additional continuous integration builds when internal releasebot commits are performed (i.e. bumping package versions, etc.). The semantics follow commonly recognized patterns used by various tools (i.e. `[skip ci]`). When the releasebot task is registered it automatically captures all the skip operations/tasks that exist within the current commit message and exposes them via `skipTasks`. This can also be useful within grunt in order to establish conditional task execution based upon the current commit message:
+
+```js
+function Tasks() {
+	this.tasks = [];
+	this.add = function(task) {
+		var commit = grunt.config.get('releasebot.commit');
+		if (commit.skipTaskCheck(task)) {
+			grunt.log.writeln('Skipping "' + task + '" task');
+			return false;
+		}
+		grunt.log.writeln('Queuing "' + task + '" task');
+		return this.tasks.push(task);
+	};
+}
+// Build tasks
+var buildTasks = new Tasks();
+buildTasks.add('clean');
+buildTasks.add('copy:dist');
+buildTasks.add('jshint');
+buildTasks.add('nodeunit');
+buildTasks.add('releasebot');
+grunt.registerTask('build', buildTasks.tasks);
+```
+
 ## Options
 
 There are two types of releasebot options. The first type of options are <a href="#default-global-plug-in-environment-options">globally defined</a> and are applied when the releasebot task is registered, but prior to any releasebot task executions. This allows for accessibility of extracted <a href="#commit">commit</a> details for other tasks that are ran before releasebot. It also provides a shared data pool and prevents duplicating the extraction process and prevents discrepancies between multiple relesebot task executions (e.g. in case releasebot needs to be re-ran due to a prior release failure). The second type is the <a href="#default-task-specific-options">typical grunt options</a> and is task specific.
@@ -161,7 +189,7 @@ The following **global plug-in environment options** can be set using one of the
 3. Automatically from the <a href="http://docs.travis-ci.com/user/ci-environment/#Environment-variables">Travis-CI environmental variables</a>
 4. Default option value or extracted from Git
 
-```JavaScript
+```js
 {
   // the path to the project package file (blank/null prevents npm publish)
   pkgPath : grunt.config('pkgFile') || 'package.json',
@@ -194,7 +222,7 @@ The following **global plug-in environment options** can be set using one of the
 
 Once the releasebot task has been registered commit datails are captured and made available via `grunt.config.get('releasebot.commit')`
 
-```JavaScript
+```js
 {
   // Same as corresponding global env option
   hash : '',
@@ -262,7 +290,7 @@ Once the releasebot task has been registered commit datails are captured and mad
 
 ###Default task specific options:
 
-```JavaScript
+```js
 {
   // The name that will appear on GitHub (grunt template parsed using any "commit" property or task "options" property)
   name : '<%= commit.versionTag %>',
