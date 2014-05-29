@@ -1,0 +1,308 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html;charset=utf-8" /><title>releasebot</title><link href="css/index.css" rel="stylesheet" media="screen" /></head><body><h1 id="-a-href-http-ugate-github-io-releasebot-img-src-http-ugate-github-io-releasebot-img-logo-svg-a-"><a href="http://ugate.github.io/releasebot"><img src="http://ugate.github.io/releasebot/img/logo.svg"/></a></h1>
+<p><a href="http://badge.fury.io/js/releasebot"><img src="https://badge.fury.io/js/releasebot.png" alt="NPM version"></a> <a href="https://travis-ci.org/ugate/releasebot"><img src="https://travis-ci.org/ugate/releasebot.png?branch=master" alt="Build Status"></a> <a href="https://david-dm.org/ugate/releasebot"><img src="https://david-dm.org/ugate/releasebot.png" alt="Dependency Status"></a> <a href="https://david-dm.org/ugate/releasebot#info=devDependencies"><img src="https://david-dm.org/ugate/releasebot/dev-status.png" alt="devDependency Status"></a></p>
+<p><strong>releasebot</strong> is a <a href="http://gruntjs.com/">Grunt</a> task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>. The task performs the following actions:</p>
+<ol>
+<li><a href="https://www.kernel.org/pub/software/scm/git/docs/git-rev-parse.html">Capture</a> <a href="https://www.kernel.org/pub/software/scm/git/docs/git-show.html">commit</a> <a href="https://www.kernel.org/pub/software/scm/git/docs/git-remote.html">details</a> <a href="https://www.kernel.org/pub/software/scm/git/docs/git-describe.html">from Git</a> (on task registration)</li>
+<li>Check for <a href="#default-task-specific-options">release trigger</a> within commit message</li>
+<li><a href="https://www.npmjs.org/doc/cli/npm-update.html">Update package version</a> to current release version (if needed) &dagger; &spades;</li>
+<li>Capture/write <a href="https://www.kernel.org/pub/software/scm/git/docs/git-log.html">change log and/or authors</a> (if directed) &dagger; &spades;</li>
+<li><a href="https://www.kernel.org/pub/software/scm/git/docs/git-archive.html">Generate release archive assets</a> (zip and tar) &dagger; &spades;</li>
+<li><a href="http://developer.github.com/v3/repos/releases/#create-a-release">Release</a>/<a href="https://www.kernel.org/pub/software/scm/git/docs/git-tag.html">Tag</a> version (with <a href="https://www.kernel.org/pub/software/scm/git/docs/git-log.html">change log</a> as description) &dagger; &hearts;</li>
+<li><a href="http://developer.github.com/v3/repos/releases/#upload-a-release-asset">Upload archive assets</a> &#9679; &dagger; &hearts; &spades;</li>
+<li>Publish/<a href="https://www.kernel.org/pub/software/scm/git/docs/git-push.html">Push</a> release distribution contents to distribution/pages/docs branch (creating the branch- if needed) &dagger; &hearts; &spades;</li>
+<li><a href="https://www.npmjs.org/doc/cli/npm-publish.html">Publish</a> release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts; &spades;</li>
+<li><a href="https://www.npmjs.org/doc/cli/npm-update.html">Update/Bump package version</a> to next release version (auto increment or specified in commit message) &dagger; &spades;</li>
+</ol>
+<p>&dagger; Performed when only when release is triggered <br/>
+&#9679; GitHub only <br/>
+&spades; Optional <br/>
+&hearts; Failure will result in the following <em>default</em> roll back sequence (<a href="#default-task-specific-options">additional roll back strategies</a>):</p>
+<ol>
+<li><a href="http://developer.github.com/v3/repos/releases/#delete-a-release-asset">Remove remote release archive assets</a> &#9679; and <a href="https://www.kernel.org/pub/software/scm/git/docs/git-push.html">tagged</a> <a href="http://developer.github.com/v3/repos/releases/#delete-a-release">release</a> (if needed)</li>
+<li><a href="https://www.kernel.org/pub/software/scm/git/docs/git-revert.html">Revert</a> published distribution content from distribution/pages/docs branch (if needed)</li>
+<li><a href="https://www.npmjs.org/doc/cli/npm-update.html">Revert package version</a> (if needed)</li>
+</ol>
+<h4 id="see-this-link-github-com-ugate-releasebot-releases-for-example-github-releasebot-generated-releases-">See <a href="//github.com/ugate/releasebot/releases">this link</a> for example GitHub releasebot generated releases!</h4>
+<p><img src="img/github.png"/></p>
+<h2 id="usage-examples">Usage Examples</h2>
+<p>Each commit message will be checked for the presence of a version to release. The default expression checks for <code>release v</code> followed by a <a href="http://semver.org/">semantic compliant version</a> or a <code>+</code> or <code>*</code> within the appropriate version <em>slot</em> indicating the version should be either <em>incremented</em> by one or that the value should be replaced by the <em>last/currently</em> released version (respectively).</p>
+<p>The commit message below will result in a release of version <code>1.0.0</code> (surrounding text will be ignored):</p>
+<pre><code class="lang-shell">This is Release v1.0.0 of my app
+</code></pre>
+<p>To release version <code>0.0.1-alpha.1</code> when no prior releases have been made:</p>
+<pre><code class="lang-shell">release v*.*.+-alpha.+
+</code></pre>
+<p>To release version <code>1.0.2</code> when the latest release is <code>1.0.0</code>:</p>
+<pre><code class="lang-shell">release v*.*.2
+</code></pre>
+<p>To release version <code>1.0.1</code> when the latest release is <code>1.0.0</code>:</p>
+<pre><code class="lang-shell">release v*.*.+
+</code></pre>
+<p>To release version <code>1.2.1</code> when the latest release is <code>1.0.0</code>:</p>
+<pre><code class="lang-shell">release v*.++.+
+</code></pre>
+<p>To release version <code>2.0.0</code> when the latest release is <code>1.1.1</code>:</p>
+<pre><code class="lang-shell">release v+.0.0
+</code></pre>
+<p>To release version <code>0.0.1-beta.1</code> when the latest release is <code>0.0.1-alpha.3</code>:</p>
+<pre><code class="lang-shell">release v*.*.*-+.1
+</code></pre>
+<p>To release version <code>2.0.0</code> when the latest release is <code>1.1.1</code> via the <a href="http://gruntjs.com/using-the-cli">grunt cli</a>:</p>
+<pre><code class="lang-shell">grunt releasebot --releasebot.commitMessage=&quot;Release v+.0.0&quot;
+</code></pre>
+<h4 id="bumping-versions">Bumping versions</h4>
+<p>In all of the prior <a href="#usage-examples">usage examples</a> the version is incremented on the package once the release successfully completes (optional). First, the bump version expression is used against the commit message to determine what the next version will be. If it cannot find a bump version it will auto-increment the current release version by one and use that value as the next release version.</p>
+<p>To release version <code>1.1.0</code> when the latest release is <code>1.0.0</code> (next version is auto-incremented to <code>1.1.1</code>)</p>
+<pre><code class="lang-shell">release v*.+.0
+</code></pre>
+<p>To release version <code>1.1.1-beta.1</code> when the latest release is <code>1.1.0</code> (next version is auto-incremented to <code>1.1.1-beta.2</code>)</p>
+<pre><code class="lang-shell">release v*.*.+-beta.1
+</code></pre>
+<p>To release version <code>1.1.1-beta.1</code> when the latest release is <code>1.1.0</code> and explicitly set the next version to <code>1.1.1-rc.1</code></p>
+<pre><code class="lang-shell">release v*.*.+-beta.1 bump v*.*.*-rc.*
+</code></pre>
+<p>As you can see the <em>release</em> version use of <code>*</code> and <code>+</code> is relative to the <em>last/currently</em> released version. In contrast, the <em>bump</em> version use of <code>*</code> and <code>+</code> is based upon the version that&#39;s being released.</p>
+<h2 id="getting-started">Getting Started</h2>
+<p>If you haven&#39;t used <a href="http://gruntjs.com/">Grunt</a> before, be sure to check out the <a href="http://gruntjs.com/getting-started">Getting Started</a> guide, as it explains how to create a <a href="http://gruntjs.com/sample-gruntfile">Gruntfile</a> as well as install and use Grunt plugins. Once you&#39;re familiar with that process, you may install this plugin with this command:</p>
+<pre><code class="lang-shell">npm install releasebot --save-dev
+</code></pre>
+<p>Once the plugin has been installed, it may be enabled inside your Gruntfile with this line of JavaScript:</p>
+<pre><code class="lang-shell">grunt.loadNpmTasks(&#39;releasebot&#39;);
+</code></pre>
+<h4 id="-travis-ci-http-travis-ci-com-"><a href="http://travis-ci.com/">Travis CI</a></h4>
+<p>By default, <code>process.env.GH_TOKEN</code> is used for authorization for Git pushes and the alike. It&#39;s recommended you encrypt the token following <a href="http://docs.travis-ci.com/user/encryption-keys/">travis encrypttion guidlines</a>.</p>
+<p>When using releasebot&#39;s built-in <em>distribution branch</em> publishing make sure to exclude that branch (or restrict to master) from travis builds in your <code>.travis.yml</code> file:</p>
+<pre><code class="lang-yaml">branches:
+  only:
+  - master
+git:
+  branch: master
+</code></pre>
+<p>By default, travis <a href="https://www.kernel.org/pub/software/scm/git/docs/git-clone.html">clones</a> repositories with a <code>depth=1</code>. You will need to set this value high enough to accommodate the desired level of history in your <code>.travis.yml</code> file:</p>
+<pre><code class="lang-yaml">git:
+  depth: 2147483647
+</code></pre>
+<h4 id="-npm-https-www-npmjs-org-"><a href="https://www.npmjs.org/">NPM</a></h4>
+<p>If you&#39;re using travis-ci and do not require any of the built-in npm capabilities that releasebot has to offer, it&#39;s recommended that you use <a href="http://docs.travis-ci.com/user/deployment/npm/">the npm deploy option offered by travis-ci</a>. </p>
+<p>In order to enable releasebot&#39;s <code>npm publish</code> step, a token needs to be generated by executing <code>npm login</code> from the command line. You will be prompted for your credentials. Once authenticated, an <code>_auth</code> entry will be added to your user directory in a file named <code>~/.npmrc</code>. The value can be used to set the <code>process.env.NPM_TOKEN</code> which releasebot uses to authenticate the npm publishing process. If your using <a href="#travis-ci">Travis CI</a> it&#39;s recommended you encrypt the npm token following <a href="http://docs.travis-ci.com/user/encryption-keys/">travis encrypttion guidlines</a>.</p>
+<p><strong>Tips:</strong> </p>
+<ul>
+<li>If you encounter <code>Cannot find module &#39;npm&#39;</code> and are using <code>.travis.yml</code> add the following to link the global npm that comes with node js (alternatively, you can <code>npm install npm</code> locally in your project):</li>
+</ul>
+<pre><code class="lang-yaml">before_script:
+- npm link npm
+</code></pre>
+<ul>
+<li>If you encounter <a href="https://github.com/travis-ci/travis-ci/issues/1588">an error similar to</a> <code>The authenticity of host &#39;github.com&#39; can&#39;t be established</code> while using <code>.travis.yml</code> add the following:</li>
+</ul>
+<pre><code class="lang-yaml">before_script:
+- echo -e &quot;Host *\n\tStrictHostKeyChecking no\n&quot; &gt;&gt; ~/.ssh/config
+</code></pre>
+<h3 id="distribution">Distribution</h3>
+<p>By default, a <code>HISTORY.md</code> file will be created that will contain a list of commit messages since the last release (the same info that is used as the release description). An <code>AUTHORS.md</code> will also be generated that will contain a list of authors since the last release, prefixed with the number of contributed commits. Both of these files along with the contents of the <code>distDir</code> (<a href="#default-task-specific-options">filterable</a>) will be published to the <code>distBranch</code> (when defined) and used as the contents of the compressed archive assets (zip and tar). An optional <code>[skip CHANGELOG]</code> can be appended to any commit message to indicate that the commit message should not be included in <code>HISTORY.md</code> and the release description. Alternatively, a custom regular expression can be used in the <code>chgLogSkipRegExp</code> option.</p>
+<h3 id="skips-indicators">Skips Indicators</h3>
+<p>Skip indicators are used within commit messages to notify underlying systems that a particular operation should not be performed for a particular commit. An example of which is the <a href="http://docs.travis-ci.com/user/how-to-skip-a-build/">skip option for travis-ci</a>. By default, releasebot adds a flag to <code>releaseSkipTasks</code> in order to skip additional continuous integration builds when internal releasebot commits are performed (i.e. bumping package versions, etc.). The semantics follow commonly recognized patterns used by various tools (i.e. <code>[skip ci]</code>). When the releasebot task is registered it automatically captures all the skip operations/tasks that exist within the current commit message and exposes them via <code>skipTasks</code>. This can also be useful within grunt in order to establish conditional task execution based upon the current commit message:</p>
+<pre><code class="lang-js">function Tasks() {
+    this.tasks = [];
+    this.add = function(task) {
+        var commit = grunt.config.get(&#39;releasebot.commit&#39;);
+        if (commit.skipTaskCheck(task)) {
+            grunt.log.writeln(&#39;Skipping &quot;&#39; + task + &#39;&quot; task&#39;);
+            return false;
+        }
+        grunt.log.writeln(&#39;Queuing &quot;&#39; + task + &#39;&quot; task&#39;);
+        return this.tasks.push(task);
+    };
+}
+// Build tasks
+var buildTasks = new Tasks();
+buildTasks.add(&#39;clean&#39;);
+buildTasks.add(&#39;copy:dist&#39;);
+buildTasks.add(&#39;jshint&#39;);
+buildTasks.add(&#39;nodeunit&#39;);
+buildTasks.add(&#39;releasebot&#39;);
+grunt.registerTask(&#39;build&#39;, buildTasks.tasks);
+</code></pre>
+<h2 id="options">Options</h2>
+<p>There are two types of releasebot options. The first type of options are <a href="#default-global-plug-in-environment-options">globally defined</a> and are applied when the releasebot task is registered, but prior to any releasebot task executions. This allows for accessibility of extracted <a href="#commit">commit</a> details for other tasks that are ran before releasebot. It also provides a shared data pool and prevents duplicating the extraction process and prevents discrepancies between multiple relesebot task executions (e.g. in case releasebot needs to be re-ran due to a prior release failure). The second type is the <a href="#default-task-specific-options">typical grunt options</a> and is task specific.</p>
+<h3 id="default-global-plug-in-environment-options-">Default global plug-in environment options:</h3>
+<p>Global environment options are set once the releasebot task is registered and are accessible via <code>grunt.config.get(&#39;releasebot.env&#39;)</code>.</p>
+<p>The following <strong>global plug-in environment options</strong> can be set using one of the following techniques.</p>
+<h4 id="global-environment-option-extraction-in-order-of-presidence-">Global environment option extraction (in order of presidence):</h4>
+<ol>
+<li>Via <code>grunt.config.set(&#39;releasebot.env&#39;, options)</code> before the releasebot task is registered</li>
+<li>Passed in from the command line <code>grunt releasebot --releasebot.theoptionname=THE_OPTION_VALUE</code></li>
+<li>Automatically from the <a href="http://docs.travis-ci.com/user/ci-environment/#Environment-variables">Travis-CI environmental variables</a></li>
+<li>Default option value or extracted from Git</li>
+</ol>
+<pre><code class="lang-js">{
+  // the path to the project package file (blank/null prevents npm publish)
+  pkgPath : grunt.config(&#39;pkgFile&#39;) || &#39;package.json&#39;,
+  // CLI executable for Git operations
+  gitCliSubstitute : &#39;git&#39;,
+  // Directory where the build will take place
+  buildDir : process.cwd(),
+  // Git branch that will be released (default: global env option extraction or from current checkout)
+  branch : &#39;&#39;,
+  // The commit message that will be checked for release trigger (default: global env option extraction or from last/current commit)
+  commitNumber : &#39;&#39;,
+  // The commit message that will be checked for release trigger (default: global env option extraction or from last/current commit)
+  commitMessage : &#39;&#39;,
+  // The repository slug the release is for (default: global env option extraction or from current checkout)
+  repoSlug : &#39;&#39;,
+  // The default release label used against releaseVersionRegExp
+  releaseVersionDefaultLabel : &#39;release&#39;,
+  // The default release version prefix used against releaseVersionRegExp
+  releaseVersionDefaultType : &#39;v&#39;,
+  // The regular expression used to check the commit message for the presence of a release to trigger (match order must be maintained and should contain releaseVersionDefaultLabel and releaseVersionDefaultType)
+  releaseVersionRegExp : /(releas(?:e|ed|ing))\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
+  // The regular expression used to check the commit message for the presence of a bump version that will be used once the release completes (match order must be maintained)
+  bumpVersionRegExp : /(bump(?:ed|ing)?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
+  // The regular expression that will be used to ignore non-error output when extracting the previous release version from Git
+  prevVersionMsgIgnoreRegExp: /No names found/i,
+  // Function that will return the token used for authorization of remote Git pushes (default: returns process.env.GH_TOKEN)
+  gitToken : [Function],
+  // Function that will return the token used for authorization of npm publish (default: returns process.env.NPM_TOKEN)
+  npmToken : [Function]
+}
+</code></pre>
+<h3 id="commit-">Commit:</h3>
+<p>Once the releasebot task has been registered commit datails are captured and made available via <code>grunt.config.get(&#39;releasebot.commit&#39;)</code></p>
+<pre><code class="lang-js">{
+  // Same as corresponding global env option
+  hash : &#39;&#39;,
+  // Same as corresponding global env option
+  message : &#39;&#39;,
+  // Same as corresponding global env option
+  buildDir : &#39;&#39;,
+  // Same as corresponding global env option
+  branch : &#39;&#39;,
+  // Same as corresponding global env option
+  slug : &#39;&#39;,
+  // Username extracted via slug
+  username : &#39;&#39;,
+  // Repository name extracted via slug
+  reponame : &#39;&#39;,
+  // Flag indicating if the required Git token exists (extracted from global plug-in environment)
+  hasGitToken : false,
+  // Flag indicating if the npm token exists (extracted from global plug-in environment)
+  hasNpmToken : false,
+  // The indices for each version &quot;slot&quot; that was incremented (e.g. 0.0.1 to 0.1.2 would contain [1,2])
+  versionBumpedIndices : [],
+  // The indices for each version &quot;slot&quot; that was extracted from the previous release
+  versionPrevIndices : [],
+  // Previous released commit object containing similar properties as the current commit
+  prev : {},
+  // Next staged/bumped release commit object containing similar properties as the current commit
+  next : {},
+  // Same as corresponding global env option
+  versionRegExp : &#39;&#39;,
+  // The release label used within the commit message
+  versionLabel : &#39;Release&#39;,
+  // The release version label used within the commit message
+  versionType : &#39;v&#39;,
+  // The pre-release type used within the commit message (e.g. &quot;beta&quot; for version &quot;1.0.0-beta.1&quot;)
+  versionPrereleaseType : undefined,
+  // The major version (e.g. 1 for version &quot;1.2.3&quot;)
+  versionMajor : 0,
+  // The minor version (e.g. 2 for version &quot;1.2.3&quot;)
+  versionMinor : 0,
+  // The patch version (e.g. 3 for version &quot;1.2.3&quot;)
+  versionPatch : 0,
+  // The pre-release version (e.g. 4 for version &quot;1.2.3-beta.4&quot;)
+  versionPrerelease : 0,
+  // The comprised version (e.g. &quot;1.2.3-beta.4&quot;)
+  version : &#39;&#39;,
+  // The versionType + version (e.g. &quot;v1.2.3-beta.4&quot;)
+  versionTag : &#39;&#39;,
+  // Function versionPkg([replacer] [, space] [, revert] [, altFunctionToWrite] [, afterWriteFunction] [,altPath])
+  // returns the JSON from the pkgPath
+  versionPkg : [Function],
+  // Array of tasks extracted from the commit message in the format: &quot;[skip SOME_TASK]&quot; 
+  skipTasks : [],
+  // Function skipTaskGen(taskName) that produces a skip string (e.g. skipTaskGen(&quot;clean&quot;) produces &quot;[skip clean]&quot;)
+  skipTaskGen : [Function],
+  // Function skipTaskCheck(taskName) that returns true when the task is in the skipTasks
+  skipTaskCheck : [Function],
+  // The ID of the release (populated after release task has ran)
+  releaseId : null,
+  // Release assets added/uploaded as part of the release (populated after release task has ran). Each item will contain:
+  // 1. &quot;asset&quot; : object returned by the external API (e.g. https://developer.github.com/v3/repos/releases/#upload-a-release-asset)
+  // 2. &quot;downloadUrl&quot; : URL where the asset can be downloaded from
+  releaseAssets : []
+}
+</code></pre>
+<h3 id="default-task-specific-options-">Default task specific options:</h3>
+<pre><code class="lang-js">{
+  // The name that will appear on GitHub (grunt template parsed using any &quot;commit&quot; property or task &quot;options&quot; property)
+  name : &#39;&lt;%= commit.versionTag %&gt;&#39;,
+  // Commit message used when the package version does not match the version being released and needs to be updated
+  pkgCurrVerBumpMsg : &#39;Updating &lt;%= commit.pckPath %&gt; version to match release version &lt;%= commit.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
+  // Commit message used for incrementing to the next release version once the current release completes (null to disable feature)
+  pkgNextVerBumpMsg : &#39;Bumping &lt;%= commit.pckPath %&gt; version to &lt;%= commit.next.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
+  // Commit message used when publishing to the distribution branch
+  distBranchPubMsg : &#39;Publishing &lt;%= commit.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
+  // The package replacer option sent into JSON.stringify during package version updates
+  pkgJsonReplacer : null,
+  // The package space option sent into JSON.stringify during package version updates
+  pkgJsonSpace : 2,
+  // The host name of the Git provider (null will use generic Git releases)
+  gitHostname : &#39;github&#39;,
+  // The repository name
+  repoName : &#39;origin&#39;,
+  // The repository user that will be used during remote updates
+  repoUser : &#39;releasebot&#39;,
+  // The repository email that will be used during remote updates
+  repoEmail : &#39;releasebot@example.org&#39;,
+  // Change log file that will contain change details since the last release and used as the release description markdown (null to skip)
+  chgLog : &#39;HISTORY.md&#39;,
+  // Authors log that will contain all the authors of the project (null to skip)
+  authors : &#39;AUTHORS.md&#39;,
+  // The Git format that will be used for each line in the change log 
+  chgLogLineFormat : &#39;  * %s&#39;,
+  // Flag to indicate that the release will fail when the change log cannot be validated
+  chgLogRequired : true,
+  // Regular expression that will be used to exclude change log content
+  // Default: any change log new line that matches the release trigger, [skip changelog] or merge branch (&quot;master&quot; will be replaced with the value from commit.branch)
+  chgLogSkipRegExp : /.*(?:(?:(releas(?:e|ed|ing))\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?)))|(\[skip\s*CHANGELOG\])|(Merge\sbranch\s&#39;master&#39;)).*\r?\n&#39;/mi,
+  // Flag to indicate that the release will fail when the authors log cannot be validated
+  authorsRequired : false,
+  // Regular expression that will be used to skip individual lines from being used within the authors log
+  authorsSkipLineRegExp : null,
+  // The branch that will be used to distribute released pages/documentation or other distribution assets to (null to skip)
+  distBranch : &#39;gh-pages&#39;,
+  // The directory that will be used to distribute released pages/documentation or other distribution assets from
+  distDir : &#39;dist&#39;,
+  // Regular expression that will be used to check the error output of a Git fetch for the distBranch, when there&#39;s a match an attempt will be made to create the distBranch
+  distBranchCreateRegExp : /Couldn&#39;t find remote ref/i,
+  // Regular expression that will be used to exclude directories from distributed assets within the distDir
+  distExcludeDirRegExp : /.?node_modules.?/gmi,
+  // Regular expression that will be used to exclude files from distributed assets within the distDir
+  distExcludeFileRegExp : /.?\.zip|tar.?/gmi,
+  // The compression ratio for which the distDir will be archived
+  distAssetCompressRatio : 9,
+  // The directory that will be used when creating the asset archives (releative to the commit.buildDir)
+  distAssetDir : &#39;..&#39;,
+  // Function that will be called for each distAssetUpdateFiles 
+  // distAssetUpdateFunction(contents, path, commit) and returning customized content for the specified distribution asset that will be overwritten before the release assets are generated
+  distAssetUpdateFunction : null,
+  // Array of file paths that will be read/written to after distAssetUpdateFunction
+  distAssetUpdateFiles : [],
+  // Function that will be called for each distBranchUpdateFiles
+  // distBranchUpdateFunction(contents, path, commit) and returning customized content for the specified distribution branch that will be overwritten before the published/pushed to the specified branch
+  distBranchUpdateFunction : null,
+  // Array of file paths that will be read/written to after distBranchUpdateFunction
+  distBranchUpdateFiles : [],
+  // The strategy/order in which roll back actions will be executed (&quot;stack&quot; or &quot;queue&quot;)  
+  rollbackStrategy : &#39;queue&#39;,
+  // Number of milliseconds that an asynchronous rollback action will wait for completion before throwing an error
+  rollbackAsyncTimeout : 60000,
+  // Number of milliseconds that an asynchronous step will wait for completion before throwing an error
+  asyncTimeout : 60000,
+  // Tasks names that will be skipped when releasebot performs commits for package version bumps, publish branch changes, etc. Default: http://docs.travis-ci.com/user/how-to-skip-a-build/
+  releaseSkipTasks : [ &#39;ci&#39; ],
+  // The optional npm publish tag
+  npmTag : &#39;&#39;
+}
+</code></pre>
+</body></html>

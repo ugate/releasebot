@@ -1,4 +1,4 @@
-# releasebot
+# <a href="http://ugate.github.io/releasebot"><img src="http://ugate.github.io/releasebot/img/logo.svg"/></a>
 [![NPM version](https://badge.fury.io/js/releasebot.png)](http://badge.fury.io/js/releasebot) [![Build Status](https://travis-ci.org/ugate/releasebot.png?branch=master)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
 
 **releasebot** is a [Grunt](http://gruntjs.com/) task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>. The task performs the following actions:
@@ -22,6 +22,10 @@
 1. [Remove remote release archive assets](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &#9679; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release) (if needed)
 2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published distribution content from distribution/pages/docs branch (if needed)
 3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html) (if needed)
+
+#### See [this link](//github.com/ugate/releasebot/releases) for example GitHub releasebot generated releases!
+
+<img src="img/github.png"/>
 
 ## Usage Examples
 
@@ -144,6 +148,35 @@ before_script:
 - echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 ```
 
+### Distribution
+By default, a `HISTORY.md` file will be created that will contain a list of commit messages since the last release (the same info that is used as the release description). An `AUTHORS.md` will also be generated that will contain a list of authors since the last release, prefixed with the number of contributed commits. Both of these files along with the contents of the `distDir` (<a href="#default-task-specific-options">filterable</a>) will be published to the `distBranch` (when defined) and used as the contents of the compressed archive assets (zip and tar). An optional `[skip CHANGELOG]` can be appended to any commit message to indicate that the commit message should not be included in `HISTORY.md` and the release description. Alternatively, a custom regular expression can be used in the `chgLogSkipRegExp` option.
+
+### Skips Indicators
+Skip indicators are used within commit messages to notify underlying systems that a particular operation should not be performed for a particular commit. An example of which is the [skip option for travis-ci](http://docs.travis-ci.com/user/how-to-skip-a-build/). By default, releasebot adds a flag to `releaseSkipTasks` in order to skip additional continuous integration builds when internal releasebot commits are performed (i.e. bumping package versions, etc.). The semantics follow commonly recognized patterns used by various tools (i.e. `[skip ci]`). When the releasebot task is registered it automatically captures all the skip operations/tasks that exist within the current commit message and exposes them via `skipTasks`. This can also be useful within grunt in order to establish conditional task execution based upon the current commit message:
+
+```js
+function Tasks() {
+	this.tasks = [];
+	this.add = function(task) {
+		var commit = grunt.config.get('releasebot.commit');
+		if (commit.skipTaskCheck(task)) {
+			grunt.log.writeln('Skipping "' + task + '" task');
+			return false;
+		}
+		grunt.log.writeln('Queuing "' + task + '" task');
+		return this.tasks.push(task);
+	};
+}
+// Build tasks
+var buildTasks = new Tasks();
+buildTasks.add('clean');
+buildTasks.add('copy:dist');
+buildTasks.add('jshint');
+buildTasks.add('nodeunit');
+buildTasks.add('releasebot');
+grunt.registerTask('build', buildTasks.tasks);
+```
+
 ## Options
 
 There are two types of releasebot options. The first type of options are <a href="#default-global-plug-in-environment-options">globally defined</a> and are applied when the releasebot task is registered, but prior to any releasebot task executions. This allows for accessibility of extracted <a href="#commit">commit</a> details for other tasks that are ran before releasebot. It also provides a shared data pool and prevents duplicating the extraction process and prevents discrepancies between multiple relesebot task executions (e.g. in case releasebot needs to be re-ran due to a prior release failure). The second type is the <a href="#default-task-specific-options">typical grunt options</a> and is task specific.
@@ -161,7 +194,7 @@ The following **global plug-in environment options** can be set using one of the
 3. Automatically from the <a href="http://docs.travis-ci.com/user/ci-environment/#Environment-variables">Travis-CI environmental variables</a>
 4. Default option value or extracted from Git
 
-```JavaScript
+```js
 {
   // the path to the project package file (blank/null prevents npm publish)
   pkgPath : grunt.config('pkgFile') || 'package.json',
@@ -177,7 +210,11 @@ The following **global plug-in environment options** can be set using one of the
   commitMessage : '',
   // The repository slug the release is for (default: global env option extraction or from current checkout)
   repoSlug : '',
-  // The regular expression used to check the commit message for the presence of a release to trigger (match order must be maintained)
+  // The default release label used against releaseVersionRegExp
+  releaseVersionDefaultLabel : 'release',
+  // The default release version prefix used against releaseVersionRegExp
+  releaseVersionDefaultType : 'v',
+  // The regular expression used to check the commit message for the presence of a release to trigger (match order must be maintained and should contain releaseVersionDefaultLabel and releaseVersionDefaultType)
   releaseVersionRegExp : /(releas(?:e|ed|ing))\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
   // The regular expression used to check the commit message for the presence of a bump version that will be used once the release completes (match order must be maintained)
   bumpVersionRegExp : /(bump(?:ed|ing)?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
@@ -194,7 +231,7 @@ The following **global plug-in environment options** can be set using one of the
 
 Once the releasebot task has been registered commit datails are captured and made available via `grunt.config.get('releasebot.commit')`
 
-```JavaScript
+```js
 {
   // Same as corresponding global env option
   hash : '',
@@ -262,7 +299,7 @@ Once the releasebot task has been registered commit datails are captured and mad
 
 ###Default task specific options:
 
-```JavaScript
+```js
 {
   // The name that will appear on GitHub (grunt template parsed using any "commit" property or task "options" property)
   name : '<%= commit.versionTag %>',
@@ -292,7 +329,7 @@ Once the releasebot task has been registered commit datails are captured and mad
   chgLogLineFormat : '  * %s',
   // Flag to indicate that the release will fail when the change log cannot be validated
   chgLogRequired : true,
-  // Regular expression that will be used to exclude change log content 
+  // Regular expression that will be used to exclude change log content
   // Default: any change log new line that matches the release trigger, [skip changelog] or merge branch ("master" will be replaced with the value from commit.branch)
   chgLogSkipRegExp : /.*(?:(?:(releas(?:e|ed|ing))\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?)))|(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
   // Flag to indicate that the release will fail when the authors log cannot be validated
