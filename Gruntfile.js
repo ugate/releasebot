@@ -120,12 +120,11 @@ module.exports = function(grunt) {
 		var rmmd = grunt.file.read(__dirname + '/README.md', {
 			encoding : grunt.file.defaultEncoding
 		});
-		var rmhtml = '<!DOCTYPE html><html><head>\
-<meta http-equiv="content-type" content="text/html;charset=utf-8" />\
-<title>releasebot</title>\
-<link href="css/index.css" rel="stylesheet" media="screen" />\
-</head><body>'
-				+ marked(rmmd) + '</body></html>';
+		var rmhtml = '<!DOCTYPE html><html><head>'
+				+ '<meta http-equiv="content-type" content="text/html;charset=utf-8" />'
+				+ '<title>releasebot</title>'
+				+ '<link href="css/index.css" rel="stylesheet" media="screen" />'
+				+ '</head><body>' + marked(rmmd) + '</body></html>';
 		grunt.file.write(distPath + '/index.html', rmhtml);
 		grunt.log.writeln('Generated distribution pages');
 	}
