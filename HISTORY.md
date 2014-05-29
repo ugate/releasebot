@@ -1,4 +1,2 @@
-<!-- Commit ed5a6059728e64bd98082bf696a5118f797c7996 -->
-  * Rollback: Updating  version to match release version 0.0.3 [skip ci]
+<!-- Commit 6aec1173496db0cd7731c15c2b82f97448909edc -->
   * Updating  version to match release version 0.0.3 [skip ci]
-  * Updating  version to match release version 0.0.2 [skip ci]
