@@ -1,7 +1,7 @@
 {
   "name": "releasebot",
   "description": "Grunt task for triggering a release when a commit message matches a predefined regular expression or when manually invoked",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "releasebot.js",
   "files": [
     "releasebot.js",
