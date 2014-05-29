@@ -3,6 +3,7 @@
 var regexDistUrl = /(\shref\s*=\s*["|\']?)(\s*https?:\/\/github\.com.*?(?:tar|zip)ball\/master.*?)(["|\']?)/gmi;
 var regexSuppressWrite = /(key|GH_TOKEN)/mi;
 var distPath = 'dist';
+var marked = require('marked');
 
 module.exports = function(grunt) {
 
@@ -33,8 +34,9 @@ module.exports = function(grunt) {
 				copy : {
 					dist : {
 						expand : true,
-						src : [ '{tasks,lib,test}/**/*.{js,md}', 'LICENSE',
-								'README.md', '*.json' ],
+						src : [
+								'{tasks,lib,test,css,img}/**/*.{js,md,css,svg,png}',
+								'LICENSE', 'README.md', '*.json' ],
 						dest : distPath
 					}
 				},
@@ -112,6 +114,22 @@ module.exports = function(grunt) {
 	}
 	// load project tasks
 	grunt.loadTasks('tasks');
+	// Custom tasks
+	function writeHtml() {
+		grunt.log.writeln('Creating distribution pages');
+		var rmmd = grunt.file.read(__dirname + '/README.md', {
+			encoding : grunt.file.defaultEncoding
+		});
+		var rmhtml = '<!DOCTYPE html><html><head>\
+<meta http-equiv="content-type" content="text/html;charset=utf-8" />\
+<title>releasebot</title>\
+<link href="css/index.css" rel="stylesheet" media="screen" />\
+</head><body>'
+				+ marked(rmmd) + '</body></html>';
+		grunt.file.write(distPath + '/index.html', rmhtml);
+		grunt.log.writeln('Generated distribution pages');
+	}
+	grunt.registerTask('pages', 'Create distribution pages', writeHtml);
 
 	// suppress certain options in verbose mode
 	var writeflags = grunt.log.writeflags;
@@ -150,6 +168,7 @@ module.exports = function(grunt) {
 	var buildTasks = new Tasks();
 	buildTasks.add('clean');
 	buildTasks.add('copy:dist');
+	buildTasks.add('pages');
 	buildTasks.add('jshint');
 	buildTasks.add('nodeunit');
 	buildTasks.add('releasebot');
