@@ -25,7 +25,7 @@
 
 #### See [this link](//github.com/ugate/releasebot/releases) for example GitHub releasebot generated releases!
 
-<img src="img/github.png"/>
+<img src="http://ugate.github.io/releasebot/img/github.png"/>
 
 ## Usage Examples
 
