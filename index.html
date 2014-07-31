@@ -1,24 +1,25 @@
 <!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html;charset=utf-8" /><title>releasebot</title><link href="css/index.css" rel="stylesheet" media="screen" /></head><body><h1 id="-a-href-http-ugate-github-io-releasebot-img-src-http-ugate-github-io-releasebot-img-logo-svg-a-"><a href="http://ugate.github.io/releasebot"><img src="http://ugate.github.io/releasebot/img/logo.svg"/></a></h1>
-<p><a href="http://badge.fury.io/js/releasebot"><img src="https://badge.fury.io/js/releasebot.png" alt="NPM version"></a> <a href="https://travis-ci.org/ugate/releasebot"><img src="https://travis-ci.org/ugate/releasebot.png?branch=master" alt="Build Status"></a> <a href="https://david-dm.org/ugate/releasebot"><img src="https://david-dm.org/ugate/releasebot.png" alt="Dependency Status"></a> <a href="https://david-dm.org/ugate/releasebot#info=devDependencies"><img src="https://david-dm.org/ugate/releasebot/dev-status.png" alt="devDependency Status"></a></p>
+<p><a href="http://badge.fury.io/js/releasebot"><img src="https://badge.fury.io/js/releasebot.png" alt="NPM version"></a> <a href="https://travis-ci.org/ugate/releasebot"><img src="https://travis-ci.org/ugate/releasebot.png?branch=master" alt="Build Status"></a> <a href="https://david-dm.org/ugate/releasebot"><img src="https://david-dm.org/ugate/releasebot.png" alt="Dependency Status"></a> <a href="https://david-dm.org/ugate/releasebot#info=devDependencies"><img src="https://david-dm.org/ugate/releasebot/dev-status.png" alt="devDependency Status"></a>
+<a href="https://david-dm.org/ugate/releasebot#info=peerDependencies"><img src="https://david-dm.org/ugate/releasebot/peer-status.png" alt="peerDependency Status"></a></p>
 <p><strong>releasebot</strong> is a <a href="http://gruntjs.com/">Grunt</a> task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>. The task performs the following actions:</p>
 <ol>
 <li><a href="https://www.kernel.org/pub/software/scm/git/docs/git-rev-parse.html">Capture</a> <a href="https://www.kernel.org/pub/software/scm/git/docs/git-show.html">commit</a> <a href="https://www.kernel.org/pub/software/scm/git/docs/git-remote.html">details</a> <a href="https://www.kernel.org/pub/software/scm/git/docs/git-describe.html">from Git</a> (on task registration)</li>
 <li>Check for <a href="#default-task-specific-options">release trigger</a> within commit message</li>
-<li><a href="https://www.npmjs.org/doc/cli/npm-update.html">Update package version</a> to current release version (if needed) &dagger; &spades;</li>
-<li>Capture/write <a href="https://www.kernel.org/pub/software/scm/git/docs/git-log.html">change log and/or authors</a> (if directed) &dagger; &spades;</li>
-<li><a href="https://www.kernel.org/pub/software/scm/git/docs/git-archive.html">Generate release archive assets</a> (zip and tar) &dagger; &spades;</li>
-<li><a href="http://developer.github.com/v3/repos/releases/#create-a-release">Release</a>/<a href="https://www.kernel.org/pub/software/scm/git/docs/git-tag.html">Tag</a> version (with <a href="https://www.kernel.org/pub/software/scm/git/docs/git-log.html">change log</a> as description) &dagger; &hearts;</li>
-<li><a href="http://developer.github.com/v3/repos/releases/#upload-a-release-asset">Upload archive assets</a> &#9679; &dagger; &hearts; &spades;</li>
-<li>Publish/<a href="https://www.kernel.org/pub/software/scm/git/docs/git-push.html">Push</a> release distribution contents to distribution/pages/docs branch (creating the branch- if needed) &dagger; &hearts; &spades;</li>
-<li><a href="https://www.npmjs.org/doc/cli/npm-publish.html">Publish</a> release archive asset to <a href="https://www.npmjs.org/">npm</a> &dagger; &hearts; &spades;</li>
-<li><a href="https://www.npmjs.org/doc/cli/npm-update.html">Update/Bump package version</a> to next release version (auto increment or specified in commit message) &dagger; &spades;</li>
+<li><a href="https://www.npmjs.org/doc/cli/npm-update.html">Update package version</a> to current release version (if needed) &clubs; &spades;</li>
+<li>Capture/write <a href="https://www.kernel.org/pub/software/scm/git/docs/git-log.html">change log and/or authors</a> (if directed) &clubs; &spades;</li>
+<li><a href="https://www.kernel.org/pub/software/scm/git/docs/git-archive.html">Generate release archive assets</a> (zip and tar) &clubs; &spades;</li>
+<li><a href="http://developer.github.com/v3/repos/releases/#create-a-release">Release</a>/<a href="https://www.kernel.org/pub/software/scm/git/docs/git-tag.html">Tag</a> version (with <a href="https://www.kernel.org/pub/software/scm/git/docs/git-log.html">change log</a> as description) &clubs; &hearts;</li>
+<li><a href="http://developer.github.com/v3/repos/releases/#upload-a-release-asset">Upload archive assets</a> &diams; &clubs; &hearts; &spades;</li>
+<li>Publish/<a href="https://www.kernel.org/pub/software/scm/git/docs/git-push.html">Push</a> release distribution contents to distribution/pages/docs branch (creating the branch- if needed) &clubs; &hearts; &spades;</li>
+<li><a href="https://www.npmjs.org/doc/cli/npm-publish.html">Publish</a> release archive asset to <a href="https://www.npmjs.org/">npm</a> &clubs; &hearts; &spades;</li>
+<li><a href="https://www.npmjs.org/doc/cli/npm-update.html">Update/Bump package version</a> to next release version (auto increment or specified in commit message) &clubs; &spades;</li>
 </ol>
-<p>&dagger; Performed when only when release is triggered <br/>
-&#9679; GitHub only <br/>
+<p>&clubs; Performed when only when release is triggered <br/>
+&diams; GitHub only <br/>
 &spades; Optional <br/>
 &hearts; Failure will result in the following <em>default</em> roll back sequence (<a href="#default-task-specific-options">additional roll back strategies</a>):</p>
 <ol>
-<li><a href="http://developer.github.com/v3/repos/releases/#delete-a-release-asset">Remove remote release archive assets</a> &#9679; and <a href="https://www.kernel.org/pub/software/scm/git/docs/git-push.html">tagged</a> <a href="http://developer.github.com/v3/repos/releases/#delete-a-release">release</a> (if needed)</li>
+<li><a href="http://developer.github.com/v3/repos/releases/#delete-a-release-asset">Remove remote release archive assets</a> &diams; and <a href="https://www.kernel.org/pub/software/scm/git/docs/git-push.html">tagged</a> <a href="http://developer.github.com/v3/repos/releases/#delete-a-release">release</a> (if needed)</li>
 <li><a href="https://www.kernel.org/pub/software/scm/git/docs/git-revert.html">Revert</a> published distribution content from distribution/pages/docs branch (if needed)</li>
 <li><a href="https://www.npmjs.org/doc/cli/npm-update.html">Revert package version</a> (if needed)</li>
 </ol>

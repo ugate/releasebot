@@ -1,2 +1,3 @@
-<!-- Commit 6aec1173496db0cd7731c15c2b82f97448909edc -->
-  * Updating  version to match release version 0.0.3 [skip ci]
+<!-- Commit d40fa7f8d1d9acfb0dee12ab2bc16ee0ca24fab3 -->
+  * Minor performance enhancemnts
+  * Updating  version to match release version 0.0.4 [skip ci]
