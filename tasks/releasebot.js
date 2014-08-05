@@ -4,27 +4,10 @@ var npm = require('npm');
 var fs = require('fs');
 var pth = require('path');
 var util = require('util');
+var coopt = require('../lib/coopt');
 var utils = require('../lib/utils');
-var committer = require('../lib/committer');
 var RollCall = require('../lib/rollcall');
 var github = require('../lib/github');
-var pluginName = 'releasebot';
-var regexVersion = /(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?))/mi;
-var regexRelease = new RegExp(/(releas(?:e|ed|ing))\s*/.source
-		+ regexVersion.source, 'mi');
-var regexBump = new RegExp(/(bump(?:ed|ing)?)\s*/.source + regexVersion.source,
-		'mi');
-var pluginDesc = 'Git commit message triggered grunt task that tags a release (GitHub Release API '
-		+ 'supported), generates/uploads a release distribution asset archive, publishes a '
-		+ 'distribution asset\'s content to a specified branch and publishes to npm when a '
-		+ 'commit message matches the regular expression pattern: '
-		+ regexRelease
-		+ ' (for Travis CI set git: depth: in .travis.yml to a higher value than the default value '
-		+ ' of 1 in order to properly capture change log)';
-var regexSkipChgLog = /\[skip\s*CHANGELOG\]/gmi;
-var regexLines = /(\r?\n)/g;
-var regexDupLines = /^(.*)(\r?\n\1)+$/gm;
-var regexKey = /(https?:\/\/|:)+(?=[^:]*$)[a-z0-9]+(@)/gmi;
 
 /**
  * When a commit message contains "release v" followed by a valid version number
@@ -35,70 +18,13 @@ var regexKey = /(https?:\/\/|:)+(?=[^:]*$)[a-z0-9]+(@)/gmi;
  */
 module.exports = function(grunt) {
 
-	// initialize global release environment options
-	var commit = committer.init(grunt, pluginName, regexLines, {
-		pkgPath : grunt.config('pkgFile') || 'package.json',
-		gitCliSubstitute : '',
-		buildDir : process.env.TRAVIS_BUILD_DIR || process.cwd(),
-		branch : process.env.TRAVIS_BRANCH,
-		commitHash : process.env.TRAVIS_COMMIT,
-		commitMessage : process.env.TRAVIS_COMMIT_MESSAGE,
-		repoSlug : process.env.TRAVIS_REPO_SLUG,
-		releaseVersionDefaultLabel : 'release',
-		releaseVersionDefaultType : 'v',
-		releaseVersionRegExp : regexRelease,
-		bumpVersionRegExp : regexBump,
-		prevVersionMsgIgnoreRegExp : /No names found/i,
-		gitToken : process.env.GH_TOKEN,
-		npmToken : process.env.NPM_TOKEN
-	});
-
-	// initialize default task options
-	var defTskOpts = {
-		name : '<%= commit.versionTag %>',
-		pkgCurrVerBumpMsg : 'Updating <%= commit.pckPath %> version to match release version <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
-		pkgNextVerBumpMsg : 'Bumping <%= commit.pckPath %> version to <%= commit.next.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
-		distBranchPubMsg : 'Publishing <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
-		pkgJsonReplacer : null,
-		pkgJsonSpace : 2,
-		gitHostname : github.hostname,
-		repoName : 'origin',
-		repoUser : pluginName,
-		repoEmail : pluginName
-				+ '@'
-				+ (process.env.TRAVIS_BUILD_NUMBER ? 'travis-ci.org'
-						: 'example.org'),
-		chgLog : 'HISTORY.md',
-		authors : 'AUTHORS.md',
-		chgLogLineFormat : '  * %s',
-		chgLogRequired : true,
-		chgLogSkipRegExp : new RegExp('.*(?:(?:' + commit.versionRegExp.source
-				+ ')|(' + regexSkipChgLog.source + ')|(Merge\\sbranch\\s\''
-				+ commit.branch + '\')).*\r?\n', 'g'
-				+ (commit.versionRegExp.multiline ? 'm' : '')
-				+ (commit.versionRegExp.ignoreCase ? 'i' : '')),
-		authorsRequired : false,
-		authorsSkipLineRegExp : null,
-		distBranch : 'gh-pages',
-		distDir : 'dist',
-		distBranchCreateRegExp : /Couldn't find remote ref/i,
-		distExcludeDirRegExp : /.?node_modules.?/gmi,
-		distExcludeFileRegExp : /.?\.zip|tar.?/gmi,
-		distAssetCompressRatio : 9,
-		distAssetDir : '..',
-		distAssetUpdateFunction : null,
-		distAssetUpdateFiles : [],
-		distBranchUpdateFunction : null,
-		distBranchUpdateFiles : [],
-		rollbackStrategy : 'queue',
-		rollbackAsyncTimeout : 60000,
-		asyncTimeout : 60000,
-		releaseSkipTasks : [ 'ci' ],
-		npmTag : ''
-	};
+	// generate commit using default global release environment options
+	var commitTask = coopt.getCommitTask(grunt, true);
+	var commit = commitTask.commit;
+	var defTskOpts = commitTask.defaultTaskOptions;
 
 	// register release task
-	grunt.registerTask(pluginName, pluginDesc, function() {
+	grunt.registerTask(coopt.pluginName, coopt.pluginDesc, function() {
 		var options = this.options(defTskOpts);
 		if (options.gitHostname && commit.username) {
 			options.hideTokenRegExp = new RegExp('(' + commit.username
@@ -174,7 +100,7 @@ module.exports = function(grunt) {
 				rollCall.error('Failed to bump next release version', e);
 			}
 			try {
-				committer.cloneAndSetCommit(commit, null);
+				coopt.cloneAndSetCommit(grunt, null, null);
 			} catch (e) {
 				rollCall.error('Failed to set global commit result properties',
 						e);
@@ -352,7 +278,7 @@ module.exports = function(grunt) {
 			cmd('git tag -f -a '
 					+ commit.versionTag
 					+ ' -m "'
-					+ (chgLogRtn ? chgLogRtn.replace(regexLines, '$1 \\')
+					+ (chgLogRtn ? chgLogRtn.replace(coopt.regexLines, '$1 \\')
 							: commit.message) + '"');
 			cmd('git push -f ' + options.repoName + ' ' + commit.versionTag);
 			// TODO : upload asset?
@@ -377,7 +303,7 @@ module.exports = function(grunt) {
 				path : distTarAsset,
 				name : distTarAssetName,
 				contentType : 'application/x-compressed'
-			} ], grunt, regexLines, commit, releaseName, chgLogRtn
+			} ], grunt, coopt.regexLines, commit, releaseName, chgLogRtn
 					|| commit.message, options, rollCall, rollbackTag,
 					function() {
 						rollCall.then(publish);
@@ -613,7 +539,7 @@ module.exports = function(grunt) {
 			}
 			var output = rtn.output;
 			if (output) {
-				output = output.replace(regexKey, '$1[SECURE]$2');
+				output = output.replace(coopt.regexKey, '$1[SECURE]$2');
 			}
 			if (output && wpath) {
 				grunt.file.write(wpath, output);
@@ -628,7 +554,7 @@ module.exports = function(grunt) {
 				if (output) {
 					// replace duplicate lines
 					output = (dupsPrefix ? dupsPrefix : '')
-							+ output.replace(regexDupLines, '$1');
+							+ output.replace(coopt.regexDupLines, '$1');
 					if (util.isRegExp(dupsSkipLineRegExp)) {
 						// optionally skip lines that match expression
 						output = output.replace(dupsSkipLineRegExp, '');
