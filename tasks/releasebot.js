@@ -19,7 +19,7 @@ var github = require('../lib/github');
 module.exports = function(grunt) {
 
 	// generate commit using default global release environment options
-	var commitTask = coopt.getCommitTask(grunt, true);
+	var commitTask = coopt._getCommitTask(grunt);
 	var commit = commitTask.commit;
 	var defTskOpts = commitTask.defaultTaskOptions;
 
@@ -100,7 +100,7 @@ module.exports = function(grunt) {
 				rollCall.error('Failed to bump next release version', e);
 			}
 			try {
-				coopt.cloneAndSetCommit(grunt, null, null);
+				coopt._cloneAndSetCommitTask(commitTask);
 			} catch (e) {
 				rollCall.error('Failed to set global commit result properties',
 						e);

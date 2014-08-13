@@ -114,6 +114,7 @@ module.exports = function(grunt) {
 	}
 	// load project tasks
 	grunt.loadTasks('tasks');
+	grunt.loadTasks('test/unit');
 	// Custom tasks
 	function writeHtml() {
 		grunt.log.writeln('Creating distribution pages');
@@ -158,7 +159,7 @@ module.exports = function(grunt) {
 				grunt.log.writeln('Skipping "' + task + '" task');
 				return false;
 			}
-			grunt.log.writeln('Queuing "' + task + '" task');
+			//grunt.log.writeln('Queuing "' + task + '" task');
 			return this.tasks.push(task);
 		};
 	}
@@ -169,10 +170,19 @@ module.exports = function(grunt) {
 	buildTasks.add('copy:dist');
 	buildTasks.add('pages');
 	buildTasks.add('jshint');
-	buildTasks.add('nodeunit');
-	buildTasks.add('releasebot');
-	grunt.registerTask('test', buildTasks.tasks);
+	
+	// Test tasks
+	var testTasks = buildTasks.tasks.slice(0);
+	testTasks.push('smokey');
+	testTasks.push('nodeunit');
+	testTasks.push('releasebot');
+	grunt.registerTask('test', testTasks);
 
 	// Default tasks
 	grunt.registerTask('default', [ 'test' ]);
+	
+	// grunt smoketest -v --stack --TRAVIS_COMMIT_MESSAGE "Release v*.*.+"
+	var smokeTasks = buildTasks.tasks.slice(0);
+	smokeTasks.unshift('smokey');
+	grunt.registerTask('smoketest', smokeTasks);
 };

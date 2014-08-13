@@ -1,0 +1,1316 @@
+[
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v0.0.0"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v*.*.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v*.*.*-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v*.*.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v*.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v+.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v*.*.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v*.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v+.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v*.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v+.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v+.*.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v*.*.*-beta.*"
+	},
+
+	{
+		"currentVersion": "0.0.0-alpha.0",
+		"commitMessage": "release v*.*.*-rc.*"
+	},
+
+	{
+		"currentVersion": "0.0.0-beta.0",
+		"commitMessage": "release v*.*.*-alpha.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.0.0-beta.0",
+		"commitMessage": "release v*.*.*-beta.*"
+	},
+
+	{
+		"currentVersion": "0.0.0-beta.0",
+		"commitMessage": "release v*.*.*-rc.*"
+	},
+
+	{
+		"currentVersion": "0.0.0-rc.0",
+		"commitMessage": "release v*.*.*-alpha.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.0.0-rc.0",
+		"commitMessage": "release v*.*.*-beta.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.0.0-rc.0",
+		"commitMessage": "release v*.*.*-rc.*"
+	},
+
+	{
+		"currentVersion": "0.0.0",
+		"commitMessage": "release v*.*.*"
+	},
+
+	{
+		"currentVersion": "0.0.0",
+		"commitMessage": "release v*.*.+"
+	},
+
+	{
+		"currentVersion": "0.0.0",
+		"commitMessage": "release v*.+.+"
+	},
+
+	{
+		"currentVersion": "0.0.0",
+		"commitMessage": "release v+.+.+"
+	},
+
+	{
+		"currentVersion": "0.0.0",
+		"commitMessage": "release v+.+.++"
+	},
+
+	{
+		"currentVersion": "0.0.0",
+		"commitMessage": "release v+.++.++"
+	},
+
+	{
+		"currentVersion": "0.0.0",
+		"commitMessage": "release v++.++.++"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.*-alpha.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.*-alpha.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.*.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.*-beta.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.*-beta.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.+-beta.+"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.+.+-beta.+"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.+.+-beta.+"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.+-beta.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.+.+-beta.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.+.+-beta.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.+.*-beta.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.+.*-beta.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.*.*-beta.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.*-rc.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.*-rc.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.+-rc.+"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.+.+-rc.+"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.+.+-rc.+"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.+-rc.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.+.+-rc.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.+.+-rc.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.+.*-rc.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.+.*-rc.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.*.*-rc.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.*"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.*.+"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v*.+.+"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.+.+"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.+.++"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v+.++.++"
+	},
+
+	{
+		"currentVersion": "0.0.1",
+		"commitMessage": "release v++.++.++"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v*.*.*-alpha.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v*.*.*-alpha.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v*.*.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v*.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v+.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v*.*.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v*.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v+.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v*.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v+.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v+.*.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v*.*.*"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v*.*.+"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v*.+.+"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v+.+.+"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v+.+.++"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v+.++.++"
+	},
+
+	{
+		"currentVersion": "0.1.1",
+		"commitMessage": "release v++.++.++"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.*-alpha.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.*-alpha.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.*.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.*-beta.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.*-beta.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.+-beta.+"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.+.+-beta.+"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.+.+-beta.+"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.+-beta.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.+.+-beta.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.+.+-beta.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.+.*-beta.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.+.*-beta.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.*.*-beta.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.*-rc.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.*-rc.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.+-rc.+"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.+.+-rc.+"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.+.+-rc.+"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.+-rc.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.+.+-rc.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.+.+-rc.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.+.*-rc.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.+.*-rc.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.*.*-rc.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.*"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.*.+"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v*.+.+"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.+.+"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.+.++"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v+.++.++"
+	},
+
+	{
+		"currentVersion": "1.1.1",
+		"commitMessage": "release v++.++.++"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.*-alpha.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.*-alpha.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.*.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.*-beta.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.*-beta.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.+-beta.+"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.+.+-beta.+"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.+.+-beta.+"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.+-beta.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.+.+-beta.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.+.+-beta.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.+.*-beta.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.+.*-beta.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.*.*-beta.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.*-rc.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.*-rc.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.+-rc.+"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.+.+-rc.+"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.+.+-rc.+"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.+-rc.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.+.+-rc.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.+.+-rc.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.+.*-rc.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.+.*-rc.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.*.*-rc.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.*"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.*.+"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v*.+.+"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.+.+"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.+.++"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v+.++.++"
+	},
+
+	{
+		"currentVersion": "1.0.0",
+		"commitMessage": "release v++.++.++"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.*-alpha.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.*-alpha.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.*.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.*-beta.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.*-beta.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.+-beta.+"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.+.+-beta.+"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.+.+-beta.+"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.+-beta.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.+.+-beta.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.+.+-beta.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.+.*-beta.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.+.*-beta.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.*.*-beta.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.*-rc.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.*-rc.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.+-rc.+"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.+.+-rc.+"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.+.+-rc.+"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.+-rc.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.+.+-rc.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.+.+-rc.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.+.*-rc.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.+.*-rc.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.*.*-rc.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.*"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.*.+"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v*.+.+"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.+.+"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.+.++"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v+.++.++"
+	},
+
+	{
+		"currentVersion": "1.1.0",
+		"commitMessage": "release v++.++.++"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.*-alpha.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.*-alpha.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.+.+-alpha.+"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.+.+-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.+.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.*.*-alpha.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.*-beta.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.*-beta.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.+-beta.+"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.+.+-beta.+"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.+.+-beta.+"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.+-beta.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.+.+-beta.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.+.+-beta.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.+.*-beta.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.+.*-beta.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.*.*-beta.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.*-rc.*",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.*-rc.+",
+		"fails": true
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.+-rc.+"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.+.+-rc.+"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.+.+-rc.+"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.+-rc.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.+.+-rc.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.+.+-rc.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.+.*-rc.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.+.*-rc.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.*.*-rc.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.*"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.*.+"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v*.+.+"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.+.+"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.+.++"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v+.++.++"
+	},
+
+	{
+		"currentVersion": "0.1.0",
+		"commitMessage": "release v++.++.++"
+	},
+
+	{
+		"currentVersion": "5.0.2-alpha.1",
+		"commitMessage": "release v*.*.*-alpha.++"
+	},
+
+	{
+		"currentVersion": "3.2.0-alpha.2",
+		"commitMessage": "release v*.*.++-alpha.++"
+	},
+
+	{
+		"currentVersion": "9.9.9-alpha.9",
+		"commitMessage": "release v++.++.++-alpha.++"
+	},
+
+	{
+		"currentVersion": "9.9.9-alpha.9",
+		"commitMessage": "release v++.++.++-beta.++"
+	},
+
+	{
+		"currentVersion": "9.9.9-alpha.9",
+		"commitMessage": "release v++.++.++-rc.++"
+	},
+
+	{
+		"currentVersion": "9.9.9-beta.9",
+		"commitMessage": "release v++.++.++-alpha.++"
+	},
+
+	{
+		"currentVersion": "9.9.9-beta.9",
+		"commitMessage": "release v++.++.++-beta.++"
+	},
+
+	{
+		"currentVersion": "9.9.9-beta.9",
+		"commitMessage": "release v++.++.++-rc.++"
+	},
+
+	{
+		"currentVersion": "9.9.9-rc.9",
+		"commitMessage": "release v++.++.++-alpha.++"
+	},
+
+	{
+		"currentVersion": "9.9.9-rc.9",
+		"commitMessage": "release v++.++.++-beta.++"
+	},
+
+	{
+		"currentVersion": "9.9.9-rc.9",
+		"commitMessage": "release v++.++.++-rc.++"
+	}
+]

@@ -1,6 +1,5 @@
 # <a href="http://ugate.github.io/releasebot"><img src="http://ugate.github.io/releasebot/img/logo.svg"/></a>
-[![NPM version](https://badge.fury.io/js/releasebot.png)](http://badge.fury.io/js/releasebot) [![Build Status](https://travis-ci.org/ugate/releasebot.png?branch=master)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
-[![peerDependency Status](https://david-dm.org/ugate/releasebot/peer-status.png)](https://david-dm.org/ugate/releasebot#info=peerDependencies)
+[![NPM version](https://badge.fury.io/js/releasebot.png)](http://badge.fury.io/js/releasebot) [![NPM downloads](http://img.shields.io/npm/dm/releasebot.svg)](https://www.npmjs.org/package/releasebot) [![Build Status](https://travis-ci.org/ugate/releasebot.png?branch=master)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
 
 **releasebot** is a [Grunt](http://gruntjs.com/) task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>. The task performs the following actions:
 
@@ -216,9 +215,9 @@ The following **global plug-in environment options** can be set using one of the
   // The default release version prefix used against releaseVersionRegExp
   releaseVersionDefaultType : 'v',
   // The regular expression used to check the commit message for the presence of a release to trigger (match order must be maintained and should contain releaseVersionDefaultLabel and releaseVersionDefaultType)
-  releaseVersionRegExp : /(releas(?:e|ed|ing))\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
+  releaseVersionRegExp : /(releas(?:e|ed|ing))\s*(v)((?:(\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(?:(-)(alpha|beta|rc|\++|\*?)(?:(\.)?(\d+|\++|\*))?)?))/mi,
   // The regular expression used to check the commit message for the presence of a bump version that will be used once the release completes (match order must be maintained)
-  bumpVersionRegExp : /(bump(?:ed|ing)?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
+  bumpVersionRegExp : /(bump(?:ed|ing)?)\s*(v)((?:(\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(?:(-)(alpha|beta|rc|\++|\*?)(?:(\.)?(\d+|\++|\*))?)?))/mi,
   // The regular expression that will be used to ignore non-error output when extracting the previous release version from Git
   prevVersionMsgIgnoreRegExp: /No names found/i,
   // Function that will return the token used for authorization of remote Git pushes (default: returns process.env.GH_TOKEN)
@@ -332,7 +331,7 @@ Once the releasebot task has been registered commit datails are captured and mad
   chgLogRequired : true,
   // Regular expression that will be used to exclude change log content
   // Default: any change log new line that matches the release trigger, [skip changelog] or merge branch ("master" will be replaced with the value from commit.branch)
-  chgLogSkipRegExp : /.*(?:(?:(releas(?:e|ed|ing))\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?)))|(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
+  chgLogSkipRegExp : /.*(?:(?:(releas(?:e|ed|ing))\s*(v)((?:(\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(?:(-)(alpha|beta|rc|\++|\*?)(?:(\.)?(\d+|\++|\*))?)?)))|(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
   // Flag to indicate that the release will fail when the authors log cannot be validated
   authorsRequired : false,
   // Regular expression that will be used to skip individual lines from being used within the authors log
