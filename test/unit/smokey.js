@@ -89,10 +89,10 @@ module.exports = function(grunt) {
 			test();
 		}
 		function logit(s) {
-			console.log('=======> %s %s/%s smoke tests, current ver: %s and commit msg: %s%s', 
+			console.log('=======> %s %s/%s smoke tests, current ver: %s for "%s"%s', 
 					s ? 'Starting' : rslt.failed ? 'Failed on' : 'Completed', s ? rslt.started : rslt.ran, 
 							rslt.total, rslt.req.currentVersion, rslt.req.commitMessage, 
-							!s && rslt.commitTask && rslt.commitTask.commit ? ' commit ver: ' + 
+							!s && rslt.commitTask && rslt.commitTask.commit ? ' ' + 
 									rslt.commitTask.commit.versionTag : '');
 		}
 	});
