@@ -19,18 +19,21 @@ module.exports = function(grunt) {
 			tests : path.join(__dirname, '/../smoketests.json')
 		});
 
-		var tests = require(options.tests);
+		var tests = require(options.tests) || [];
 		var rslt = {
 			start : process.hrtime(),
 			req : null,
 			commitTask: null,
-			total : tests.length,
+			total : 0,
 			started : 0,
 			ran : 0,
 			failed : 0,
 			assertFailed : 0,
 			assertions : 0
 		};
+
+		// run tests
+		rslt.total = tests.length;
 		console.log('=======> Running %s smoke tests', rslt.total);
 		test();
 
@@ -56,9 +59,9 @@ module.exports = function(grunt) {
 			rslt.commitTask = coopt._getCommitTask(grunt, rslt.req.commitMessage, coopt._testNamespace, 
 					rslt.req.currentVersion);
 			if (rslt.req.matchVersion && rslt.commitTask && rslt.commitTask.commit) {
-				rslt.commitTask.commit._matchVersion = rslt.req.matchVersion;
+				coopt._setTestValue('matchVersion', rslt.req.matchVersion);
 			}
-			coopt._cloneAndSetCommitTask(rslt.commitTask, rslt.req.showCommitMsg ? rslt.req.showCommitMsg : null);
+			//coopt._cloneAndSetCommitTask(rslt.commitTask, rslt.req.showCommitMsg ? rslt.req.showCommitMsg : null);
 
 			// run test
 			nodeunit.runModule('commit', require('../commit_test'), {}, testComplete);
@@ -89,11 +92,12 @@ module.exports = function(grunt) {
 			test();
 		}
 		function logit(s) {
-			console.log('=======> %s %s/%s smoke tests, current ver: %s for "%s"%s', 
+			console.log('=======> %s %s/%s smoke test, current ver: %s for "%s"%s%s', 
 					s ? 'Starting' : rslt.failed ? 'Failed on' : 'Completed', s ? rslt.started : rslt.ran, 
 							rslt.total, rslt.req.currentVersion, rslt.req.commitMessage, 
 							!s && rslt.commitTask && rslt.commitTask.commit ? ' ' + 
-									rslt.commitTask.commit.versionTag : '');
+									rslt.commitTask.commit.versionTag : '', 
+									rslt.req.matchVersion ? ' ✓' : '');
 		}
 	});
 };

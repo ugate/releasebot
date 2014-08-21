@@ -36,11 +36,6 @@ The commit message below will result in a release of version `1.0.0` (surroundin
 This is Release v1.0.0 of my app
 ```
 
-To release version `0.0.1-alpha.1` when no prior releases have been made:
-```shell
-release v*.*.+-alpha.+
-```
-
 To release version `1.0.2` when the latest release is `1.0.0`:
 ```shell
 release v*.*.2
@@ -66,10 +61,17 @@ To release version `0.0.1-beta.1` when the latest release is `0.0.1-alpha.3`:
 release v*.*.*-+.1
 ```
 
+To release version `0.0.1-alpha.1` when no prior releases have been made:
+```shell
+release v*.*.+-alpha.+
+```
+
 To release version `2.0.0` when the latest release is `1.1.1` via the [grunt cli](http://gruntjs.com/using-the-cli):
 ```shell
 grunt releasebot --releasebot.commitMessage="Release v+.0.0"
 ```
+
+Although `+` and `*` can be used within a pre-release, care should be taken to ensure the proper slots are referenced. For example, if a prior release of `0.0.1-5.10.3` exists a commit message of `release v*.*.*-beta.*.+` the resulting version will become `0.0.1-beta.5.11` because the first numeric version slot in the prior release is occupied by `5` while the second numeric version is occupied by `10`. Due to the relaxed nature of the <a href="http://semver.org/">semantic version specification</a>, version numbers can reside in unforeseen locations within a pre-release sequence. Also, `+` pre-release increments can not be adjacent to <a href="http://semver.org/>metadata</a> (i.e. trying to release `1.0.0-x.7.z.92+20500101084500` using a commit message of `release v1.0.0-x.7.z.9++20500101084500` will result in `1.0.0-x.7.z.9420500101084500`).
 
 #### Bumping versions
 
@@ -265,16 +267,18 @@ Once the releasebot task has been registered commit datails are captured and mad
   versionLabel : 'Release',
   // The release version label used within the commit message
   versionType : 'v',
-  // The pre-release type used within the commit message (e.g. "beta" for version "1.0.0-beta.1")
-  versionPrereleaseType : undefined,
+  // The pre-release character used within the commit message that inidcates a pre-release (e.g. "-" as defined by semver.org)
+  versionPrereleaseChar : undefined,
   // The major version (e.g. 1 for version "1.2.3")
   versionMajor : 0,
   // The minor version (e.g. 2 for version "1.2.3")
   versionMinor : 0,
   // The patch version (e.g. 3 for version "1.2.3")
   versionPatch : 0,
-  // The pre-release version (e.g. 4 for version "1.2.3-beta.4")
+  // The pre-release version (e.g. "beta.4" for version "1.2.3-beta.4+20201203144700")
   versionPrerelease : 0,
+  // The metadata appended to the version (e.g. "+001" for version "1.0.0-alpha+001")
+  versionMetadata : '',
   // The comprised version (e.g. "1.2.3-beta.4")
   version : '',
   // The versionType + version (e.g. "v1.2.3-beta.4")

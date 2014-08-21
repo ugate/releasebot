@@ -36,9 +36,16 @@ exports.commit = {
 		test.ok(vnv, 'Invalid commit.next.version ' + (c.next ? c.next.version : 0));
 		test.ok(vnv && semver.gte(c.next.version, c.version), 'Next version should satisfy ' + (c.next ? c.next.version : 0) + ' >= ' + (c.version || 0));
 
-		// special test
-		if (vcv && c._matchVersion) {
-			test.ok(semver.eq(c.version, c._matchVersion), 'Version should satisfy ' + c.version + ' ~= ' + c._matchVersion);
+		// match version test
+		var mv = vcv ? coopt._getTestValue('matchVersion') : '';
+		if (mv) {
+			test.ok(semver.eq(c.version, mv), 'Version should satisfy ' + c.version + ' ~= ' + mv);
+		}
+		
+		// meta data test
+		test.ok(typeof c.versionMetadata !== 'undefined' && c.versionMetadata != null, 'Cannot find commit.versionMetadata');
+		if (vpv) {
+			test.ok(c.versionMetadata === c.prev.versionMetadata, 'Version metadata should satisfy ' + c.versionMetadata + ' === ' + c.prev.versionMetadata);
 		}
 
 		test.done();
