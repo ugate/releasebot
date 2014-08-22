@@ -217,9 +217,9 @@ The following **global plug-in environment options** can be set using one of the
   // The default release version prefix used against releaseVersionRegExp
   releaseVersionDefaultType : 'v',
   // The regular expression used to check the commit message for the presence of a release to trigger (match order must be maintained and should contain releaseVersionDefaultLabel and releaseVersionDefaultType)
-  releaseVersionRegExp : /(releas(?:e|ed|ing))\s*(v)((?:(\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(?:(-)(alpha|beta|rc|\++|\*?)(?:(\.)?(\d+|\++|\*))?)?))/mi,
+  releaseVersionRegExp : /(releas(?:e|ed|ing))\s*(v)((\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(-?)((?:[0-9A-Za-z-\.\+\*]*)*))/mi,
   // The regular expression used to check the commit message for the presence of a bump version that will be used once the release completes (match order must be maintained)
-  bumpVersionRegExp : /(bump(?:ed|ing)?)\s*(v)((?:(\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(?:(-)(alpha|beta|rc|\++|\*?)(?:(\.)?(\d+|\++|\*))?)?))/mi,
+  bumpVersionRegExp : /(bump(?:ed|ing)?)\s*(v)((\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(-?)((?:[0-9A-Za-z-\.\+\*]*)*))/mi,
   // The regular expression that will be used to ignore non-error output when extracting the previous release version from Git
   prevVersionMsgIgnoreRegExp: /No names found/i,
   // Function that will return the token used for authorization of remote Git pushes (default: returns process.env.GH_TOKEN)
@@ -334,8 +334,8 @@ Once the releasebot task has been registered commit datails are captured and mad
   // Flag to indicate that the release will fail when the change log cannot be validated
   chgLogRequired : true,
   // Regular expression that will be used to exclude change log content
-  // Default: any change log new line that matches the release trigger, [skip changelog] or merge branch ("master" will be replaced with the value from commit.branch)
-  chgLogSkipRegExp : /.*(?:(?:(releas(?:e|ed|ing))\s*(v)((?:(\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(?:(-)(alpha|beta|rc|\++|\*?)(?:(\.)?(\d+|\++|\*))?)?)))|(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
+  // Default: any change log new line that matches [skip changelog] or merge branch ("master" will be replaced with the value from commit.branch)
+  chgLogSkipRegExp : /.*(?:(?:(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
   // Flag to indicate that the release will fail when the authors log cannot be validated
   authorsRequired : false,
   // Regular expression that will be used to skip individual lines from being used within the authors log
