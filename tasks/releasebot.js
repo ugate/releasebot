@@ -559,20 +559,36 @@ module.exports = function(grunt) {
 						// optionally skip lines that match expression
 						output = output.replace(dupsSkipLineRegExp, '');
 					}
-					// replace the release message with the evaluated release
-					// message so the actual version will be used
-					// (e.g. "release v1.0.0" rather than "release v+.*.*")
-					var cnt = 0;
-					output = output.replace(new RegExp(commit.versionTrigger,
-							'gmi'), function cmdCmtMsgRepl(m) {
-						return ++cnt <= 1 ? commit.versionLabel
-								+ commit.versionLabelSep + commit.versionTag
-								: '';
-					});
+					output = replaceVersionTrigger(output);
 					grunt.file.write(dupsPath, output);
 				}
 			}
 			return output || '';
+		}
+
+		/**
+		 * Replace the release message with the evaluated release message so
+		 * that the actual version will be used (e.g. "release v1.0.0" rather
+		 * than "release v+.*.*")
+		 * 
+		 * @param str
+		 *            the string that contains the release trigger
+		 * @returns the replaced string
+		 */
+		function replaceVersionTrigger(str) {
+			var s = str || '';
+			var cnt = 0;
+			// use original commit.versionRegExp instead of
+			// commit.versionTrigger in case there were previous commits that
+			// have unsuccessful release triggers that are in a different format
+			// than the current one
+			s = str.replace(new RegExp(commit.versionRegExp.source, 'gmi'),
+					function cmdCmtMsgRepl() {
+						return ++cnt <= 1 ? commit.versionLabel
+								+ commit.versionLabelSep + commit.versionTag
+								: '';
+					});
+			return s;
 		}
 
 		/**
