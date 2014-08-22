@@ -1,5 +1,10 @@
-<!-- Commit 44165619955a0cf8a9968921a7b161cf58d887c8 -->
+<!-- Commit df1310c38cde99bd5411994739c0d107d39534c8 -->
   * Release v0.1.0
+  *  Added task option npmRegistryURL that gets passed to npm.registry.adduser when publishing to npm
+  * 
+  * Rollback: Updating  version to match release version 0.1.0 [skip ci]
+  * Updating  version to match release version 0.1.0 [skip ci]
+  * 
   * Bumping  version to 0.1.1 [skip ci]
   * Rollback: Updating  version to match release version 0.1.0 [skip ci]
   * Updating  version to match release version 0.1.0 [skip ci]

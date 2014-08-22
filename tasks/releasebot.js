@@ -428,7 +428,8 @@ module.exports = function(grunt) {
 			}
 			function adduser() {
 				npm.config.set('email', pkg.author.email, 'user');
-				npm.registry.adduser(auth[0], auth[1], pkg.author.email, aucb);
+				npm.registry.adduser(options.npmRegistryURL, auth[0], auth[1],
+						pkg.author.email, aucb);
 				function aucb(e) {
 					if (e) {
 						rollCall.error(

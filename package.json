@@ -40,9 +40,13 @@
     "marked": "^0.3.2"
   },
   "keywords": [
-    "gruntplugin",
     "release",
-    "publish"
+    "bump",
+    "grunt",
+    "plugin",
+    "publish",
+    "github",
+    "npm"
   ],
   "dependencies": {
     "semver": "~3.0.1",

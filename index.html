@@ -311,7 +311,9 @@ grunt.registerTask(&#39;build&#39;, buildTasks.tasks);
   // Tasks names that will be skipped when releasebot performs commits for package version bumps, publish branch changes, etc. Default: http://docs.travis-ci.com/user/how-to-skip-a-build/
   releaseSkipTasks : [ &#39;ci&#39; ],
   // The optional npm publish tag
-  npmTag : &#39;&#39;
+  npmTag : &#39;&#39;,
+  // The registry URL to use when publishing to npm
+  npmRegistryURL : &#39;https://registry.npmjs.org&#39;
 }
 </code></pre>
 </body></html>

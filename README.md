@@ -381,6 +381,8 @@ Once the releasebot task has been registered commit datails are captured and mad
   // Tasks names that will be skipped when releasebot performs commits for package version bumps, publish branch changes, etc. Default: http://docs.travis-ci.com/user/how-to-skip-a-build/
   releaseSkipTasks : [ 'ci' ],
   // The optional npm publish tag
-  npmTag : ''
+  npmTag : '',
+  // The registry URL to use when publishing to npm
+  npmRegistryURL : 'https://registry.npmjs.org'
 }
 ```
