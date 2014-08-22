@@ -428,7 +428,12 @@ module.exports = function(grunt) {
 			}
 			function adduser() {
 				npm.config.set('email', pkg.author.email, 'user');
-				npm.registry.adduser(auth[0], auth[1], pkg.author.email, aucb);
+				try {
+					npm.registry.adduser(auth[0], auth[1], pkg.author.email,
+							aucb);
+				} catch (e) {
+					rollCall.error('npm publish failed to adduser', e).resume();
+				}
 				function aucb(e) {
 					if (e) {
 						rollCall.error(
