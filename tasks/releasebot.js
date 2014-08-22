@@ -562,9 +562,13 @@ module.exports = function(grunt) {
 					// replace the release message with the evaluated release
 					// message so the actual version will be used
 					// (e.g. "release v1.0.0" rather than "release v+.*.*")
-					output = output.replace(commit.versionTrigger,
-							commit.versionLabel + commit.versionLabelSep
-									+ commit.versionTag);
+					var cnt = 0;
+					output = output.replace(new RegExp(commit.versionTrigger,
+							'gmi'), function cmdCmtMsgRepl(m) {
+						return ++cnt <= 1 ? commit.versionLabel
+								+ commit.versionLabelSep + commit.versionTag
+								: '';
+					});
 					grunt.file.write(dupsPath, output);
 				}
 			}
