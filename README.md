@@ -29,7 +29,7 @@
 
 ## Usage Examples
 
-Each commit message will be checked for the presence of a version to release. The default expression checks for `release v` followed by a <a href="http://semver.org/">semantic compliant version</a> or a `+` or `*` within the appropriate version *slot* indicating the version should be either *incremented* by one or that the value should be replaced by the *last/currently* released version (respectively).
+Each commit message will be checked for the presence of a version to release. The default expression checks for `release v` followed by a <a href="http://semver.org/">semantic compliant version</a> or a `+` or `*` within the appropriate version *slot* indicating the version should be either *incremented* by the number of `+` for a given slot or that the value should be replaced by the *last/currently* released version (respectively).
 
 The commit message below will result in a release of version `1.0.0` (surrounding text will be ignored):
 ```shell
@@ -71,7 +71,7 @@ To release version `2.0.0` when the latest release is `1.1.1` via the [grunt cli
 grunt releasebot --releasebot.commitMessage="Release v+.0.0"
 ```
 
-Although `+` and `*` can be used within a pre-release, care should be taken to ensure the proper slots are referenced. For example, if a prior release of `0.0.1-5.10.3` exists a commit message of `release v*.*.*-beta.*.+` the resulting version will become `0.0.1-beta.5.11` because the first numeric version slot in the prior release is occupied by `5` while the second numeric version is occupied by `10`. Due to the relaxed nature of the <a href="http://semver.org/">semantic version specification</a>, version numbers can reside in unforeseen locations within a pre-release sequence. Also, `+` pre-release increments can not be adjacent to <a href="http://semver.org/>metadata</a> (i.e. trying to release `1.0.0-x.7.z.92+20500101084500` using a commit message of `release v1.0.0-x.7.z.9++20500101084500` will result in `1.0.0-x.7.z.9420500101084500`).
+Although `+` and `*` can be used within a pre-release, care should be taken to ensure the proper slots are referenced. For example, if a prior release of `0.0.1-5.10.3` exists a commit message of `release v*.*.*-beta.*.+` the resulting version will become `0.0.1-beta.5.11` because the first numeric version slot in the prior release is occupied by `5` while the second numeric version is occupied by `10`. Due to the relaxed nature of the <a href="http://semver.org/">semantic version specification</a>, version numbers can reside in unforeseen locations within a pre-release sequence. Also, `+` pre-release increments can not be adjacent to <a href="http://semver.org/">metadata</a> (i.e. trying to release `1.0.0-x.7.z.92+20500101084500` using a commit message of `release v1.0.0-x.7.z.9++20500101084500` will result in `1.0.0-x.7.z.9420500101084500`).
 
 #### Bumping versions
 
@@ -265,6 +265,8 @@ Once the releasebot task has been registered commit datails are captured and mad
   versionRegExp : '',
   // The release label used within the commit message
   versionLabel : 'Release',
+  // The sequence of characters between the release label and the version type
+  versionLabelSep : '',
   // The release version label used within the commit message
   versionType : 'v',
   // The pre-release character used within the commit message that inidcates a pre-release (e.g. "-" as defined by semver.org)
@@ -283,6 +285,8 @@ Once the releasebot task has been registered commit datails are captured and mad
   version : '',
   // The versionType + version (e.g. "v1.2.3-beta.4")
   versionTag : '',
+  // The match character sequence that triggered the release (e.g. "release v*.*.+")
+  versionTrigger : '',
   // Function versionPkg([replacer] [, space] [, revert] [, altFunctionToWrite] [, afterWriteFunction] [,altPath])
   // returns the JSON from the pkgPath
   versionPkg : [Function],

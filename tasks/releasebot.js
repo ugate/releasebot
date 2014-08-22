@@ -559,6 +559,12 @@ module.exports = function(grunt) {
 						// optionally skip lines that match expression
 						output = output.replace(dupsSkipLineRegExp, '');
 					}
+					// replace the release message with the evaluated release
+					// message so the actual version will be used
+					// (e.g. "release v1.0.0" rather than "release v+.*.*")
+					output = output.replace(commit.versionTrigger,
+							commit.versionLabel + commit.versionLabelSep
+									+ commit.versionTag);
 					grunt.file.write(dupsPath, output);
 				}
 			}
