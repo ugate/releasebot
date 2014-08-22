@@ -107,6 +107,10 @@ Once the plugin has been installed, it may be enabled inside your Gruntfile with
 grunt.loadNpmTasks('releasebot');
 ```
 
+####[Git](http://git-scm.com/)
+
+There isn't any special setup for Git. However, it's a good idea to follow GitHub's [recommendations regarding line endings](https://help.github.com/articles/dealing-with-line-endings) so you don't run into an issue where your new line characters are mysteriously missing from your commit message. This will help to avoid issues where a release trigger is followed by a line ending, but instead the next line gets appended to the end of your release version!
+
 ####[Travis CI](http://travis-ci.com/)
 
 By default, `process.env.GH_TOKEN` is used for authorization for Git pushes and the alike. It's recommended you encrypt the token following [travis encrypttion guidlines](http://docs.travis-ci.com/user/encryption-keys/).
