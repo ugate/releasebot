@@ -1,6 +1,5 @@
 # <a href="http://ugate.github.io/releasebot"><img src="http://ugate.github.io/releasebot/img/logo.svg"/></a>
-[![NPM version](https://badge.fury.io/js/releasebot.png)](http://badge.fury.io/js/releasebot) [![Build Status](https://travis-ci.org/ugate/releasebot.png?branch=master)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
-[![peerDependency Status](https://david-dm.org/ugate/releasebot/peer-status.png)](https://david-dm.org/ugate/releasebot#info=peerDependencies)
+[![NPM version](https://badge.fury.io/js/releasebot.png)](http://badge.fury.io/js/releasebot) [![NPM downloads](http://img.shields.io/npm/dm/releasebot.svg)](https://www.npmjs.org/package/releasebot) [![Build Status](https://travis-ci.org/ugate/releasebot.png?branch=master)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
 
 **releasebot** is a [Grunt](http://gruntjs.com/) task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>. The task performs the following actions:
 
@@ -30,16 +29,11 @@
 
 ## Usage Examples
 
-Each commit message will be checked for the presence of a version to release. The default expression checks for `release v` followed by a <a href="http://semver.org/">semantic compliant version</a> or a `+` or `*` within the appropriate version *slot* indicating the version should be either *incremented* by one or that the value should be replaced by the *last/currently* released version (respectively).
+Each commit message will be checked for the presence of a version to release. The default expression checks for `release v` followed by a <a href="http://semver.org/">semantic compliant version</a> or a `+` or `*` within the appropriate version *slot* indicating the version should be either *incremented* by the number of `+` for a given slot or that the value should be replaced by the *last/currently* released version (respectively).
 
 The commit message below will result in a release of version `1.0.0` (surrounding text will be ignored):
 ```shell
 This is Release v1.0.0 of my app
-```
-
-To release version `0.0.1-alpha.1` when no prior releases have been made:
-```shell
-release v*.*.+-alpha.+
 ```
 
 To release version `1.0.2` when the latest release is `1.0.0`:
@@ -67,10 +61,17 @@ To release version `0.0.1-beta.1` when the latest release is `0.0.1-alpha.3`:
 release v*.*.*-+.1
 ```
 
+To release version `0.0.1-alpha.1` when no prior releases have been made:
+```shell
+release v*.*.+-alpha.+
+```
+
 To release version `2.0.0` when the latest release is `1.1.1` via the [grunt cli](http://gruntjs.com/using-the-cli):
 ```shell
 grunt releasebot --releasebot.commitMessage="Release v+.0.0"
 ```
+
+Although `+` and `*` can be used within a pre-release, care should be taken to ensure the proper slots are referenced. For example, if a prior release of `0.0.1-5.10.3` exists a commit message of `release v*.*.*-beta.*.+` the resulting version will become `0.0.1-beta.5.11` because the first numeric version slot in the prior release is occupied by `5` while the second numeric version is occupied by `10`. Due to the relaxed nature of the <a href="http://semver.org/">semantic version specification</a>, version numbers can reside in unforeseen locations within a pre-release sequence. Also, `+` pre-release increments can not be adjacent to <a href="http://semver.org/">metadata</a> (i.e. trying to release `1.0.0-x.7.z.92+20500101084500` using a commit message of `release v1.0.0-x.7.z.9++20500101084500` will result in `1.0.0-x.7.z.9420500101084500`).
 
 #### Bumping versions
 
@@ -105,6 +106,10 @@ Once the plugin has been installed, it may be enabled inside your Gruntfile with
 ```shell
 grunt.loadNpmTasks('releasebot');
 ```
+
+####[Git](http://git-scm.com/)
+
+There isn't any special setup for Git. However, it's a good idea to follow GitHub's [recommendations regarding line endings](https://help.github.com/articles/dealing-with-line-endings) so you don't run into an issue where your new line characters are mysteriously missing from your commit message. This will help to avoid issues where a release trigger is followed by a new line character, but instead the content of the next line gets appended to the end of your release version!
 
 ####[Travis CI](http://travis-ci.com/)
 
@@ -216,9 +221,9 @@ The following **global plug-in environment options** can be set using one of the
   // The default release version prefix used against releaseVersionRegExp
   releaseVersionDefaultType : 'v',
   // The regular expression used to check the commit message for the presence of a release to trigger (match order must be maintained and should contain releaseVersionDefaultLabel and releaseVersionDefaultType)
-  releaseVersionRegExp : /(releas(?:e|ed|ing))\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
+  releaseVersionRegExp : /(releas(?:e|ed|ing))\s*(v)((\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(-?)((?:[0-9A-Za-z-\.\+\*]*)*))/mi,
   // The regular expression used to check the commit message for the presence of a bump version that will be used once the release completes (match order must be maintained)
-  bumpVersionRegExp : /(bump(?:ed|ing)?)\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?))/mi,
+  bumpVersionRegExp : /(bump(?:ed|ing)?)\s*(v)((\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(-?)((?:[0-9A-Za-z-\.\+\*]*)*))/mi,
   // The regular expression that will be used to ignore non-error output when extracting the previous release version from Git
   prevVersionMsgIgnoreRegExp: /No names found/i,
   // Function that will return the token used for authorization of remote Git pushes (default: returns process.env.GH_TOKEN)
@@ -264,22 +269,28 @@ Once the releasebot task has been registered commit datails are captured and mad
   versionRegExp : '',
   // The release label used within the commit message
   versionLabel : 'Release',
+  // The sequence of characters between the release label and the version type
+  versionLabelSep : '',
   // The release version label used within the commit message
   versionType : 'v',
-  // The pre-release type used within the commit message (e.g. "beta" for version "1.0.0-beta.1")
-  versionPrereleaseType : undefined,
+  // The pre-release character used within the commit message that inidcates a pre-release (e.g. "-" as defined by semver.org)
+  versionPrereleaseChar : undefined,
   // The major version (e.g. 1 for version "1.2.3")
   versionMajor : 0,
   // The minor version (e.g. 2 for version "1.2.3")
   versionMinor : 0,
   // The patch version (e.g. 3 for version "1.2.3")
   versionPatch : 0,
-  // The pre-release version (e.g. 4 for version "1.2.3-beta.4")
+  // The pre-release version (e.g. "beta.4" for version "1.2.3-beta.4+20201203144700")
   versionPrerelease : 0,
+  // The metadata appended to the version (e.g. "+001" for version "1.0.0-alpha+001")
+  versionMetadata : '',
   // The comprised version (e.g. "1.2.3-beta.4")
   version : '',
   // The versionType + version (e.g. "v1.2.3-beta.4")
   versionTag : '',
+  // The match character sequence that triggered the release (e.g. "release v*.*.+")
+  versionTrigger : '',
   // Function versionPkg([replacer] [, space] [, revert] [, altFunctionToWrite] [, afterWriteFunction] [,altPath])
   // returns the JSON from the pkgPath
   versionPkg : [Function],
@@ -331,8 +342,8 @@ Once the releasebot task has been registered commit datails are captured and mad
   // Flag to indicate that the release will fail when the change log cannot be validated
   chgLogRequired : true,
   // Regular expression that will be used to exclude change log content
-  // Default: any change log new line that matches the release trigger, [skip changelog] or merge branch ("master" will be replaced with the value from commit.branch)
-  chgLogSkipRegExp : /.*(?:(?:(releas(?:e|ed|ing))\s*(v)((?:(\d+|\+|\*)(\.)(\d+|\+|\*)(\.)(\d+|\+|\*)(?:(-)(alpha|beta|rc|\+|\*?)(?:(\.)?(\d+|\+|\*))?)?)))|(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
+  // Default: any change log new line that matches [skip changelog] or merge branch ("master" will be replaced with the value from commit.branch)
+  chgLogSkipRegExp : /.*(?:(?:(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
   // Flag to indicate that the release will fail when the authors log cannot be validated
   authorsRequired : false,
   // Regular expression that will be used to skip individual lines from being used within the authors log
