@@ -71,6 +71,13 @@ To release version `2.0.0` when the latest release is `1.1.1` via the [grunt cli
 grunt releasebot --releasebot.commitMessage="Release v+.0.0"
 ```
 
+For you [node-semver purists](https://www.npmjs.org/doc/misc/semver.html#functions) you can use the syntax `release v+RELEASE_TYPE` where RELEASE_TYPE is one of the defined values passed into [inc(v, release)](https://www.npmjs.org/doc/misc/semver.html#functions).
+
+To release version `2.0.0` when the latest release is `1.0.0`:
+```shell
+release v+major
+```
+
 Although `+` and `*` can be used within a pre-release, care should be taken to ensure the proper slots are referenced. For example, if a prior release of `0.0.1-5.10.3` exists a commit message of `release v*.*.*-beta.*.+` the resulting version will become `0.0.1-beta.5.11` because the first numeric version slot in the prior release is occupied by `5` while the second numeric version is occupied by `10`. Due to the relaxed nature of the <a href="http://semver.org/">semantic version specification</a>, version numbers can reside in unforeseen locations within a pre-release sequence. Also, `+` pre-release increments can not be adjacent to <a href="http://semver.org/">metadata</a> (i.e. trying to release `1.0.0-x.7.z.92+20500101084500` using a commit message of `release v1.0.0-x.7.z.9++20500101084500` will result in `1.0.0-x.7.z.9420500101084500`).
 
 #### Bumping versions
@@ -220,10 +227,14 @@ The following **global plug-in environment options** can be set using one of the
   releaseVersionDefaultLabel : 'release',
   // The default release version prefix used against releaseVersionRegExp
   releaseVersionDefaultType : 'v',
-  // The regular expression used to check the commit message for the presence of a release to trigger (match order must be maintained and should contain releaseVersionDefaultLabel and releaseVersionDefaultType)
-  releaseVersionRegExp : /(releas(?:e|ed|ing))\s*(v)((\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(-?)((?:[0-9A-Za-z-\.\+\*]*)*))/mi,
+  // The regular expression used to check the commit message for the presence of a release to trigger (match order must be maintained)
+  releaseVersionRegExp : /(releas(?:e|ed|ing))(\s*)(v)((\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(-?)((?:[0-9A-Za-z-\.\+\*]*)*))/mi,
+  // The regular expression used to check the commit message for the presence of a release to trigger using semver syntax (match order must be maintained)
+  releaseVersionSemverIncRegExp : /(releas(?:e|ed|ing))(\s*)(v)\+(major|premajor|minor|preminor|patch|prepatch|prerelease)/mi,
   // The regular expression used to check the commit message for the presence of a bump version that will be used once the release completes (match order must be maintained)
-  bumpVersionRegExp : /(bump(?:ed|ing)?)\s*(v)((\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(-?)((?:[0-9A-Za-z-\.\+\*]*)*))/mi,
+  bumpVersionRegExp : /(bump(?:ed|ing)?)(\s*)(v)((\d+|\++|\*)(\.)(\d+|\++|\*)(\.)(\d+|\++|\*)(-?)((?:[0-9A-Za-z-\.\+\*]*)*))/mi,
+  // The regular expression used to check the commit message for the presence of a bump version using semver syntax that will be used once the release completes (match order must be maintained)
+  bumpVersionSemverIncRegExp : /(bump(?:ed|ing)?)(\s*)(v)\+(major|premajor|minor|preminor|patch|prepatch|prerelease)/mi,
   // The regular expression that will be used to ignore non-error output when extracting the previous release version from Git
   prevVersionMsgIgnoreRegExp: /No names found/i,
   // Function that will return the token used for authorization of remote Git pushes (default: returns process.env.GH_TOKEN)
