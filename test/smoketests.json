@@ -1605,10 +1605,52 @@
 		"commitMessage": "release v*.*.*-x+beta+205001011447",
 		"matchVersion": "9.9.9-x2beta+205001011447"
 	},
-	
+
 	{
 		"currentVersion": "9.9.9-1.0.1+205001011447",
 		"commitMessage": "release v*.*.*-x++beta+205001011447",
 		"matchVersion": "9.9.9-x3beta+205001011447"
+	},
+
+	{
+		"currentVersion": "1.0.0-x.7.z.92",
+		"commitMessage": "release v+major",
+		"matchVersion": "2.0.0"
+	},
+
+	{
+		"currentVersion": "1.0.0-x.7.z.92",
+		"commitMessage": "release v+premajor",
+		"matchVersion": "2.0.0-0"
+	},
+
+	{
+		"currentVersion": "1.0.0-x.7.z.92",
+		"commitMessage": "release v+minor",
+		"matchVersion": "1.1.0"
+	},
+
+	{
+		"currentVersion": "1.0.0-x.7.z.92",
+		"commitMessage": "release v+preminor",
+		"matchVersion": "1.1.0-0"
+	},
+
+	{
+		"currentVersion": "1.0.0-x.7.z.92",
+		"commitMessage": "release v+patch",
+		"matchVersion": "1.0.0"
+	},
+
+	{
+		"currentVersion": "1.0.0-x.7.z.92",
+		"commitMessage": "release v+prepatch",
+		"matchVersion": "1.0.1-0"
+	},
+
+	{
+		"currentVersion": "1.0.0-x.7.z.92",
+		"commitMessage": "release v+prerelease",
+		"matchVersion": "1.0.0-x.7.z.93"
 	}
 ]
