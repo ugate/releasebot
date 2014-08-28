@@ -165,9 +165,12 @@ module.exports = function(grunt) {
 				pkgLog(pkg, pkgStr, ov, u, r, n, p, false);
 			}
 			function pkgLog(pkg, pkgStr, ov, u, r, n, p, beforeWrite) {
-				var m = (r ? 'Revert' : 'Bump') + (beforeWrite ? 'ing' : 'ed')
-						+ (n ? ' next ' : '') + ' version from ' + ov + ' to '
-						+ pkg.version + ' in ' + p;
+				var skip = !n && !r && !u;
+				var m = (skip ? 'Skip' : r ? 'Revert' : 'Bump')
+						+ (beforeWrite ? 'ing' : (skip ? 'p' : '') + 'ed')
+						+ (skip ? ' write:' : n ? ' next' : '')
+						+ ' version from ' + ov + ' to ' + pkg.version + ' in '
+						+ p;
 				if (r) {
 					grunt.verbose.writeln(m);
 				} else {
