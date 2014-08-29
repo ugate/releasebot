@@ -324,7 +324,7 @@ Once the releasebot task has been registered commit datails are captured and mad
 
 ```js
 {
-  // The name that will appear on GitHub (grunt template parsed using any "commit" property or task "options" property)
+  // The name that will appear on GitHub (grunt template parsed using any "commit", task "options", "env" or "process" properties)
   name : '<%= commit.versionTag %>',
   // Commit message used when the package version does not match the version being released and needs to be updated
   pkgCurrVerBumpMsg : 'Updating <%= env.pckPath %> version to match release version <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',

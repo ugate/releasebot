@@ -132,7 +132,7 @@ module.exports = function(grunt) {
 						templateData) : '';
 				if (rtn[s]) {
 					grunt.verbose.writeln(s + ' = ' + rtn[s]);
-					escCmtMsgs.push(coopt.escapeRegExp(rtn[s]));
+					rtn.escCmtMsgs.push(coopt.escapeRegExp(rtn[s]));
 				}
 			});
 			return rtn;
