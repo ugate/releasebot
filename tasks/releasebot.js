@@ -126,7 +126,7 @@ module.exports = function(grunt) {
 			var rtn = {
 				escCmtMsgs : []
 			};
-			var arr = arguments;
+			var arr = Array.prototype.slice.call(arguments, 0);
 			arr.forEach(function genIntMsgs(s) {
 				rtn[s] = options[s] ? grunt.template.process(options[s],
 						templateData) : '';
