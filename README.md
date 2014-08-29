@@ -327,9 +327,9 @@ Once the releasebot task has been registered commit datails are captured and mad
   // The name that will appear on GitHub (grunt template parsed using any "commit" property or task "options" property)
   name : '<%= commit.versionTag %>',
   // Commit message used when the package version does not match the version being released and needs to be updated
-  pkgCurrVerBumpMsg : 'Updating <%= commit.pckPath %> version to match release version <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
+  pkgCurrVerBumpMsg : 'Updating <%= env.pckPath %> version to match release version <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
   // Commit message used for incrementing to the next release version once the current release completes (null to disable feature)
-  pkgNextVerBumpMsg : 'Bumping <%= commit.pckPath %> version to <%= commit.next.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
+  pkgNextVerBumpMsg : 'Bumping <%= env.pckPath %> version to <%= commit.next.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
   // Commit message used when publishing to the distribution branch
   distBranchPubMsg : 'Publishing <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
   // The package replacer option sent into JSON.stringify during package version updates
