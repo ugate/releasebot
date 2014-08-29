@@ -68,6 +68,7 @@ module.exports = function(grunt) {
 				options.pkgNextVerBumpMsg, templateData) : '';
 		var distBPM = grunt.template.process(options.distBranchPubMsg,
 				templateData);
+		var cmtMsgs = [ pkgCVBM, pkgNVBM, distBPM ];
 		var chgLogRtn = '', pubSrcDir = '', pubDistDir = '', pubHash = '', pckBumped = false;
 		var distZipAsset = '', distTarAsset = '', distZipAssetName = '', distTarAssetName = '';
 
@@ -201,7 +202,7 @@ module.exports = function(grunt) {
 			chgLogRtn = cmd('git --no-pager log ' + lastGitLog
 					+ ' --pretty=format:"' + options.chgLogLineFormat + '" > '
 					+ chgLogPath, null, false, chgLogPath,
-					options.chgLogSkipRegExp, '<!-- Commit ' + commit.hash
+					options.chgLogSkipRegExps, '<!-- Commit ' + commit.hash
 							+ ' -->\n')
 					|| '';
 			utils.validateFile(chgLogPath, rollCall);
@@ -516,15 +517,16 @@ module.exports = function(grunt) {
 		 * @param dupsPath
 		 *            path to the command output that will be read, duplicate
 		 *            entry lines removed and re-written
-		 * @param dupsSkipLineRegExp
-		 *            an optional {RegExp} to use for eliminating specific
-		 *            content from the output (only used when in conjunction
-		 *            with a valid duplicate path)
+		 * @param skipRegExps
+		 *            an optional {Array} of {RegExp} to use for eliminating
+		 *            specific content from the output (only used when in
+		 *            conjunction with a valid duplicate path, combined using
+		 *            OR)
 		 * @param dupsPrefix
 		 *            an optional prefix to the duplication replacement path
 		 * @returns {String} command output
 		 */
-		function cmd(c, wpath, nofail, dupsPath, dupsSkipLineRegExp, dupsPrefix) {
+		function cmd(c, wpath, nofail, dupsPath, skipRegExps, dupsPrefix) {
 			grunt.log.writeln(c);
 			var rtn = null;
 			if (typeof c === 'string') {
@@ -559,10 +561,11 @@ module.exports = function(grunt) {
 					// replace duplicate lines
 					output = (dupsPrefix ? dupsPrefix : '')
 							+ output.replace(coopt.regexDupLines, '$1');
-					if (util.isRegExp(dupsSkipLineRegExp)) {
-						// optionally skip lines that match expression
-						output = output.replace(dupsSkipLineRegExp, '');
-					}
+					// skip content that matches any of the supplied expressions
+					// and the release commit messages performed internally
+					var rxs = Array.isArray(skipRegExps) ? cmtMsgs
+							.concat(skipRegExps) : cmtMsgs;
+					output = output.replace(coopt.getLineReplRegExp(rxs), '');
 					output = replaceVersionTrigger(output);
 					grunt.file.write(dupsPath, output);
 				}

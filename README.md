@@ -162,7 +162,7 @@ before_script:
 ```
 
 ### Distribution
-By default, a `HISTORY.md` file will be created that will contain a list of commit messages since the last release (the same info that is used as the release description). An `AUTHORS.md` will also be generated that will contain a list of authors since the last release, prefixed with the number of contributed commits. Both of these files along with the contents of the `distDir` (<a href="#default-task-specific-options">filterable</a>) will be published to the `distBranch` (when defined) and used as the contents of the compressed archive assets (zip and tar). An optional `[skip CHANGELOG]` can be appended to any commit message to indicate that the commit message should not be included in `HISTORY.md` and the release description. Alternatively, a custom regular expression can be used in the `chgLogSkipRegExp` option.
+By default, a `HISTORY.md` file will be created that will contain a list of commit messages since the last release (the same info that is used as the release description). An `AUTHORS.md` will also be generated that will contain a list of authors since the last release, prefixed with the number of contributed commits. Both of these files along with the contents of the `distDir` (<a href="#default-task-specific-options">filterable</a>) will be published to the `distBranch` (when defined) and used as the contents of the compressed archive assets (zip and tar). An optional `[skip CHANGELOG]` can be appended to any commit message to indicate that the commit message should not be included in `HISTORY.md` and the release description. Alternatively, an array of custom regular expressions can be used in the `chgLogSkipRegExps` option.
 
 ### Skips Indicators
 Skip indicators are used within commit messages to notify underlying systems that a particular operation should not be performed for a particular commit. An example of which is the [skip option for travis-ci](http://docs.travis-ci.com/user/how-to-skip-a-build/). By default, releasebot adds a flag to `releaseSkipTasks` in order to skip additional continuous integration builds when internal releasebot commits are performed (i.e. bumping package versions, etc.). The semantics follow commonly recognized patterns used by various tools (i.e. `[skip ci]`). When the releasebot task is registered it automatically captures all the skip operations/tasks that exist within the current commit message and exposes them via `skipTasks`. This can also be useful within grunt in order to establish conditional task execution based upon the current commit message:
@@ -307,7 +307,7 @@ Once the releasebot task has been registered commit datails are captured and mad
   versionPkg : [Function],
   // Array of tasks extracted from the commit message in the format: "[skip SOME_TASK]" 
   skipTasks : [],
-  // Function skipTaskGen(taskName) that produces a skip string (e.g. skipTaskGen("clean") produces "[skip clean]")
+  // Function skipTaskGen(array or string) that produces skip string(s) (e.g. skipTaskGen("clean") produces "[skip clean]")
   skipTaskGen : [Function],
   // Function skipTaskCheck(taskName) that returns true when the task is in the skipTasks
   skipTaskCheck : [Function],
@@ -352,9 +352,9 @@ Once the releasebot task has been registered commit datails are captured and mad
   chgLogLineFormat : '  * %s',
   // Flag to indicate that the release will fail when the change log cannot be validated
   chgLogRequired : true,
-  // Regular expression that will be used to exclude change log content
-  // Default: any change log new line that matches [skip changelog] or merge branch ("master" will be replaced with the value from commit.branch)
-  chgLogSkipRegExp : /.*(?:(?:(\[skip\s*CHANGELOG\])|(Merge\sbranch\s'master')).*\r?\n'/mi,
+  // Array of regular expressions that will be used to against each line of the change log that when matched will be removed (each item in array will be concatenated via OR in final expression)
+  // the changelog entry will always be present, even if it's not passed- removes lines with [skip changelog]
+  chgLogSkipRegExps : [],
   // Flag to indicate that the release will fail when the authors log cannot be validated
   authorsRequired : false,
   // Regular expression that will be used to skip individual lines from being used within the authors log
