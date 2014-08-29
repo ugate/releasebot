@@ -592,7 +592,9 @@ module.exports = function(grunt) {
 					// and the release commit messages performed internally
 					var rxs = Array.isArray(skipRegExps) ? tmpltData.escCmtMsgs
 							.concat(skipRegExps) : tmpltData.escCmtMsgs;
-					output = output.replace(coopt.getLineReplRegExp(rxs), '');
+					var rxl = coopt.getLineReplRegExp(rxs);
+					grunt.verbose.writeln('Replacing output using: ' + rxl);
+					output = output.replace(rxl, '');
 					output = replaceVersionTrigger(output);
 					grunt.file.write(dupsPath, output);
 				}
