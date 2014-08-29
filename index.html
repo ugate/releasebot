@@ -106,7 +106,7 @@ git:
 - echo -e &quot;Host *\n\tStrictHostKeyChecking no\n&quot; &gt;&gt; ~/.ssh/config
 </code></pre>
 <h3 id="distribution">Distribution</h3>
-<p>By default, a <code>HISTORY.md</code> file will be created that will contain a list of commit messages since the last release (the same info that is used as the release description). An <code>AUTHORS.md</code> will also be generated that will contain a list of authors since the last release, prefixed with the number of contributed commits. Both of these files along with the contents of the <code>distDir</code> (<a href="#default-task-specific-options">filterable</a>) will be published to the <code>distBranch</code> (when defined) and used as the contents of the compressed archive assets (zip and tar). An optional <code>[skip CHANGELOG]</code> can be appended to any commit message to indicate that the commit message should not be included in <code>HISTORY.md</code> and the release description. Alternatively, a custom regular expression can be used in the <code>chgLogSkipRegExp</code> option.</p>
+<p>By default, a <code>HISTORY.md</code> file will be created that will contain a list of commit messages since the last release (the same info that is used as the release description). An <code>AUTHORS.md</code> will also be generated that will contain a list of authors since the last release, prefixed with the number of contributed commits. Both of these files along with the contents of the <code>distDir</code> (<a href="#default-task-specific-options">filterable</a>) will be published to the <code>distBranch</code> (when defined) and used as the contents of the compressed archive assets (zip and tar). An optional <code>[skip CHANGELOG]</code> can be appended to any commit message to indicate that the commit message should not be included in <code>HISTORY.md</code> and the release description. Alternatively, an array of custom regular expressions can be used in the <code>chgLogSkipRegExps</code> option.</p>
 <h3 id="skips-indicators">Skips Indicators</h3>
 <p>Skip indicators are used within commit messages to notify underlying systems that a particular operation should not be performed for a particular commit. An example of which is the <a href="http://docs.travis-ci.com/user/how-to-skip-a-build/">skip option for travis-ci</a>. By default, releasebot adds a flag to <code>releaseSkipTasks</code> in order to skip additional continuous integration builds when internal releasebot commits are performed (i.e. bumping package versions, etc.). The semantics follow commonly recognized patterns used by various tools (i.e. <code>[skip ci]</code>). When the releasebot task is registered it automatically captures all the skip operations/tasks that exist within the current commit message and exposes them via <code>skipTasks</code>. This can also be useful within grunt in order to establish conditional task execution based upon the current commit message:</p>
 <pre><code class="lang-js">function Tasks() {
@@ -237,7 +237,7 @@ grunt.registerTask(&#39;build&#39;, buildTasks.tasks);
   versionPkg : [Function],
   // Array of tasks extracted from the commit message in the format: &quot;[skip SOME_TASK]&quot; 
   skipTasks : [],
-  // Function skipTaskGen(taskName) that produces a skip string (e.g. skipTaskGen(&quot;clean&quot;) produces &quot;[skip clean]&quot;)
+  // Function skipTaskGen(array or string) that produces skip string(s) (e.g. skipTaskGen(&quot;clean&quot;) produces &quot;[skip clean]&quot;)
   skipTaskGen : [Function],
   // Function skipTaskCheck(taskName) that returns true when the task is in the skipTasks
   skipTaskCheck : [Function],
@@ -251,12 +251,12 @@ grunt.registerTask(&#39;build&#39;, buildTasks.tasks);
 </code></pre>
 <h3 id="default-task-specific-options-">Default task specific options:</h3>
 <pre><code class="lang-js">{
-  // The name that will appear on GitHub (grunt template parsed using any &quot;commit&quot; property or task &quot;options&quot; property)
+  // The name that will appear on GitHub (grunt template parsed using any &quot;commit&quot;, task &quot;options&quot;, &quot;env&quot; or &quot;process&quot; properties)
   name : &#39;&lt;%= commit.versionTag %&gt;&#39;,
   // Commit message used when the package version does not match the version being released and needs to be updated
-  pkgCurrVerBumpMsg : &#39;Updating &lt;%= commit.pckPath %&gt; version to match release version &lt;%= commit.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
+  pkgCurrVerBumpMsg : &#39;Updating &lt;%= env.pckPath %&gt; version to match release version &lt;%= commit.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
   // Commit message used for incrementing to the next release version once the current release completes (null to disable feature)
-  pkgNextVerBumpMsg : &#39;Bumping &lt;%= commit.pckPath %&gt; version to &lt;%= commit.next.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
+  pkgNextVerBumpMsg : &#39;Bumping &lt;%= env.pckPath %&gt; version to &lt;%= commit.next.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
   // Commit message used when publishing to the distribution branch
   distBranchPubMsg : &#39;Publishing &lt;%= commit.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
   // The package replacer option sent into JSON.stringify during package version updates
@@ -279,9 +279,9 @@ grunt.registerTask(&#39;build&#39;, buildTasks.tasks);
   chgLogLineFormat : &#39;  * %s&#39;,
   // Flag to indicate that the release will fail when the change log cannot be validated
   chgLogRequired : true,
-  // Regular expression that will be used to exclude change log content
-  // Default: any change log new line that matches [skip changelog] or merge branch (&quot;master&quot; will be replaced with the value from commit.branch)
-  chgLogSkipRegExp : /.*(?:(?:(\[skip\s*CHANGELOG\])|(Merge\sbranch\s&#39;master&#39;)).*\r?\n&#39;/mi,
+  // Array of regular expressions that will be used to against each line of the change log that when matched will be removed (each item in array will be concatenated via OR in final expression)
+  // the changelog entry will always be present, even if it&#39;s not passed- removes lines with [skip changelog]
+  chgLogSkipRegExps : [],
   // Flag to indicate that the release will fail when the authors log cannot be validated
   authorsRequired : false,
   // Regular expression that will be used to skip individual lines from being used within the authors log

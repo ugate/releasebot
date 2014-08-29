@@ -54,20 +54,10 @@ module.exports = function(grunt) {
 				+ (commit.prev.versionTag ? commit.prev.versionTag : 'N/A')
 				+ ')');
 		var useGitHub = options.gitHostname.toLowerCase() === github.hostname;
-		var templateData = {
-			data : {
-				process : process,
-				commit : commit,
-				options : options
-			}
-		};
-		var releaseName = grunt.template.process(options.name, templateData);
-		var pkgCVBM = grunt.template.process(options.pkgCurrVerBumpMsg,
-				templateData);
-		var pkgNVBM = options.pkgNextVerBumpMsg ? grunt.template.process(
-				options.pkgNextVerBumpMsg, templateData) : '';
-		var distBPM = grunt.template.process(options.distBranchPubMsg,
-				templateData);
+
+		var tmpltData = genTemplateData('name', 'pkgCurrVerBumpMsg',
+				'pkgNextVerBumpMsg', 'distBranchPubMsg');
+
 		var chgLogRtn = '', pubSrcDir = '', pubDistDir = '', pubHash = '', pckBumped = false;
 		var distZipAsset = '', distTarAsset = '', distZipAssetName = '', distTarAssetName = '';
 
@@ -92,7 +82,7 @@ module.exports = function(grunt) {
 
 			// non-critical cleanup
 			try {
-				if (pkgNVBM) {
+				if (tmpltData.pkgNextVerBumpMsg) {
 					// bump to next version
 					pkgUpdate(null, false, true);
 				}
@@ -113,6 +103,40 @@ module.exports = function(grunt) {
 				throw new Error('Release failed');
 			}
 		});
+
+		/**
+		 * Generates an object that contains each of the passed arguments as a
+		 * property with a value of an option with the same name. Each property
+		 * will have a value for that option that is parsed using the grunt
+		 * template processor. When the processed value exists it will also be
+		 * escaped for regular expression use and added to the escCmtMsgs
+		 * {Array} property
+		 * 
+		 * @returns all of the grunt template parsed data
+		 */
+		function genTemplateData() {
+			var templateData = {
+				data : {
+					process : process,
+					commit : commit,
+					env : commitTask.commitOpts,
+					options : options
+				}
+			};
+			var rtn = {
+				escCmtMsgs : []
+			};
+			var arr = Array.prototype.slice.call(arguments, 0);
+			arr.forEach(function genIntMsgs(s) {
+				rtn[s] = options[s] ? grunt.template.process(options[s],
+						templateData) : '';
+				if (rtn[s]) {
+					grunt.verbose.writeln(s + ' = ' + rtn[s]);
+					rtn.escCmtMsgs.push(coopt.escapeRegExp(rtn[s]));
+				}
+			});
+			return rtn;
+		}
 
 		/**
 		 * Remote Git setup to permit pushes
@@ -156,9 +180,11 @@ module.exports = function(grunt) {
 			function pkgPush(pkg, pkgStr, ov, u, r, n, p) {
 				// TODO : check to make sure there isn't any commits ahead of
 				// this one
-				if (!noPush) {
-					cmd('git commit -q -m "' + (r ? 'Rollback: ' : '')
-							+ (n ? pkgNVBM : pkgCVBM) + '" ' + p);
+				if (!noPush && (u || r || n)) {
+					cmd('git commit -q -m "'
+							+ (r ? 'Rollback: ' : '')
+							+ (n ? tmpltData.pkgNextVerBumpMsg
+									: tmpltData.pkgCurrVerBumpMsg) + '" ' + p);
 					cmd('git push ' + options.repoName + ' ' + commit.branch);
 					pckBumped = u;
 				}
@@ -201,7 +227,7 @@ module.exports = function(grunt) {
 			chgLogRtn = cmd('git --no-pager log ' + lastGitLog
 					+ ' --pretty=format:"' + options.chgLogLineFormat + '" > '
 					+ chgLogPath, null, false, chgLogPath,
-					options.chgLogSkipRegExp, '<!-- Commit ' + commit.hash
+					options.chgLogSkipRegExps, '<!-- Commit ' + commit.hash
 							+ ' -->\n')
 					|| '';
 			utils.validateFile(chgLogPath, rollCall);
@@ -239,7 +265,7 @@ module.exports = function(grunt) {
 			}
 			// Commit changes (needed to generate archive asset)
 			cmd('git add --force ' + options.distDir);
-			cmd('git commit -q -m "' + distBPM + '"');
+			cmd('git commit -q -m "' + tmpltData.distBranchPubMsg + '"');
 		}
 
 		/**
@@ -306,7 +332,7 @@ module.exports = function(grunt) {
 				path : distTarAsset,
 				name : distTarAssetName,
 				contentType : 'application/x-compressed'
-			} ], grunt, coopt.regexLines, commit, releaseName, chgLogRtn
+			} ], grunt, coopt.regexLines, commit, tmpltData.name, chgLogRtn
 					|| commit.message, options, rollCall, rollbackTag,
 					function() {
 						rollCall.then(publish);
@@ -377,7 +403,8 @@ module.exports = function(grunt) {
 									commit.buildDir);
 
 							cmd('git add -A');
-							cmd('git commit -q -m "' + distBPM + '"');
+							cmd('git commit -q -m "'
+									+ tmpltData.distBranchPubMsg + '"');
 							cmd('git push -f ' + options.repoName + ' '
 									+ options.distBranch);
 
@@ -485,7 +512,8 @@ module.exports = function(grunt) {
 					var cph = cmd('git rev-parse HEAD');
 					if (pubHash && pubHash !== cph) {
 						cmd('git checkout -qf ' + pubHash);
-						cmd('git commit -q -m "Rollback: ' + distBPM + '"');
+						cmd('git commit -q -m "Rollback: '
+								+ tmpltData.distBranchPubMsg + '"');
 						cmd('git push -f ' + options.repoName + ' '
 								+ options.distBranch);
 					} else if (!pubHash) {
@@ -516,15 +544,16 @@ module.exports = function(grunt) {
 		 * @param dupsPath
 		 *            path to the command output that will be read, duplicate
 		 *            entry lines removed and re-written
-		 * @param dupsSkipLineRegExp
-		 *            an optional {RegExp} to use for eliminating specific
-		 *            content from the output (only used when in conjunction
-		 *            with a valid duplicate path)
+		 * @param skipRegExps
+		 *            an optional {Array} of {RegExp} to use for eliminating
+		 *            specific content from the output (only used when in
+		 *            conjunction with a valid duplicate path, combined using
+		 *            OR)
 		 * @param dupsPrefix
 		 *            an optional prefix to the duplication replacement path
 		 * @returns {String} command output
 		 */
-		function cmd(c, wpath, nofail, dupsPath, dupsSkipLineRegExp, dupsPrefix) {
+		function cmd(c, wpath, nofail, dupsPath, skipRegExps, dupsPrefix) {
 			grunt.log.writeln(c);
 			var rtn = null;
 			if (typeof c === 'string') {
@@ -559,10 +588,11 @@ module.exports = function(grunt) {
 					// replace duplicate lines
 					output = (dupsPrefix ? dupsPrefix : '')
 							+ output.replace(coopt.regexDupLines, '$1');
-					if (util.isRegExp(dupsSkipLineRegExp)) {
-						// optionally skip lines that match expression
-						output = output.replace(dupsSkipLineRegExp, '');
-					}
+					// skip content that matches any of the supplied expressions
+					// and the release commit messages performed internally
+					var rxs = Array.isArray(skipRegExps) ? tmpltData.escCmtMsgs
+							.concat(skipRegExps) : tmpltData.escCmtMsgs;
+					output = output.replace(coopt.getLineReplRegExp(rxs), '');
 					output = replaceVersionTrigger(output);
 					grunt.file.write(dupsPath, output);
 				}
