@@ -107,7 +107,7 @@ git:
 </code></pre>
 <h3 id="distribution">Distribution</h3>
 <p>By default, a <code>HISTORY.md</code> file will be created that will contain a list of commit messages since the last release (the same info that is used as the release description). An <code>AUTHORS.md</code> will also be generated that will contain a list of authors since the last release, prefixed with the number of contributed commits. Both of these files along with the contents of the <code>distDir</code> (<a href="#default-task-specific-options">filterable</a>) will be published to the <code>distBranch</code> (when defined) and used as the contents of the compressed archive assets (zip and tar). An optional <code>[skip CHANGELOG]</code> can be appended to any commit message to indicate that the commit message should not be included in <code>HISTORY.md</code> and the release description. Alternatively, an array of custom regular expressions can be used in the <code>chgLogSkipRegExps</code> option.</p>
-<h3 id="skips-indicators">Skips Indicators</h3>
+<h3 id="skip-indicators">Skip Indicators</h3>
 <p>Skip indicators are used within commit messages to notify underlying systems that a particular operation should not be performed for a particular commit. An example of which is the <a href="http://docs.travis-ci.com/user/how-to-skip-a-build/">skip option for travis-ci</a>. By default, releasebot adds a flag to <code>releaseSkipTasks</code> in order to skip additional continuous integration builds when internal releasebot commits are performed (i.e. bumping package versions, etc.). The semantics follow commonly recognized patterns used by various tools (i.e. <code>[skip ci]</code>). When the releasebot task is registered it automatically captures all the skip operations/tasks that exist within the current commit message and exposes them via <code>skipTasks</code>. This can also be useful within grunt in order to establish conditional task execution based upon the current commit message:</p>
 <pre><code class="lang-js">function Tasks() {
     this.tasks = [];
@@ -214,8 +214,8 @@ grunt.registerTask(&#39;build&#39;, buildTasks.tasks);
   versionLabelSep : &#39;&#39;,
   // The release version label used within the commit message
   versionType : &#39;v&#39;,
-  // The pre-release character used within the commit message that inidcates a pre-release (e.g. &quot;-&quot; as defined by semver.org)
-  versionPrereleaseChar : undefined,
+  // The pre-release character used within the commit message that inidcates a pre-release (e.g. extracted by env.releaseVersionRegExp, but usually a &quot;-&quot; as defined by semver.org)
+  versionPrereleaseChar : &#39;-&#39;,
   // The major version (e.g. 1 for version &quot;1.2.3&quot;)
   versionMajor : 0,
   // The minor version (e.g. 2 for version &quot;1.2.3&quot;)

@@ -132,7 +132,9 @@ module.exports = function(grunt) {
 						templateData) : '';
 				if (rtn[s]) {
 					grunt.verbose.writeln(s + ' = ' + rtn[s]);
-					rtn.escCmtMsgs.push(coopt.escapeRegExp(rtn[s]));
+					if (s.toLowerCase() !== 'name') {
+						rtn.escCmtMsgs.push(coopt.escapeRegExp(rtn[s]));
+					}
 				}
 			});
 			return rtn;
@@ -585,9 +587,6 @@ module.exports = function(grunt) {
 					});
 				}
 				if (output) {
-					// replace duplicate lines
-					output = (dupsPrefix ? dupsPrefix : '')
-							+ output.replace(coopt.regexDupLines, '$1');
 					// skip content that matches any of the supplied expressions
 					// and the release commit messages performed internally
 					var rxs = Array.isArray(skipRegExps) ? tmpltData.escCmtMsgs
@@ -595,6 +594,10 @@ module.exports = function(grunt) {
 					var rxl = coopt.getLineReplRegExp(rxs);
 					grunt.verbose.writeln('Replacing output using: ' + rxl);
 					output = output.replace(rxl, '');
+					// replace duplicate lines
+					output = (dupsPrefix ? dupsPrefix : '')
+							+ output.replace(coopt.regexDupLines, '$1');
+					// use calculated version instead of trigger version
 					output = replaceVersionTrigger(output);
 					grunt.file.write(dupsPath, output);
 				}
