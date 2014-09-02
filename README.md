@@ -164,7 +164,7 @@ before_script:
 ### Distribution
 By default, a `HISTORY.md` file will be created that will contain a list of commit messages since the last release (the same info that is used as the release description). An `AUTHORS.md` will also be generated that will contain a list of authors since the last release, prefixed with the number of contributed commits. Both of these files along with the contents of the `distDir` (<a href="#default-task-specific-options">filterable</a>) will be published to the `distBranch` (when defined) and used as the contents of the compressed archive assets (zip and tar). An optional `[skip CHANGELOG]` can be appended to any commit message to indicate that the commit message should not be included in `HISTORY.md` and the release description. Alternatively, an array of custom regular expressions can be used in the `chgLogSkipRegExps` option.
 
-### Skips Indicators
+### Skip Indicators
 Skip indicators are used within commit messages to notify underlying systems that a particular operation should not be performed for a particular commit. An example of which is the [skip option for travis-ci](http://docs.travis-ci.com/user/how-to-skip-a-build/). By default, releasebot adds a flag to `releaseSkipTasks` in order to skip additional continuous integration builds when internal releasebot commits are performed (i.e. bumping package versions, etc.). The semantics follow commonly recognized patterns used by various tools (i.e. `[skip ci]`). When the releasebot task is registered it automatically captures all the skip operations/tasks that exist within the current commit message and exposes them via `skipTasks`. This can also be useful within grunt in order to establish conditional task execution based upon the current commit message:
 
 ```js
@@ -284,8 +284,8 @@ Once the releasebot task has been registered commit datails are captured and mad
   versionLabelSep : '',
   // The release version label used within the commit message
   versionType : 'v',
-  // The pre-release character used within the commit message that inidcates a pre-release (e.g. "-" as defined by semver.org)
-  versionPrereleaseChar : undefined,
+  // The pre-release character used within the commit message that inidcates a pre-release (e.g. extracted by env.releaseVersionRegExp, but usually a "-" as defined by semver.org)
+  versionPrereleaseChar : '-',
   // The major version (e.g. 1 for version "1.2.3")
   versionMajor : 0,
   // The minor version (e.g. 2 for version "1.2.3")
