@@ -1,1 +1,5 @@
-<!-- Commit 0bc278b1f9b8c3280718aabb1fd9d751e8cd5413 -->
+<!-- Commit c381db3332072a263d02078d931013ffc94fa081 -->
+  * Release v0.1.3 Fixes #3
+  * Bumping  version to 0.1.4
+  * Rollback: Updating  version to match release version 0.1.3
+  *  Fixes #3
