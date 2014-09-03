@@ -5,7 +5,7 @@
 
 <a href="http://ugate.github.io/releasebot/img/workflow.png">
 Click to view a detailed workflow
-<img src="http://ugate.github.io/releasebot/img/workflow.png" width="100%"/>
+<img src="http://ugate.github.io/releasebot/img/workflow.png" height="800px"/>
 </a>
 
 #### See [this link](//github.com/ugate/releasebot/releases) for example GitHub releasebot generated releases!
