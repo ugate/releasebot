@@ -2,7 +2,7 @@
 
 var npm = require('npm');
 var fs = require('fs');
-var pth = require('path');
+var path = require('path');
 var util = require('util');
 var coopt = require('../lib/coopt');
 var utils = require('../lib/utils');
@@ -58,8 +58,12 @@ module.exports = function(grunt) {
 		var tmpltData = genTemplateData('name', 'pkgCurrVerBumpMsg',
 				'pkgNextVerBumpMsg', 'distBranchPubMsg');
 
-		var chgLogRtn = '', pubSrcDir = '', pubDistDir = '', pubHash = '', pckBumped = false;
+		var chgLogRtn = '', athrsRtn = '', pubHash = '', pckBumped = false, distAssets = [];
 		var distZipAsset = '', distTarAsset = '', distZipAssetName = '', distTarAssetName = '';
+		var pubSrcDir = options.distDir ? path.join(commit.buildDir,
+				options.distDir) : commit.buildDir;
+		var pubDistDir = options.distBranch ? commit.buildDir.replace(
+				commit.reponame, options.distBranch) : '';
 
 		// Start work
 		var rollCall = new RollCall(grunt, options).then(remoteSetup).then(
@@ -222,7 +226,7 @@ module.exports = function(grunt) {
 				}
 				return;
 			}
-			var chgLogPath = options.distDir + '/' + options.chgLog;
+			var chgLogPath = path.join(options.distDir, options.chgLog);
 			var lastGitLog = commit.prev && !commit.prev.versionVacant() ? commit.prev.versionTag
 					+ '..HEAD'
 					: 'HEAD';
@@ -250,10 +254,11 @@ module.exports = function(grunt) {
 				}
 				return;
 			}
-			var authorsPath = options.distDir + '/' + options.authors;
-			cmd('git --no-pager shortlog -sen HEAD > ' + authorsPath, null,
-					false, authorsPath, options.authorsSkipLineRegExp);
-			utils.validateFile(authorsPath, rollCall);
+			var athrsPath = path.join(options.distDir, options.authors);
+			athrsRtn = cmd('git --no-pager shortlog -sen HEAD > ' + athrsPath,
+					null, false, athrsPath, options.authorsSkipLineRegExp)
+					|| '';
+			utils.validateFile(athrsPath, rollCall);
 		}
 
 		/**
@@ -263,39 +268,75 @@ module.exports = function(grunt) {
 			if (commit.pkgPath && commit.distDir
 					&& !/\.|\//.test(commit.distDir)) {
 				// need to update the package included in the distribution
-				pkgUpdate(pth.join(commit.distDir, commit.pkgPath), true);
+				pkgUpdate(path.join(commit.distDir, commit.pkgPath), true);
+			} else if (commit.distDir) {
+				cmd('git add --force ' + options.distDir);
 			}
-			// Commit changes (needed to generate archive asset)
-			cmd('git add --force ' + options.distDir);
-			cmd('git commit -q -m "' + tmpltData.distBranchPubMsg + '"');
+			if (commit.distDir || athrsRtn || chgLogRtn) {
+				// Commit changes (needed to generate archive asset)
+				cmd('git commit -q -m "' + tmpltData.distBranchPubMsg + '"');
+			}
 		}
 
 		/**
 		 * Generates distribution archive assets (i.e. zip/tar)
 		 */
 		function genDistAssets() {
+			if (!commit.distDir) {
+				grunt.log
+						.writeln('Skipping generation of distribution assets (no distDir)');
+				return;
+			}
+			if (!options.distAssetDir) {
+				grunt.log
+						.writeln('Skipping generation of distribution assets (no distAssetDir)');
+				return;
+			}
 			// give taskateers a chance to update branch file contents
 			updateFiles(options.distAssetUpdateFiles,
 					options.distAssetUpdateFunction, commit.buildDir);
 			// Create distribution assets
 			distZipAssetName = commit.reponame + '-' + commit.version
 					+ '-dist.zip';
-			distZipAsset = pth.resolve(options.distAssetDir, distZipAssetName);
-			cmd('git archive -o "' + distZipAsset + '" --format=zip -'
-					+ options.distAssetCompressRatio + ' HEAD:'
-					+ options.distDir);
-			if (grunt.option('verbose')) {
-				grunt.verbose.writeln('Created ' + distZipAsset + ' (size: '
-						+ fs.statSync(distZipAsset).size + ')');
-			}
+			distZipAsset = genAsset(distZipAssetName, 'zip', true,
+					'application/zip');
 			distTarAssetName = commit.reponame + '-' + commit.version
 					+ '-dist.tar.gz';
-			distTarAsset = pth.resolve(options.distAssetDir, distTarAssetName);
-			cmd('git archive -o "' + distTarAsset + '" --format=tar.gz HEAD:'
-					+ options.distDir);
-			if (grunt.option('verbose')) {
-				grunt.verbose.writeln('Created ' + distTarAsset + ' (size: '
-						+ fs.statSync(distTarAsset).size + ')');
+			distTarAsset = genAsset(distZipAssetName, 'tar.gz', false,
+					'application/x-compressed');
+
+			/**
+			 * Generates an Git archive asset and pushes an object
+			 * w/path/name/contentType to the distribution assets {Array}
+			 * 
+			 * @param name
+			 *            the name of the asset file
+			 * @param type
+			 *            the type/format the asset represents
+			 * @param compress
+			 *            true to add the compression ratio to the Git command
+			 * @param ct
+			 *            the Content-Type
+			 * @returns the file path to the asset
+			 */
+			function genAsset(name, type, compress, ct) {
+				var a = path.resolve(options.distAssetDir, name);
+				cmd('git archive -o "'
+						+ a
+						+ '" --format='
+						+ type
+						+ (compress ? ' -' + options.distAssetCompressRatio
+								: '') + ' HEAD:' + options.distDir);
+				if (grunt.option('verbose')) {
+					grunt.verbose.writeln('Created ' + a + ' (size: '
+							+ fs.statSync(a).size + ')');
+				}
+				distAssets.push({
+					path : a,
+					name : name,
+					contentType : ct
+				});
+				return a;
 			}
 		}
 
@@ -312,6 +353,7 @@ module.exports = function(grunt) {
 					+ (chgLogRtn ? chgLogRtn.replace(coopt.regexLines, '$1 \\')
 							: commit.message) + '"');
 			cmd('git push -f ' + options.repoName + ' ' + commit.versionTag);
+			commit.releaseId = commit.versionTag;
 			// TODO : upload asset?
 			rollCall.addRollback(rollbackTag);
 			rollCall.then(publish);
@@ -326,17 +368,9 @@ module.exports = function(grunt) {
 					+ options.gitHostname);
 			// GitHub Release API will not remove the tag when removing a
 			// release
-			github.releaseAndUploadAsset([ {
-				path : distZipAsset,
-				name : distZipAssetName,
-				contentType : 'application/zip'
-			}, {
-				path : distTarAsset,
-				name : distTarAssetName,
-				contentType : 'application/x-compressed'
-			} ], grunt, coopt.regexLines, commit, tmpltData.name, chgLogRtn
-					|| commit.message, options, rollCall, rollbackTag,
-					function() {
+			github.releaseAndUploadAsset(distAssets, grunt, coopt.regexLines,
+					commit, tmpltData.name, chgLogRtn || commit.message,
+					options, rollCall, rollbackTag, function() {
 						rollCall.then(publish);
 					});
 		}
@@ -346,73 +380,67 @@ module.exports = function(grunt) {
 		 * valid ID)
 		 */
 		function publish() {
-			if (!commit.releaseId) {
-				grunt.log.writeln('No release ID Skipping publishing to '
+			if (!options.distBranch) {
+				grunt.log.writeln('Skipping publishing from "' + pubSrcDir
+						+ '" to ' + pubDistDir + ' (no distBranch)');
+				return;
+			} else if (!commit.releaseId) {
+				grunt.log.writeln('Skipping publishing from "' + pubSrcDir
+						+ '" to "' + pubDistDir + '" in branch "'
+						+ options.distBranch + '" (no releaseId/tag)');
+				return;
+			}
+			grunt.log.writeln('Publishing to branch "' + options.distBranch
+					+ '"');
+			grunt.log.writeln('Copying publication directories/files from "'
+					+ pubSrcDir + '" to "' + pubDistDir + '"');
+			// copy all directories/files over that need to be published
+			// so that they are not removed by the following steps
+			grunt.log.writeln(utils
+					.copyRecursiveSync(pubSrcDir, pubDistDir,
+							options.distExcludeDirRegExp,
+							options.distExcludeFileRegExp).toString());
+			// cmd('cp -r ' + path.join(pubSrcDir, '*') + ' ' + pubDistDir);
+			chkoutRun(null, publishRun);
+			function publishRun() {
+				try {
+					cmd('git fetch ' + options.repoName + ' '
+							+ options.distBranch);
+					pubHash = cmd('git rev-parse HEAD');
+				} catch (e) {
+					if (util.isRegExp(options.distBranchCreateRegExp)
+							&& options.distBranchCreateRegExp.test(e.message)) {
+						cmd('git checkout -q --orphan ' + options.distBranch);
+					} else {
+						throw e;
+					}
+				}
+				if (pubHash) {
+					cmd('git checkout -q --track ' + options.repoName + '/'
+							+ options.distBranch);
+				}
+				cmd('git rm -rfq .');
+				cmd('git clean -dfq .');
+				grunt.log
+						.writeln('Copying publication directories/files from "'
+								+ pubDistDir + '" to "' + commit.buildDir + '"');
+				grunt.log.writeln(utils.copyRecursiveSync(pubDistDir,
+						commit.buildDir).toString());
+				// cmd('cp -r ' + path.join(pubDistDir, '*') + '
+				// .');
+
+				// give taskateers a chance to update branch file
+				// contents
+				updateFiles(options.distBranchUpdateFiles,
+						options.distBranchUpdateFunction, commit.buildDir);
+
+				cmd('git add -A');
+				cmd('git commit -q -m "' + tmpltData.distBranchPubMsg + '"');
+				cmd('git push -f ' + options.repoName + ' '
 						+ options.distBranch);
-			} else if (!options.distBranch) {
-				grunt.verbose.writeln('Skipping publishing distribution');
-			} else {
-				grunt.log.writeln('Publishing to ' + options.distBranch);
-				pubSrcDir = pth.join(commit.buildDir, options.distDir);
-				pubDistDir = commit.buildDir.replace(commit.reponame,
-						options.distBranch);
-				grunt.log.writeln('Copying publication directories/files from '
-						+ pubSrcDir + ' to ' + pubDistDir);
-				// copy all directories/files over that need to be published
-				// so that they are not removed by the following steps
-				grunt.log.writeln(utils.copyRecursiveSync(pubSrcDir,
-						pubDistDir, options.distExcludeDirRegExp,
-						options.distExcludeFileRegExp).toString());
-				// cmd('cp -r ' + pth.join(pubSrcDir, '*') + ' ' + pubDistDir);
-				chkoutRun(
-						null,
-						function() {
-							try {
-								cmd('git fetch ' + options.repoName + ' '
-										+ options.distBranch);
-								pubHash = cmd('git rev-parse HEAD');
-							} catch (e) {
-								if (util
-										.isRegExp(options.distBranchCreateRegExp)
-										&& options.distBranchCreateRegExp
-												.test(e.message)) {
-									cmd('git checkout -q --orphan '
-											+ options.distBranch);
-								} else {
-									throw e;
-								}
-							}
-							if (pubHash) {
-								cmd('git checkout -q --track '
-										+ options.repoName + '/'
-										+ options.distBranch);
-							}
-							cmd('git rm -rfq .');
-							cmd('git clean -dfq .');
-							grunt.log
-									.writeln('Copying publication directories/files from '
-											+ pubDistDir
-											+ ' to '
-											+ commit.buildDir);
-							grunt.log.writeln(utils.copyRecursiveSync(
-									pubDistDir, commit.buildDir).toString());
-							// cmd('cp -r ' + pth.join(pubDistDir, '*') + ' .');
 
-							// give taskateers a chance to update branch file
-							// contents
-							updateFiles(options.distBranchUpdateFiles,
-									options.distBranchUpdateFunction,
-									commit.buildDir);
-
-							cmd('git add -A');
-							cmd('git commit -q -m "'
-									+ tmpltData.distBranchPubMsg + '"');
-							cmd('git push -f ' + options.repoName + ' '
-									+ options.distBranch);
-
-							rollCall.addRollback(rollbackPublish);
-							rollCall.then(publishNpm);
-						});
+				rollCall.addRollback(rollbackPublish);
+				rollCall.then(publishNpm);
 			}
 		}
 
@@ -637,17 +665,17 @@ module.exports = function(grunt) {
 		 *            the {Array} of files to read/write
 		 * @param func
 		 *            the function to call for the read/write operation
-		 * @param path
+		 * @param bpath
 		 *            the base path to that will be used to prefix each file
 		 *            used in the update process
 		 * @returns {String} the replaced URL (undefined if nothing was
 		 *          replaced)
 		 */
-		function updateFiles(files, func, path) {
+		function updateFiles(files, func, bpath) {
 			try {
 				if (Array.isArray(files) && typeof func === 'function') {
 					for (var i = 0; i < files.length; i++) {
-						var p = pth.join(path, files[i]), au = '';
+						var p = path.join(bpath, files[i]), au = '';
 						var content = grunt.file.read(p, {
 							encoding : grunt.file.defaultEncoding
 						});
