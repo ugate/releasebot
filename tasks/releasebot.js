@@ -282,7 +282,7 @@ module.exports = function(grunt) {
 		 * Generates distribution archive assets (i.e. zip/tar)
 		 */
 		function genDistAssets() {
-			if (!commit.distDir) {
+			if (!options.distDir) {
 				grunt.log
 						.writeln('Skipping generation of distribution assets (no distDir)');
 				return;
