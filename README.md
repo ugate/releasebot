@@ -7,7 +7,7 @@
 
 <img src="http://ugate.github.io/releasebot/img/github.png"/>
 
-#### [Click here](tree/gh-pages) for example GitHub releasebot generated `gh-pages`!
+#### [Click here](//github.com/ugate/releasebot/tree/gh-pages) for example GitHub releasebot generated `gh-pages`!
 
 #### [Click here](//ugate.github.io/releasebot/img/workflow.png) to view a detailed workflow of what actions are performed by releasebot!
 

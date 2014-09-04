@@ -302,7 +302,7 @@ module.exports = function(grunt) {
 					'application/zip');
 			distTarAssetName = commit.reponame + '-' + commit.version
 					+ '-dist.tar.gz';
-			distTarAsset = genAsset(distZipAssetName, 'tar.gz', false,
+			distTarAsset = genAsset(distTarAssetName, 'tar.gz', false,
 					'application/x-compressed');
 
 			/**
