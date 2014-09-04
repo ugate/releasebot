@@ -88,7 +88,7 @@ module.exports = function(grunt) {
 			try {
 				if (ecnt <= 0 && tmpltData.pkgNextVerBumpMsg) {
 					// bump to next version
-					pkgUpdate(null, false, true);
+					pkgUpdate(null, false, true, true);
 				}
 			} catch (e) {
 				rollCall.error('Failed to bump next release version', e);
@@ -161,13 +161,17 @@ module.exports = function(grunt) {
 		 *            true to only update the package file
 		 * @param isNext
 		 *            true when the version should be updated to the next
-		 *            version versus the default curront one
+		 *            version versus the default current one
+		 * @param noRollback
+		 *            true to exclude a rollback for the update
 		 */
-		function pkgUpdate(altPkgPath, noPush, isNext) {
+		function pkgUpdate(altPkgPath, noPush, isNext, noRollback) {
 			chkoutRun(commit.branch, upkg, false, isNext);
-			rollCall.addRollback(function() {
-				chkoutRun(commit.branch, upkg, true);
-			});
+			if (!noRollback) {
+				rollCall.addRollback(function pkgUpdateRollback() {
+					chkoutRun(commit.branch, upkg, true);
+				});
+			}
 			function upkg(revert, next) {
 				commit.versionPkg(options.pkgJsonReplacer,
 						options.pkgJsonSpace, revert, next, pkgWritable,
@@ -260,12 +264,15 @@ module.exports = function(grunt) {
 		 */
 		function addAndCommitDistDir() {
 			if (commit.pkgPath && options.distDir
-					&& !/\.|\//.test(options.distDir)) {
+					&& !/^(?:\.|\/)[^\.]/.test(options.distDir)) {
 				// need to update the package included in the distribution
-				pkgUpdate(path.join(options.distDir, commit.pkgPath), true);
+				pkgUpdate(path.join(options.distDir, commit.pkgPath), true,
+						false, true);
 			} else if (options.distDir) {
 				cmd('git add --force ' + options.distDir);
 			}
+			grunt.log.writeln('Dist changes: '
+					+ (options.distDir || athrsRtn || chgLogRtn));
 			if (options.distDir || athrsRtn || chgLogRtn) {
 				// Commit changes (needed to generate archive asset)
 				cmd('git commit -q -m "' + tmpltData.distBranchPubMsg + '"');
