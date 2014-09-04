@@ -1,29 +1,12 @@
 <!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html;charset=utf-8" /><title>releasebot</title><link href="css/index.css" rel="stylesheet" media="screen" /></head><body><h1 id="-a-href-http-ugate-github-io-releasebot-img-src-http-ugate-github-io-releasebot-img-logo-svg-a-"><a href="http://ugate.github.io/releasebot"><img src="http://ugate.github.io/releasebot/img/logo.svg"/></a></h1>
 <p><a href="http://badge.fury.io/js/releasebot"><img src="https://badge.fury.io/js/releasebot.png" alt="NPM version"></a> <a href="https://www.npmjs.org/package/releasebot"><img src="http://img.shields.io/npm/dm/releasebot.svg" alt="NPM downloads"></a> <a href="https://travis-ci.org/ugate/releasebot"><img src="https://travis-ci.org/ugate/releasebot.png?branch=master" alt="Build Status"></a> <a href="https://david-dm.org/ugate/releasebot"><img src="https://david-dm.org/ugate/releasebot.png" alt="Dependency Status"></a> <a href="https://david-dm.org/ugate/releasebot#info=devDependencies"><img src="https://david-dm.org/ugate/releasebot/dev-status.png" alt="devDependency Status"></a></p>
-<p><strong>releasebot</strong> is a <a href="http://gruntjs.com/">Grunt</a> task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>. The task performs the following actions:</p>
-<ol>
-<li><a href="https://www.kernel.org/pub/software/scm/git/docs/git-rev-parse.html">Capture</a> <a href="https://www.kernel.org/pub/software/scm/git/docs/git-show.html">commit</a> <a href="https://www.kernel.org/pub/software/scm/git/docs/git-remote.html">details</a> <a href="https://www.kernel.org/pub/software/scm/git/docs/git-describe.html">from Git</a> (on task registration)</li>
-<li>Check for <a href="#default-task-specific-options">release trigger</a> within commit message</li>
-<li><a href="https://www.npmjs.org/doc/cli/npm-update.html">Update package version</a> to current release version (if needed) &clubs; &spades;</li>
-<li>Capture/write <a href="https://www.kernel.org/pub/software/scm/git/docs/git-log.html">change log and/or authors</a> (if directed) &clubs; &spades;</li>
-<li><a href="https://www.kernel.org/pub/software/scm/git/docs/git-archive.html">Generate release archive assets</a> (zip and tar) &clubs; &spades;</li>
-<li><a href="http://developer.github.com/v3/repos/releases/#create-a-release">Release</a>/<a href="https://www.kernel.org/pub/software/scm/git/docs/git-tag.html">Tag</a> version (with <a href="https://www.kernel.org/pub/software/scm/git/docs/git-log.html">change log</a> as description) &clubs; &hearts;</li>
-<li><a href="http://developer.github.com/v3/repos/releases/#upload-a-release-asset">Upload archive assets</a> &diams; &clubs; &hearts; &spades;</li>
-<li>Publish/<a href="https://www.kernel.org/pub/software/scm/git/docs/git-push.html">Push</a> release distribution contents to distribution/pages/docs branch (creating the branch- if needed) &clubs; &hearts; &spades;</li>
-<li><a href="https://www.npmjs.org/doc/cli/npm-publish.html">Publish</a> release archive asset to <a href="https://www.npmjs.org/">npm</a> &clubs; &hearts; &spades;</li>
-<li><a href="https://www.npmjs.org/doc/cli/npm-update.html">Update/Bump package version</a> to next release version (auto increment or specified in commit message) &clubs; &spades;</li>
-</ol>
-<p>&clubs; Performed when only when release is triggered <br/>
-&diams; GitHub only <br/>
-&spades; Optional <br/>
-&hearts; Failure will result in the following <em>default</em> roll back sequence (<a href="#default-task-specific-options">additional roll back strategies</a>):</p>
-<ol>
-<li><a href="http://developer.github.com/v3/repos/releases/#delete-a-release-asset">Remove remote release archive assets</a> &diams; and <a href="https://www.kernel.org/pub/software/scm/git/docs/git-push.html">tagged</a> <a href="http://developer.github.com/v3/repos/releases/#delete-a-release">release</a> (if needed)</li>
-<li><a href="https://www.kernel.org/pub/software/scm/git/docs/git-revert.html">Revert</a> published distribution content from distribution/pages/docs branch (if needed)</li>
-<li><a href="https://www.npmjs.org/doc/cli/npm-update.html">Revert package version</a> (if needed)</li>
-</ol>
+<p><strong>releasebot</strong> is a <a href="http://gruntjs.com/">Grunt</a> task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>.</p>
 <h4 id="see-this-link-github-com-ugate-releasebot-releases-for-example-github-releasebot-generated-releases-">See <a href="//github.com/ugate/releasebot/releases">this link</a> for example GitHub releasebot generated releases!</h4>
 <p><img src="http://ugate.github.io/releasebot/img/github.png"/></p>
+<p><a href="http://ugate.github.io/releasebot/img/workflow.png">
+Click to view a detailed workflow of what actions are performed by releasebot
+<img src="http://ugate.github.io/releasebot/img/workflow.png" height="800px"/>
+</a></p>
 <h2 id="usage-examples">Usage Examples</h2>
 <p>Each commit message will be checked for the presence of a version to release. The default expression checks for <code>release v</code> followed by a <a href="http://semver.org/">semantic compliant version</a> or a <code>+</code> or <code>*</code> within the appropriate version <em>slot</em> indicating the version should be either <em>incremented</em> by the number of <code>+</code> for a given slot or that the value should be replaced by the <em>last/currently</em> released version (respectively).</p>
 <p>The commit message below will result in a release of version <code>1.0.0</code> (surrounding text will be ignored):</p>
@@ -254,11 +237,11 @@ grunt.registerTask(&#39;build&#39;, buildTasks.tasks);
   // The name that will appear on GitHub (grunt template parsed using any &quot;commit&quot;, task &quot;options&quot;, &quot;env&quot; or &quot;process&quot; properties)
   name : &#39;&lt;%= commit.versionTag %&gt;&#39;,
   // Commit message used when the package version does not match the version being released and needs to be updated
-  pkgCurrVerBumpMsg : &#39;Updating &lt;%= env.pckPath %&gt; version to match release version &lt;%= commit.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
+  pkgCurrVerBumpMsg : &#39;releasebot: Updating &lt;%= env.pkgPath %&gt; version to match release version &lt;%= commit.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
   // Commit message used for incrementing to the next release version once the current release completes (null to disable feature)
-  pkgNextVerBumpMsg : &#39;Bumping &lt;%= env.pckPath %&gt; version to &lt;%= commit.next.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
+  pkgNextVerBumpMsg : &#39;releasebot: Bumping &lt;%= env.pkgPath %&gt; version to &lt;%= commit.next.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
   // Commit message used when publishing to the distribution branch
-  distBranchPubMsg : &#39;Publishing &lt;%= commit.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
+  distBranchPubMsg : &#39;releasebot: Publishing &lt;%= commit.version %&gt; &lt;%= commit.skipTaskGen(options.releaseSkipTasks) %&gt;&#39;,
   // The package replacer option sent into JSON.stringify during package version updates
   pkgJsonReplacer : null,
   // The package space option sent into JSON.stringify during package version updates
@@ -279,16 +262,21 @@ grunt.registerTask(&#39;build&#39;, buildTasks.tasks);
   chgLogLineFormat : &#39;  * %s&#39;,
   // Flag to indicate that the release will fail when the change log cannot be validated
   chgLogRequired : true,
-  // Array of regular expressions that will be used to against each line of the change log that when matched will be removed (each item in array will be concatenated via OR in final expression)
-  // the changelog entry will always be present, even if it&#39;s not passed- removes lines with [skip changelog]
-  chgLogSkipRegExps : [],
+  // Array of regular expressions that will be used to against each line of the change log that when matched will be removed
+  // - array elements can be a regular expression or a string (strings will be escaped before the final expression is applied)
+  // - array elements will be concatenated via OR in the final expression that is applied
+  // - any flags used within a passed regular expression will not be applied
+  // - matches for each array element will be case-insensitive
+  // - the changelog entry will always be present, even if it&#39;s not passed- removes lines with [skip changelog]
+  // - if you don&#39;t want commit messages that are releasebot generated to show up in your change log make sure to include a unique key in the appropriate message options as well as one of the array elements (default will exclude)
+  chgLogSkipRegExps : [ &#39;releasebot: &#39; ],
   // Flag to indicate that the release will fail when the authors log cannot be validated
   authorsRequired : false,
   // Regular expression that will be used to skip individual lines from being used within the authors log
   authorsSkipLineRegExp : null,
   // The branch that will be used to distribute released pages/documentation or other distribution assets to (null to skip)
   distBranch : &#39;gh-pages&#39;,
-  // The directory that will be used to distribute released pages/documentation or other distribution assets from
+  // The directory that will be used to distribute released pages/documentation and distribution assets from (path is relative to buildDir)
   distDir : &#39;dist&#39;,
   // Regular expression that will be used to check the error output of a Git fetch for the distBranch, when there&#39;s a match an attempt will be made to create the distBranch
   distBranchCreateRegExp : /Couldn&#39;t find remote ref/i,

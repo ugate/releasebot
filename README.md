@@ -1,31 +1,16 @@
 # <a href="http://ugate.github.io/releasebot"><img src="http://ugate.github.io/releasebot/img/logo.svg"/></a>
 [![NPM version](https://badge.fury.io/js/releasebot.png)](http://badge.fury.io/js/releasebot) [![NPM downloads](http://img.shields.io/npm/dm/releasebot.svg)](https://www.npmjs.org/package/releasebot) [![Build Status](https://travis-ci.org/ugate/releasebot.png?branch=master)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
 
-**releasebot** is a [Grunt](http://gruntjs.com/) task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>. The task performs the following actions:
-
-1. [Capture](https://www.kernel.org/pub/software/scm/git/docs/git-rev-parse.html) [commit](https://www.kernel.org/pub/software/scm/git/docs/git-show.html) [details](https://www.kernel.org/pub/software/scm/git/docs/git-remote.html) [from Git](https://www.kernel.org/pub/software/scm/git/docs/git-describe.html) (on task registration)
-2. Check for <a href="#default-task-specific-options">release trigger</a> within commit message
-3. [Update package version](https://www.npmjs.org/doc/cli/npm-update.html) to current release version (if needed) &clubs; &spades;
-4. Capture/write [change log and/or authors](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) (if directed) &clubs; &spades;
-5. [Generate release archive assets](https://www.kernel.org/pub/software/scm/git/docs/git-archive.html) (zip and tar) &clubs; &spades;
-6. [Release](http://developer.github.com/v3/repos/releases/#create-a-release)/[Tag](https://www.kernel.org/pub/software/scm/git/docs/git-tag.html) version (with [change log](https://www.kernel.org/pub/software/scm/git/docs/git-log.html) as description) &clubs; &hearts;
-7. [Upload archive assets](http://developer.github.com/v3/repos/releases/#upload-a-release-asset) &diams; &clubs; &hearts; &spades;
-8. Publish/[Push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) release distribution contents to distribution/pages/docs branch (creating the branch- if needed) &clubs; &hearts; &spades;
-10. [Publish](https://www.npmjs.org/doc/cli/npm-publish.html) release archive asset to <a href="https://www.npmjs.org/">npm</a> &clubs; &hearts; &spades;
-11. [Update/Bump package version](https://www.npmjs.org/doc/cli/npm-update.html) to next release version (auto increment or specified in commit message) &clubs; &spades;
-
-&clubs; Performed when only when release is triggered <br/>
-&diams; GitHub only <br/>
-&spades; Optional <br/>
-&hearts; Failure will result in the following *default* roll back sequence (<a href="#default-task-specific-options">additional roll back strategies</a>):
-
-1. [Remove remote release archive assets](http://developer.github.com/v3/repos/releases/#delete-a-release-asset) &diams; and [tagged](https://www.kernel.org/pub/software/scm/git/docs/git-push.html) [release](http://developer.github.com/v3/repos/releases/#delete-a-release) (if needed)
-2. [Revert](https://www.kernel.org/pub/software/scm/git/docs/git-revert.html) published distribution content from distribution/pages/docs branch (if needed)
-3. [Revert package version](https://www.npmjs.org/doc/cli/npm-update.html) (if needed)
+**releasebot** is a [Grunt](http://gruntjs.com/) task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>.
 
 #### See [this link](//github.com/ugate/releasebot/releases) for example GitHub releasebot generated releases!
 
 <img src="http://ugate.github.io/releasebot/img/github.png"/>
+
+<a href="http://ugate.github.io/releasebot/img/workflow.png">
+Click to view a detailed workflow of what actions are performed by releasebot
+<img src="http://ugate.github.io/releasebot/img/workflow.png" height="800px"/>
+</a>
 
 ## Usage Examples
 
@@ -327,11 +312,11 @@ Once the releasebot task has been registered commit datails are captured and mad
   // The name that will appear on GitHub (grunt template parsed using any "commit", task "options", "env" or "process" properties)
   name : '<%= commit.versionTag %>',
   // Commit message used when the package version does not match the version being released and needs to be updated
-  pkgCurrVerBumpMsg : 'Updating <%= env.pckPath %> version to match release version <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
+  pkgCurrVerBumpMsg : 'releasebot: Updating <%= env.pkgPath %> version to match release version <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
   // Commit message used for incrementing to the next release version once the current release completes (null to disable feature)
-  pkgNextVerBumpMsg : 'Bumping <%= env.pckPath %> version to <%= commit.next.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
+  pkgNextVerBumpMsg : 'releasebot: Bumping <%= env.pkgPath %> version to <%= commit.next.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
   // Commit message used when publishing to the distribution branch
-  distBranchPubMsg : 'Publishing <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
+  distBranchPubMsg : 'releasebot: Publishing <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
   // The package replacer option sent into JSON.stringify during package version updates
   pkgJsonReplacer : null,
   // The package space option sent into JSON.stringify during package version updates
@@ -352,16 +337,21 @@ Once the releasebot task has been registered commit datails are captured and mad
   chgLogLineFormat : '  * %s',
   // Flag to indicate that the release will fail when the change log cannot be validated
   chgLogRequired : true,
-  // Array of regular expressions that will be used to against each line of the change log that when matched will be removed (each item in array will be concatenated via OR in final expression)
-  // the changelog entry will always be present, even if it's not passed- removes lines with [skip changelog]
-  chgLogSkipRegExps : [],
+  // Array of regular expressions that will be used to against each line of the change log that when matched will be removed
+  // - array elements can be a regular expression or a string (strings will be escaped before the final expression is applied)
+  // - array elements will be concatenated via OR in the final expression that is applied
+  // - any flags used within a passed regular expression will not be applied
+  // - matches for each array element will be case-insensitive
+  // - the changelog entry will always be present, even if it's not passed- removes lines with [skip changelog]
+  // - if you don't want commit messages that are releasebot generated to show up in your change log make sure to include a unique key in the appropriate message options as well as one of the array elements (default will exclude)
+  chgLogSkipRegExps : [ 'releasebot: ' ],
   // Flag to indicate that the release will fail when the authors log cannot be validated
   authorsRequired : false,
   // Regular expression that will be used to skip individual lines from being used within the authors log
   authorsSkipLineRegExp : null,
   // The branch that will be used to distribute released pages/documentation or other distribution assets to (null to skip)
   distBranch : 'gh-pages',
-  // The directory that will be used to distribute released pages/documentation or other distribution assets from
+  // The directory that will be used to distribute released pages/documentation and distribution assets from (path is relative to buildDir)
   distDir : 'dist',
   // Regular expression that will be used to check the error output of a Git fetch for the distBranch, when there's a match an attempt will be made to create the distBranch
   distBranchCreateRegExp : /Couldn't find remote ref/i,
