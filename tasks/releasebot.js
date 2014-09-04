@@ -112,9 +112,7 @@ module.exports = function(grunt) {
 		 * Generates an object that contains each of the passed arguments as a
 		 * property with a value of an option with the same name. Each property
 		 * will have a value for that option that is parsed using the grunt
-		 * template processor. When the processed value exists it will also be
-		 * escaped for regular expression use and added to the escCmtMsgs
-		 * {Array} property
+		 * template processor.
 		 * 
 		 * @returns all of the grunt template parsed data
 		 */
@@ -127,18 +125,13 @@ module.exports = function(grunt) {
 					options : options
 				}
 			};
-			var rtn = {
-				escCmtMsgs : []
-			};
+			var rtn = {};
 			var arr = Array.prototype.slice.call(arguments, 0);
 			arr.forEach(function genIntMsgs(s) {
 				rtn[s] = options[s] ? grunt.template.process(options[s],
 						templateData) : '';
 				if (rtn[s]) {
 					grunt.verbose.writeln(s + ' = ' + rtn[s]);
-					if (s.toLowerCase() !== 'name') {
-						rtn.escCmtMsgs.push(coopt.escapeRegExp(rtn[s]));
-					}
 				}
 			});
 			return rtn;
@@ -616,10 +609,7 @@ module.exports = function(grunt) {
 				}
 				if (output) {
 					// skip content that matches any of the supplied expressions
-					// and the release commit messages performed internally
-					var rxs = Array.isArray(skipRegExps) ? tmpltData.escCmtMsgs
-							.concat(skipRegExps) : tmpltData.escCmtMsgs;
-					var rxl = coopt.getLineReplRegExp(rxs);
+					var rxl = coopt.getLineReplRegExp(skipRegExps);
 					grunt.verbose.writeln('Replacing output using: ' + rxl);
 					output = output.replace(rxl, '');
 					// replace duplicate lines
