@@ -86,7 +86,7 @@ module.exports = function(grunt) {
 
 			// non-critical cleanup
 			try {
-				if (tmpltData.pkgNextVerBumpMsg) {
+				if (ecnt <= 0 && tmpltData.pkgNextVerBumpMsg) {
 					// bump to next version
 					pkgUpdate(null, false, true);
 				}
@@ -94,6 +94,7 @@ module.exports = function(grunt) {
 				rollCall.error('Failed to bump next release version', e);
 			}
 			try {
+				// update the commit task
 				coopt._cloneAndSetCommitTask(commitTask);
 			} catch (e) {
 				rollCall.error('Failed to set global commit result properties',
