@@ -258,14 +258,14 @@ module.exports = function(grunt) {
 		 * Adds/Commits everything in the distribution directory for tracking
 		 */
 		function addAndCommitDistDir() {
-			if (commit.pkgPath && commit.distDir
-					&& !/\.|\//.test(commit.distDir)) {
+			if (commit.pkgPath && options.distDir
+					&& !/\.|\//.test(options.distDir)) {
 				// need to update the package included in the distribution
-				pkgUpdate(path.join(commit.distDir, commit.pkgPath), true);
-			} else if (commit.distDir) {
+				pkgUpdate(path.join(options.distDir, commit.pkgPath), true);
+			} else if (options.distDir) {
 				cmd('git add --force ' + options.distDir);
 			}
-			if (commit.distDir || athrsRtn || chgLogRtn) {
+			if (options.distDir || athrsRtn || chgLogRtn) {
 				// Commit changes (needed to generate archive asset)
 				cmd('git commit -q -m "' + tmpltData.distBranchPubMsg + '"');
 			}
