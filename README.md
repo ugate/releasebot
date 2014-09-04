@@ -3,14 +3,15 @@
 
 **releasebot** is a [Grunt](http://gruntjs.com/) task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>.
 
-#### See [this link](//github.com/ugate/releasebot/releases) for example GitHub releasebot generated releases!
+#### [Click here](//github.com/ugate/releasebot/releases) for example GitHub releasebot generated releases!
 
 <img src="http://ugate.github.io/releasebot/img/github.png"/>
 
-<a href="http://ugate.github.io/releasebot/img/workflow.png">
-Click to view a detailed workflow of what actions are performed by releasebot
-<img src="http://ugate.github.io/releasebot/img/workflow.png" height="800px"/>
-</a>
+#### [Click here](tree/gh-pages) for example GitHub releasebot generated `gh-pages`!
+
+#### [Click here](//ugate.github.io/releasebot/img/workflow.png) to view a detailed workflow of what actions are performed by releasebot!
+
+<img src="http://ugate.github.io/releasebot/img/workflow.png" height="200px"/>
 
 ## Usage Examples
 
