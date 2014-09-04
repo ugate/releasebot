@@ -267,13 +267,12 @@ module.exports = function(grunt) {
 					&& !/^(?:\.|\/)[^\.]/.test(options.distDir)) {
 				// need to update the package included in the distribution
 				pkgUpdate(path.join(options.distDir, commit.pkgPath), true,
-						false, true);
-			} else if (options.distDir) {
-				cmd('git add --force ' + options.distDir);
+						false);
 			}
-			grunt.log.writeln('Dist changes: '
-					+ (options.distDir || athrsRtn || chgLogRtn));
 			if (options.distDir || athrsRtn || chgLogRtn) {
+				if (options.distDir) {
+					cmd('git add --force ' + options.distDir);
+				}
 				// Commit changes (needed to generate archive asset)
 				cmd('git commit -q -m "' + tmpltData.distBranchPubMsg + '"');
 			}
