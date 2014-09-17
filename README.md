@@ -1,7 +1,7 @@
 # <a href="http://ugate.github.io/releasebot"><img src="http://ugate.github.io/releasebot/img/logo.svg"/></a>
-[![NPM version](https://badge.fury.io/js/releasebot.png)](http://badge.fury.io/js/releasebot) [![NPM downloads](http://img.shields.io/npm/dm/releasebot.svg)](https://www.npmjs.org/package/releasebot) [![Build Status](https://travis-ci.org/ugate/releasebot.png?branch=master)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
+[![NPM version](http://img.shields.io/npm/v/releasebot.svg?style=flat)](https://npmjs.org/package/releasebot) [![NPM downloads](http://img.shields.io/npm/dm/releasebot.svg?style=flat)](https://www.npmjs.org/package/releasebot) [![Build Status](http://img.shields.io/travis/ugate/releasebot/master.svg?style=flat)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
 
-**releasebot** is a [Grunt](http://gruntjs.com/) task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>. If any of the release actions fail, any prior actions that have successfully completed will be [rolled back to their previous state](//ugate.github.io/releasebot/img/workflow.png). 
+**releasebot** is a task for triggering an automated release process when a commit message matches a predefined regular expression. The commit message that triggers the automated release process can also be <a href="#default-global-plug-in-environment-options">specified rather than extracted from a commit message</a>. If any of the release actions fail, any prior actions that have successfully completed will be [rolled back to their previous state](//ugate.github.io/releasebot/img/workflow.png). Both [Grunt](http://gruntjs.com/) and [Gulp](http://gulpjs.com/) are supported!
 
 #### [Click here](//github.com/ugate/releasebot/releases) for example GitHub releasebot generated releases!
 
@@ -57,6 +57,12 @@ To release version `2.0.0` when the latest release is `1.1.1` via the [grunt cli
 grunt releasebot --releasebot.commitMessage="Release v+.0.0"
 ```
 
+To release version `2.0.0` when the latest release is `1.1.1` via the [gulp cli](https://github.com/gulpjs/gulp/blob/master/docs/CLI.md):
+
+```shell
+gulp releasebot --releasebot.commitMessage="Release v+.0.0"
+```
+
 For you [node-semver purists](https://www.npmjs.org/doc/misc/semver.html#functions) you can use the syntax `release v+RELEASE_TYPE` where RELEASE_TYPE is one of the defined values passed into [inc(v, release)](https://www.npmjs.org/doc/misc/semver.html#functions).
 
 To release version `2.0.0` when the latest release is `1.0.0`:
@@ -88,6 +94,9 @@ release v*.*.+-beta.1 bump v*.*.*-rc.*
 As you can see the *release* version use of `*` and `+` is relative to the *last/currently* released version. In contrast, the *bump* version use of `*` and `+` is based upon the version that's being released.
 
 ## Getting Started
+
+####[Grunt](http://gruntjs.com/)
+
 If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
 
 ```shell
@@ -96,8 +105,22 @@ npm install releasebot --save-dev
 
 Once the plugin has been installed, it may be enabled inside your Gruntfile with this line of JavaScript:
 
-```shell
+```js
 grunt.loadNpmTasks('releasebot');
+```
+
+####[Gulp](http://gulpjs.com/)
+
+If you haven't used [Gulp](http://gulpjs.com/) before, be sure to check out the [Getting Started](https://github.com/gulpjs/gulp/blob/master/docs/getting-started.md) guide, as it explains how to create a gulpfile as well as install and use Gulp plugins. Once you're familiar with that process, you may install this plugin with this command:
+
+```shell
+npm install releasebot --save-dev
+```
+
+Once the plugin has been installed, it may be enabled inside your gulpfile with this line of JavaScript:
+
+```js
+require('gulp').task('releasebot', require('releasebot'));
 ```
 
 ####[Git](http://git-scm.com/)
@@ -127,18 +150,20 @@ git:
 
 ####[NPM](https://www.npmjs.org/)
 
-If you're using travis-ci and do not require any of the built-in npm capabilities that releasebot has to offer, it's recommended that you use [the npm deploy option offered by travis-ci](http://docs.travis-ci.com/user/deployment/npm/). 
+If you're using travis-ci and do not require any of the built-in npm publish capabilities that releasebot has to offer, it's recommended that you use [the npm deploy option offered by travis-ci](http://docs.travis-ci.com/user/deployment/npm/).
+
+Linking the global npm module or installing the local npm module (outlined below) is only necessary when using the releasebot npm publish options.
 
 In order to enable releasebot's `npm publish` step, a token needs to be generated by executing `npm login` from the command line. You will be prompted for your credentials. Once authenticated, an `_auth` entry will be added to your user directory in a file named `~/.npmrc`. The value can be used to set the `process.env.NPM_TOKEN` which releasebot uses to authenticate the npm publishing process. If your using <a href="#travis-ci">Travis CI</a> it's recommended you encrypt the npm token following the [travis encrypttion guidlines](http://docs.travis-ci.com/user/encryption-keys/) (e.g. `travis encrypt NPM_TOKEN=secretvaluefrom_auth`).
 
-**Tips:** 
-
-* If you encounter `Cannot find module 'npm'` and are using `.travis.yml` add the following to link the global npm that comes with node js (alternatively, you can `npm install npm` locally in your project):
+If you are using travis-ci you will have to add the following to link the global npm that comes with node in your `.travis.yml` (non-ci environments you can just issue `npm link npm` at your package dir):
 
 ```yaml
 before_script:
 - npm link npm
 ```
+
+**Tips:**
 
 * If you encounter [an error similar to](https://github.com/travis-ci/travis-ci/issues/1588) `The authenticity of host 'github.com' can't be established` while using `.travis.yml` add the following:
 
@@ -147,11 +172,25 @@ before_script:
 - echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 ```
 
+####[Bower](http://bower.io)
+
+Linking the global bower module or installing the local bower module (outlined below) is only necessary when using the releasebot bower lookup/register options.
+
+If the `pkgPathBower` option points to a valid [bower JSON file](https://github.com/bower/bower.json-spec) (typically `bower.json`) and a valid `pkgPath` exists, they will be synchronized as releases are issued. Only property names defined in the `pkgPropSync` array will be synchronized between package JSON when the task is registered and a release has been triggered. Properties will be matched at the first-level only (e.g. `version` will match `{"version":"0.0.1"}`, but will not match `{"someProp":{"version":"0.0.1"}}`). The `name` defined in the bower package will be used to ["lookup"](http://bower.io/docs/api/#lookup) the package in the bower registry to see if it exists (at release time). When no match is found, an attempt will be made to ["register"](http://bower.io/docs/api/#register) the bower package using the defined `name`. Consecutive releases are automatically handled by bower using tagged releases issued to Git.
+
+If you are using travis-ci you will have to add the following to install bower and link it to your module in your `.travis.yml` (non-ci environments you can just issue `npm install -g bower` and `npm link bower` at your package dir):
+
+```yaml
+before_script:
+- npm install -g bower
+- npm link bower
+```
+
 ### Distribution
 By default, a `HISTORY.md` file will be created that will contain a list of commit messages since the last release (the same info that is used as the release description). An `AUTHORS.md` will also be generated that will contain a list of authors since the last release, prefixed with the number of contributed commits. Both of these files along with the contents of the `distDir` (<a href="#default-task-specific-options">filterable</a>) will be published to the `distBranch` (when defined) and used as the contents of the compressed archive assets (zip and tar). An optional `[skip CHANGELOG]` can be appended to any commit message to indicate that the commit message should not be included in `HISTORY.md` and the release description. Alternatively, an array of custom regular expressions can be used in the `chgLogSkipRegExps` option.
 
 ### Skip Indicators
-Skip indicators are used within commit messages to notify underlying systems that a particular operation should not be performed for a particular commit. An example of which is the [skip option for travis-ci](http://docs.travis-ci.com/user/how-to-skip-a-build/). By default, releasebot adds a flag to `releaseSkipTasks` in order to skip additional continuous integration builds when internal releasebot commits are performed (i.e. bumping package versions, etc.). The semantics follow commonly recognized patterns used by various tools (i.e. `[skip ci]`). When the releasebot task is registered it automatically captures all the skip operations/tasks that exist within the current commit message and exposes them via `skipTasks`. This can also be useful within grunt in order to establish conditional task execution based upon the current commit message:
+Skip indicators are used within commit messages to notify underlying systems that a particular operation should not be performed for a particular commit. An example of which is the [skip option for travis-ci](http://docs.travis-ci.com/user/how-to-skip-a-build/). By default, releasebot adds a flag to `releaseSkipTasks` in order to skip additional continuous integration builds when internal releasebot commits are performed (i.e. bumping package versions, etc.). The semantics follow commonly recognized patterns used by various tools (i.e. `[skip ci]`). When the releasebot task is registered it automatically captures all the skip operations/tasks that exist within the current commit message and exposes them via `skipTasks`. This can also be useful within Grunt in order to establish conditional task execution based upon the current commit message:
 
 ```js
 function Tasks() {
@@ -175,28 +214,37 @@ buildTasks.add('nodeunit');
 buildTasks.add('releasebot');
 grunt.registerTask('build', buildTasks.tasks);
 ```
+The same thing can be accomplished using Gulp:
+
+```js
+
+```
 
 ## Options
 
-There are two types of releasebot options. The first type of options are <a href="#default-global-plug-in-environment-options">globally defined</a> and are applied when the releasebot task is registered, but prior to any releasebot task executions. This allows for accessibility of extracted <a href="#commit">commit</a> details for other tasks that are ran before releasebot. It also provides a shared data pool and prevents duplicating the extraction process and prevents discrepancies between multiple relesebot task executions (e.g. in case releasebot needs to be re-ran due to a prior release failure). The second type is the <a href="#default-task-specific-options">typical grunt options</a> and is task specific.
+There are two types of releasebot options. The first type of options are <a href="#default-global-plug-in-environment-options">globally defined</a> and are applied when the releasebot task is registered, but prior to any releasebot task executions. This allows for accessibility of extracted <a href="#commit">commit</a> details for other tasks that are ran before releasebot. It also provides a shared data pool and prevents duplicating the extraction process and prevents discrepancies between multiple relesebot task executions (e.g. in case releasebot needs to be re-ran due to a prior release failure). The second type is the <a href="#default-task-specific-options">typical task specific options</a>.
 
 ###Default global plug-in environment options:
 
-Global environment options are set once the releasebot task is registered and are accessible via `grunt.config.get('releasebot.env')`.
+Global environment options are set once the releasebot task is registered and are accessible via `releasebot.config('releasebot.env')` (synonymous with `grunt.config.get('releasebot.env')` when using Grunt).
 
 The following **global plug-in environment options** can be set using one of the following techniques.
 
 ####Global environment option extraction (in order of presidence):
 
-1. Via `grunt.config.set('releasebot.env', options)` before the releasebot task is registered
-2. Passed in from the command line `grunt releasebot --releasebot.theoptionname=THE_OPTION_VALUE`
-3. Automatically from the <a href="http://docs.travis-ci.com/user/ci-environment/#Environment-variables">Travis-CI environmental variables</a>
-4. Default option value or extracted from Git
+1. Via `releasebot.config('releasebot.env', options)` (synonymous with `grunt.config('releasebot.env', options)` when using Grunt)  before the releasebot task is registered
+2. Passed in from the command line `grunt releasebot --releasebot.theoptionname=THE_OPTION_VALUE` or `gulp releasebot --releasebot.theoptionname=THE_OPTION_VALUE`
+3. Automatically from the <a href="http://docs.travis-ci.com/user/ci-environment/#Environment-variables">Travis-CI environmental variables</a> (if applicable)
+4. Default option value or extracted from Git (if applicable)
 
 ```js
 {
-  // the path to the project package file (blank/null prevents npm publish)
-  pkgPath : grunt.config('pkgFile') || 'package.json',
+  // The path to the project package file (blank/null prevents npm publish)
+  pkgPath : 'package.json',
+  // The path to the bower package file (blank/null prevents bower register)
+  pkgPathBower : 'bower.json',
+  // The properties that will be synchronized between package JSON during a release (properties must exist in all pkgPath* JSON) 
+  pkgPropSync : [ 'name', 'version', 'repository' ],
   // CLI executable for Git operations
   gitCliSubstitute : 'git',
   // Directory where the build will take place
@@ -232,7 +280,7 @@ The following **global plug-in environment options** can be set using one of the
 
 ###Commit:
 
-Once the releasebot task has been registered commit datails are captured and made available via `grunt.config.get('releasebot.commit')`
+Once the releasebot task has been registered commit datails are captured and made available via `releasebot.config('releasebot.commit')` (synonymous with `grunt.config.get('releasebot.commit')` when using Grunt)
 
 ```js
 {
@@ -288,8 +336,9 @@ Once the releasebot task has been registered commit datails are captured and mad
   versionTag : '',
   // The match character sequence that triggered the release (e.g. "release v*.*.+")
   versionTrigger : '',
-  // Function versionPkg([replacer] [, space] [, revert] [, altFunctionToWrite] [, afterWriteFunction] [,altPath])
-  // returns the JSON from the pkgPath
+  // Updates the package and/or bower package only when descrepencies are found with relation to the current commit details (otherwise, just retrieves the package objects)
+  // Function versionPkg([replacer] [, space] [, revert] [, altFunctionToWrite] [, afterWriteFunction] [,altPath] [, altBowerPath]) 
+  // returns { pkg: pkgJsonObj, pkgBower: bowerJsonObj } from the pkgPath and pkgPathBower respectively
   versionPkg : [Function],
   // Array of tasks extracted from the commit message in the format: "[skip SOME_TASK]" 
   skipTasks : [],
@@ -308,9 +357,23 @@ Once the releasebot task has been registered commit datails are captured and mad
 
 ###Default task specific options:
 
+The following options will be parsed using either [grunt template](http://gruntjs.com/api/grunt.template) or the [gulp template](https://github.com/gulpjs/gulp-util#templatestring-data) (gulp-util must be installed if used):
+
+* `name`
+* `pkgCurrVerBumpMsg`
+* `pkgNextVerBumpMsg`
+* `distBranchPubMsg`
+
+The templated `data` used by Grunt's/Gulp's internal [lodash](http://lodash.com/docs/#template) processor will be set to include the following properties:
+
+* `process` - the [node process](http://nodejs.org/api/process.html)
+* `commit` - the current commit from `releasebot.config('releasebot.commit')`
+* `env` - the releasebot environment from `releasebot.config('releasebot.env')`
+* `options` - the current releasebot task options (shown below)
+
 ```js
 {
-  // The name that will appear on GitHub (grunt template parsed using any "commit", task "options", "env" or "process" properties)
+  // The release's tag name 
   name : '<%= commit.versionTag %>',
   // Commit message used when the package version does not match the version being released and needs to be updated
   pkgCurrVerBumpMsg : 'releasebot: Updating <%= env.pkgPath %> version to match release version <%= commit.version %> <%= commit.skipTaskGen(options.releaseSkipTasks) %>',
@@ -365,12 +428,12 @@ Once the releasebot task has been registered commit datails are captured and mad
   // The directory that will be used when creating the asset archives (releative to the commit.buildDir)
   distAssetDir : '..',
   // Function that will be called for each distAssetUpdateFiles 
-  // distAssetUpdateFunction(contents, path, commit) and returning customized content for the specified distribution asset that will be overwritten before the release assets are generated
+  // distAssetUpdateFunction(contents, path) and returning customized content for the specified distribution asset that will be overwritten before the release assets are generated
   distAssetUpdateFunction : null,
   // Array of file paths that will be read/written to after distAssetUpdateFunction
   distAssetUpdateFiles : [],
   // Function that will be called for each distBranchUpdateFiles
-  // distBranchUpdateFunction(contents, path, commit) and returning customized content for the specified distribution branch that will be overwritten before the published/pushed to the specified branch
+  // distBranchUpdateFunction(contents, path) and returning customized content for the specified distribution branch that will be overwritten before the published/pushed to the specified branch
   distBranchUpdateFunction : null,
   // Array of file paths that will be read/written to after distBranchUpdateFunction
   distBranchUpdateFiles : [],
@@ -388,3 +451,7 @@ Once the releasebot task has been registered commit datails are captured and mad
   npmRegistryURL : 'https://registry.npmjs.org'
 }
 ```
+
+## API
+
+releasebot can be used with or wihout external use of it's API

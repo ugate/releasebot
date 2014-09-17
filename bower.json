@@ -1,0 +1,35 @@
+{
+  "name": "releasebot",
+  "version": "0.1.3",
+  "homepage": "https://github.com/ugate/releasebot",
+  "description": "Grunt task for triggering a release when a commit message matches a predefined regular expression or when manually invoked",
+  "main": "lib/releasebot.js",
+  "moduleType": [
+    "node"
+  ],
+  "keywords": [
+    "release",
+    "bump",
+    "grunt",
+    "publish",
+    "register",
+    "github",
+    "npm",
+    "bower"
+  ],
+  "authors": [
+    "ugate.public@gmail.com"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "semver": "~3.0.1",
+    "shelljs": "~0.3.0"
+  },
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

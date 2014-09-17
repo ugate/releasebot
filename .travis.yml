@@ -8,6 +8,8 @@ before_script:
 - npm install -g grunt-cli
 - echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 - npm link npm
+- npm install -g bower
+- npm link bower
 branches:
   only:
   - master
