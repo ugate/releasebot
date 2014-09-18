@@ -45,9 +45,9 @@ module.exports = function() {
 		function test() {
 			if (rslt.failed || !(rslt.req = tests.shift())) {
 				var diff = process.hrtime(rslt.start);
-				console.log('=======> Completed %s of %s smoke tests with %s failures (%s assertion failures) '
+				console.log('=======> Completed %s of %s smoke tests with %s failures (%s %sassertion failures) '
 						+ 'took %s ms for the smoke to clear', rslt.ran, rslt.total, rslt.failed, rslt.assertFailed,
-						(diff[0] * 1e9 + diff[1]) / 1000000);
+						(rslt.failed ? '' : 'expected '), (diff[0] * 1e9 + diff[1]) / 1000000);
 				// reset test data
 				coopt._cloneAndSetCommitTask({
 					commit : null,
