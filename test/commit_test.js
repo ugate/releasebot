@@ -2,12 +2,14 @@ var semver = require('semver');
 var coopt = require('../lib/coopt');
 var rbot = require('../releasebot');
 
+var ns = 'test';
+
 /**
  * Global configuration tests
  */
 exports.commit = {
 	config : function(test) {
-		var c = getCommit();
+		var c = getCommit(ns);
 
 		test.ok(c, 'Cannot find commit!');
 
@@ -55,8 +57,8 @@ exports.commit = {
 	}
 };
 
-function getCommit() {
-	var c = coopt.getCommit(coopt.testNamespace);
+function getCommit(ns) {
+	var c = coopt.getCommit(ns);
 	if (!c) {
 		c = coopt.getCommit();
 	}

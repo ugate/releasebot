@@ -9,6 +9,7 @@ var rbot = require('../../releasebot');
 // flag to indicate if the tests should log output pertaining to the generated
 // commits
 var verbose = false;
+var ns = 'test';
 
 /**
  * Smoke test that runs through a series of sample commit messages
@@ -50,7 +51,7 @@ module.exports = function() {
 				// reset test data
 				coopt._cloneAndSetCommitTask({
 					commit : null,
-					namespace : coopt._testNamespace
+					namespace : ns
 				});
 				done(rslt.failed === 0);
 				return;
@@ -59,8 +60,7 @@ module.exports = function() {
 			// logit(true);
 
 			// generate/set commit
-			rslt.commitTask = coopt._getCommitTask(rslt.req.commitMessage, coopt._testNamespace,
-					rslt.req.currentVersion, !verbose);
+			rslt.commitTask = coopt._getCommitTask(rslt.req.commitMessage, ns, rslt.req.currentVersion, !verbose);
 			if (rslt.req.matchVersion && rslt.commitTask && rslt.commitTask.commit) {
 				rbot.config('matchVersion', rslt.req.matchVersion);
 			}
