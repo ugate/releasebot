@@ -8,7 +8,7 @@
     "LICENSE"
   ],
   "keywords": [
-  	"gruntplugin",
+    "gruntplugin",
     "release",
     "bump",
     "grunt",
@@ -52,7 +52,7 @@
     "nodeunit": "~0.9.0"
   },
   "dependencies": {
-    "semver": "~3.0.1",
-    "shelljs": "~0.3.0"
+    "semver": "^5.5.1",
+    "shelljs": "^0.8.2"
   }
 }
