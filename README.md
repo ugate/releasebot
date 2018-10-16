@@ -1,3 +1,5 @@
+> Deprecated. Use CI plugins instead
+
 # <a href="http://ugate.github.io/releasebot"><img src="http://ugate.github.io/releasebot/img/logo.svg"/></a>
 [![NPM version](http://img.shields.io/npm/v/releasebot.svg?style=flat)](https://npmjs.org/package/releasebot) [![NPM downloads](http://img.shields.io/npm/dm/releasebot.svg?style=flat)](https://www.npmjs.org/package/releasebot) [![Build Status](http://img.shields.io/travis/ugate/releasebot/master.svg?style=flat)](https://travis-ci.org/ugate/releasebot) [![Dependency Status](https://david-dm.org/ugate/releasebot.png)](https://david-dm.org/ugate/releasebot) [![devDependency Status](https://david-dm.org/ugate/releasebot/dev-status.png)](https://david-dm.org/ugate/releasebot#info=devDependencies)
 
