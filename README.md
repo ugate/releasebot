@@ -1,4 +1,4 @@
-> Deprecated. If you're using JavaScript checkout [jsdocp](ugate/jsdocp). Otherwise, use CI plugins instead.
+> Deprecated. If you're using JavaScript checkout [jsdocp](/ugate/jsdocp). Otherwise, use CI plugins instead.
 
 # <a href="http://ugate.github.io/releasebot"><img src="http://ugate.github.io/releasebot/img/logo.svg"/></a>
 [![NPM version](http://img.shields.io/npm/v/releasebot.svg?style=flat)](https://npmjs.org/package/releasebot) [![NPM downloads](http://img.shields.io/npm/dm/releasebot.svg?style=flat)](https://www.npmjs.org/package/releasebot) [![Build Status](http://img.shields.io/travis/ugate/releasebot/master.svg?style=flat)](https://travis-ci.org/ugate/releasebot)
